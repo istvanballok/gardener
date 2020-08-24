@@ -93,7 +93,6 @@ tests:
     - exp_labels:
         severity: critical
         type: seed
-        job: kube-apiserver
         visibility: operator
       exp_annotations:
         description: 'The API servers cumulative failure rate in logging audit events is 0.03%. This may be caused by an unavailable/unreachable AuditSink(s) and/or improper API server audit configuration.'
