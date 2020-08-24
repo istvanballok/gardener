@@ -36,19 +36,6 @@ groups:
     annotations:
       description: Kube API server latency for verb {{ $labels.verb }} is high. This could be because the shoot workers and the control plane are in different regions. 99th percentile of request latency is greater than 3 seconds.
       summary: Kubernetes API server latency is high
-  ### API latency ###
-  - record: apiserver_latency_seconds:quantile
-    expr: histogram_quantile(0.99, rate(apiserver_request_duration_seconds_bucket[5m]))
-    labels:
-      quantile: "0.99"
-  - record: apiserver_latency:quantile
-    expr: histogram_quantile(0.9, rate(apiserver_request_duration_seconds_bucket[5m]))
-    labels:
-      quantile: "0.9"
-  - record: apiserver_latency_seconds:quantile
-    expr: histogram_quantile(0.5, rate(apiserver_request_duration_seconds_bucket[5m]))
-    labels:
-      quantile: "0.5"
   - alert: KubeApiServerTooManyOpenFileDescriptors
     expr: 100 * process_open_fds{job="kube-apiserver"} / process_max_fds > 50
     for: 30m
@@ -82,6 +69,19 @@ groups:
     annotations:
         description: 'The API servers cumulative failure rate in logging audit events is {{ printf "%0.2f" $value }}%. This may be caused by an unavailable/unreachable AuditSink(s) and/or improper API server audit configuration.'
         summary: 'The API server has too many failed attempts to log audit events'
+  ### API latency ###
+  - record: apiserver_latency_seconds:quantile
+    expr: histogram_quantile(0.99, rate(apiserver_request_duration_seconds_bucket[5m]))
+    labels:
+      quantile: "0.99"
+  - record: apiserver_latency:quantile
+    expr: histogram_quantile(0.9, rate(apiserver_request_duration_seconds_bucket[5m]))
+    labels:
+      quantile: "0.9"
+  - record: apiserver_latency_seconds:quantile
+    expr: histogram_quantile(0.5, rate(apiserver_request_duration_seconds_bucket[5m]))
+    labels:
+      quantile: "0.5"
 
   - record: shoot:kube_apiserver:sum_by_pod
     expr: sum(up{job="kube-apiserver"}) by (pod)
