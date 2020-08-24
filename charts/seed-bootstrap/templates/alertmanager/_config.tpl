@@ -6,7 +6,7 @@ templates:
 # The root route on which each incoming alert enters.
 route:
   # The labels by which incoming alerts are grouped together.
-  group_by: ['cluster']
+  group_by: ['service']
 
   # When a new group of alerts is created by an incoming alert, wait at
   # least 'group_wait' to send the initial notification.
