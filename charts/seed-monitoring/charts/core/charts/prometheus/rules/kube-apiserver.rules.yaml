@@ -34,7 +34,7 @@ groups:
       type: seed
       visibility: owner
     annotations:
-      description: Kube API server latency for verb {{ $labels.verb }} is high. This could be because the shoot workers and the control plane are in different regions. 99th percentile of request latency is greater than 3 second.
+      description: Kube API server latency for verb {{ $labels.verb }} is high. This could be because the shoot workers and the control plane are in different regions. 99th percentile of request latency is greater than 3 seconds.
       summary: Kubernetes API server latency is high
   ### API latency ###
   - record: apiserver_latency_seconds:quantile
