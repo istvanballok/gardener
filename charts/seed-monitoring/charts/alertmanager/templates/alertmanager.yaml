@@ -75,6 +75,11 @@ spec:
         - --web.external-url=https://{{ .Values.ingress.host }}
         - --storage.path=/var/alertmanager/data
         - --log.level=info
+        # Since v0.16 alertmanager runs as nobody user (fsGroup 65534/runAsUser 0)
+        # data volume needs to be mounted with the same permissions,
+        # otherwise we will have Permission denied problems
+        securityContext:
+          runAsUser: 0
         env:
         - name: ALERTMANAGER_NAMESPACE
           valueFrom:
