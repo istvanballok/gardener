@@ -63,6 +63,7 @@ groups:
     expr: sum(rate (apiserver_audit_error_total{plugin="webhook"} [5m])) by (app ,role) / ignoring(plugin) sum(rate(apiserver_audit_event_total [5m])) by (app, role) > 0.02
     for: 15m
     labels:
+      service: auditlog
       severity: critical
       type: seed
       visibility: operator

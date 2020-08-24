@@ -91,6 +91,7 @@ tests:
     alertname: KubeApiServerTooManyAuditlogFailures
     exp_alerts:
     - exp_labels:
+        service: auditlog
         severity: critical
         type: seed
         visibility: operator
