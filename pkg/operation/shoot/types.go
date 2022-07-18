@@ -42,6 +42,7 @@ import (
 	"github.com/gardener/gardener/pkg/operation/botanist/component/kubescheduler"
 	"github.com/gardener/gardener/pkg/operation/botanist/component/kubestatemetrics"
 	"github.com/gardener/gardener/pkg/operation/botanist/component/nodelocaldns"
+	"github.com/gardener/gardener/pkg/operation/botanist/component/operatorgrafana"
 	"github.com/gardener/gardener/pkg/operation/botanist/component/resourcemanager"
 	"github.com/gardener/gardener/pkg/operation/botanist/component/vpa"
 	"github.com/gardener/gardener/pkg/operation/botanist/component/vpnseedserver"
@@ -126,6 +127,7 @@ type ControlPlane struct {
 	KubeStateMetrics      kubestatemetrics.Interface
 	ResourceManager       resourcemanager.Interface
 	VerticalPodAutoscaler vpa.Interface
+	OperatorGrafana       operatorgrafana.Interface
 	VPNSeedServer         vpnseedserver.Interface
 }
 
