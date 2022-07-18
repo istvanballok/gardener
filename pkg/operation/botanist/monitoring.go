@@ -327,7 +327,10 @@ func (b *Botanist) DeploySeedMonitoring(ctx context.Context) error {
 		"prometheus": prometheus,
 	}
 
-	if err := b.K8sSeedClient.ChartApplier().Apply(ctx, filepath.Join(ChartsPath, "seed-monitoring", "charts", "core"), b.Shoot.SeedNamespace, fmt.Sprintf("%s-monitoring", b.Shoot.SeedNamespace), kubernetes.Values(coreValues)); err != nil {
+	if err := b.K8sSeedClient.ChartApplier().Delete(ctx,
+		filepath.Join(ChartsPath, "seed-monitoring", "charts", "core"),
+		b.Shoot.SeedNamespace, fmt.Sprintf("%s-monitoring", b.Shoot.SeedNamespace),
+		kubernetes.Values(coreValues)); err != nil {
 		return err
 	}
 
@@ -404,7 +407,10 @@ func (b *Botanist) DeploySeedMonitoring(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		if err := b.K8sSeedClient.ChartApplier().Apply(ctx, filepath.Join(ChartsPath, "seed-monitoring", "charts", "alertmanager"), b.Shoot.SeedNamespace, fmt.Sprintf("%s-monitoring", b.Shoot.SeedNamespace), kubernetes.Values(alertManagerValues)); err != nil {
+		if err := b.K8sSeedClient.ChartApplier().Delete(ctx,
+			filepath.Join(ChartsPath, "seed-monitoring", "charts", "alertmanager"),
+			b.Shoot.SeedNamespace, fmt.Sprintf("%s-monitoring", b.Shoot.SeedNamespace),
+			kubernetes.Values(alertManagerValues)); err != nil {
 			return err
 		}
 	} else {
@@ -622,7 +628,11 @@ func (b *Botanist) deployGrafanaCharts(ctx context.Context, credentialsSecret *c
 		return err
 	}
 
-	if err := b.K8sSeedClient.ChartApplier().Apply(ctx, filepath.Join(ChartsPath, "seed-monitoring", "charts", "grafana"), b.Shoot.SeedNamespace, fmt.Sprintf("%s-monitoring", b.Shoot.SeedNamespace), kubernetes.Values(values)); err != nil {
+	if err := b.K8sSeedClient.ChartApplier().Delete(ctx,
+		filepath.Join(ChartsPath, "seed-monitoring", "charts", "grafana"),
+		b.Shoot.SeedNamespace,
+		fmt.Sprintf("%s-monitoring", b.Shoot.SeedNamespace),
+		kubernetes.Values(values)); err != nil {
 		return err
 	}
 
