@@ -25,6 +25,7 @@ import (
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/operation/botanist/component"
 	"github.com/gardener/gardener/pkg/operation/botanist/component/kubeapiserver"
+	"github.com/gardener/gardener/pkg/operation/botanist/component/operatorgrafana"
 	"github.com/gardener/gardener/pkg/utils"
 	gutil "github.com/gardener/gardener/pkg/utils/gardener"
 	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
@@ -68,6 +69,7 @@ func New(
 		namespace:      namespace,
 		secretsManager: secretsManager,
 		values:         values,
+		og:             operatorgrafana.New(client, namespace, secretsManager, operatorgrafana.Values{}),
 	}
 
 	if values.ClusterType == component.ClusterTypeSeed {
@@ -93,6 +95,8 @@ type vpa struct {
 	caBundle                         []byte
 	serverSecretName                 string
 	genericTokenKubeconfigSecretName *string
+
+	og operatorgrafana.Interface
 }
 
 // Values is a set of configuration values for the VPA components.
@@ -152,7 +156,7 @@ func (v *vpa) Deploy(ctx context.Context) error {
 	}
 
 	if v.values.ClusterType == component.ClusterTypeSeed {
-		allResources = component.MergeResourceConfigs(allResources, v.exporterResourceConfigs())
+		allResources = component.MergeResourceConfigs(allResources, v.exporterResourceConfigs(), v.og.GrafanaResourceConfigs())
 	} else {
 		genericTokenKubeconfigSecret, found := v.secretsManager.Get(v1beta1constants.SecretNameGenericTokenKubeconfig)
 		if !found {

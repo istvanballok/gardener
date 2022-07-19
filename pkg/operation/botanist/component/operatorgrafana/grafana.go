@@ -9,7 +9,7 @@ import (
 	"k8s.io/utils/pointer"
 )
 
-func (og *operatorgrafana) grafanaResourceConfigs() component.ResourceConfigs {
+func (og *operatorgrafana) GrafanaResourceConfigs() component.ResourceConfigs {
 	var (
 		deployment = og.emptyDeployment("operatorgrafana")
 	)

@@ -16,6 +16,7 @@ import (
 
 type Interface interface {
 	component.DeployWaiter
+	GrafanaResourceConfigs() component.ResourceConfigs
 	// component.MonitoringComponent
 }
 
@@ -56,7 +57,7 @@ type Values struct {
 
 func (og *operatorgrafana) Deploy(ctx context.Context) error {
 	var allResources component.ResourceConfigs
-	component.MergeResourceConfigs(allResources, og.grafanaResourceConfigs())
+	component.MergeResourceConfigs(allResources, og.GrafanaResourceConfigs())
 	if err := component.DeployResourceConfigs(
 		ctx,
 		og.client,
