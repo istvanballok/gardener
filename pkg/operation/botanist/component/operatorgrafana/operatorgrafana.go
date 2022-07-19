@@ -2,11 +2,15 @@ package operatorgrafana
 
 import (
 	"context"
-	"fmt"
 
+	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
+	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/operation/botanist/component"
+	"github.com/gardener/gardener/pkg/utils"
 	"github.com/gardener/gardener/pkg/utils/managedresources"
 	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
+	appsv1 "k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -27,7 +31,7 @@ func New(
 		secretsManager: secretsManager,
 		values:         values,
 	}
-
+	og.registry = managedresources.NewRegistry(kubernetes.ShootScheme, kubernetes.ShootCodec, kubernetes.ShootSerializer)
 	return og
 }
 
@@ -51,7 +55,18 @@ type Values struct {
 }
 
 func (og *operatorgrafana) Deploy(ctx context.Context) error {
-	fmt.Println("Calling deploy on the new operator grafana component")
+	var allResources component.ResourceConfigs
+	component.MergeResourceConfigs(allResources, og.grafanaResourceConfigs())
+	if err := component.DeployResourceConfigs(
+		ctx,
+		og.client,
+		og.namespace,
+		component.ClusterTypeShoot,
+		"operatorgrafana",
+		og.registry,
+		allResources); err != nil {
+		return err
+	}
 	// TODO add grafana deployment, ingress, network policy, service
 	return nil
 }
@@ -65,4 +80,20 @@ func (og *operatorgrafana) Wait(ctx context.Context) error {
 
 func (og *operatorgrafana) WaitCleanup(ctx context.Context) error {
 	return nil
+}
+
+func (og *operatorgrafana) emptyDeployment(name string) *appsv1.Deployment {
+	return &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: og.namespace}}
+}
+
+func getAppLabel(appValue string) map[string]string {
+	return map[string]string{v1beta1constants.LabelApp: appValue}
+}
+
+func getRoleLabel() map[string]string {
+	return map[string]string{v1beta1constants.GardenRole: "operatorgrafana"}
+}
+
+func getAllLabels(appValue string) map[string]string {
+	return utils.MergeStringMaps(getAppLabel(appValue), getRoleLabel())
 }
