@@ -2,6 +2,7 @@ package operatorgrafana
 
 import (
 	"context"
+	"time"
 
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
@@ -75,8 +76,15 @@ func (og *operatorgrafana) Destroy(ctx context.Context) error {
 	return nil
 }
 
+// TimeoutWaitForManagedResource is the timeout used while waiting for the ManagedResources to become healthy
+// or deleted.
+var TimeoutWaitForManagedResource = 2 * time.Minute
+
 func (og *operatorgrafana) Wait(ctx context.Context) error {
-	return nil
+	timeoutCtx, cancel := context.WithTimeout(ctx, TimeoutWaitForManagedResource)
+	defer cancel()
+
+	return managedresources.WaitUntilHealthy(timeoutCtx, og.client, og.namespace, "operatorgrafana")
 }
 
 func (og *operatorgrafana) WaitCleanup(ctx context.Context) error {
