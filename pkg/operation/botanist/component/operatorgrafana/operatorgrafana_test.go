@@ -20,6 +20,7 @@ import (
 	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	. "github.com/gardener/gardener/pkg/operation/botanist/component/operatorgrafana"
+	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	. "github.com/gardener/gardener/pkg/utils/test/matchers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -139,7 +140,7 @@ var _ = Describe("Operator Grafana", func() {
 	})
 
 	Describe("Deploy", func() {
-		Context("cluster type seed", func() {
+		Context("cluster type shoot", func() {
 
 			It("should successfully deploy all resources", func() {
 				_ = deploymentGrafana
@@ -153,8 +154,6 @@ var _ = Describe("Operator Grafana", func() {
 				c.List(ctx, objectList)
 
 				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(Succeed())
-
-				// fmt.Printf("%#v\n", managedResource)
 				Expect(managedResource).To(DeepEqual(&resourcesv1alpha1.ManagedResource{
 					TypeMeta: metav1.TypeMeta{
 						APIVersion: resourcesv1alpha1.SchemeGroupVersion.String(),
@@ -175,6 +174,10 @@ var _ = Describe("Operator Grafana", func() {
 					},
 				}))
 
+				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResourceSecret), managedResourceSecret)).To(Succeed())
+				Expect(managedResourceSecret.Type).To(Equal(corev1.SecretTypeOpaque))
+				Expect(managedResourceSecret.Data).To(HaveLen(1))
+				Expect(c.Get(ctx, kutil.Key(namespace, "operatorgrafana"), deployment)).To(Succeed())
 			})
 		})
 	})

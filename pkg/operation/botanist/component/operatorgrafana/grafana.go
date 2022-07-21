@@ -29,7 +29,7 @@ func (og *operatorgrafana) GrafanaResourceConfigs() component.ResourceConfigs {
 	)
 
 	return component.ResourceConfigs{
-		{Obj: deployment, Class: component.Runtime, MutateFn: func() { og.reconcileOperatorGrafanaDeployment(deployment) }},
+		{Obj: deployment, Class: component.Application, MutateFn: func() { og.reconcileOperatorGrafanaDeployment(deployment) }},
 	}
 }
 
