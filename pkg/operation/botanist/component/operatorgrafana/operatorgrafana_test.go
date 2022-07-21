@@ -177,6 +177,9 @@ var _ = Describe("Operator Grafana", func() {
 				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResourceSecret), managedResourceSecret)).To(Succeed())
 				Expect(managedResourceSecret.Type).To(Equal(corev1.SecretTypeOpaque))
 				Expect(managedResourceSecret.Data).To(HaveLen(1))
+				By("checking operatorgrafana resources")
+
+				deployment := &appsv1.Deployment{}
 				Expect(c.Get(ctx, kutil.Key(namespace, "operatorgrafana"), deployment)).To(Succeed())
 			})
 		})
