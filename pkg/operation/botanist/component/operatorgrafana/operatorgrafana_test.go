@@ -16,21 +16,19 @@ package operatorgrafana_test
 
 import (
 	"context"
+	"embed"
 
 	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	. "github.com/gardener/gardener/pkg/operation/botanist/component/operatorgrafana"
-	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
-	. "github.com/gardener/gardener/pkg/utils/test/matchers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/utils/pointer"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 
 	"github.com/gardener/gardener/pkg/operation/botanist/component"
 	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
@@ -38,6 +36,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
+
+//go:embed manifests/managedresourcecontents/*
+var manifests embed.FS
+
+//go:embed manifests/managedresource/managedresource.yaml
+var managedResourceManifest string
 
 var _ = Describe("Operator Grafana", func() {
 	var (
@@ -49,16 +53,13 @@ var _ = Describe("Operator Grafana", func() {
 			Enabled: true,
 		}
 
-		c                 client.Client
-		sm                secretsmanager.Interface
-		og                component.DeployWaiter
-		deploymentGrafana *appsv1.Deployment
+		c  client.Client
+		sm secretsmanager.Interface
+		og component.DeployWaiter
 
 		managedResourceName   string
 		managedResource       *resourcesv1alpha1.ManagedResource
 		managedResourceSecret *corev1.Secret
-
-		// imageGrafana             = "some-image:for-grafana"
 	)
 
 	BeforeEach(func() {
@@ -68,60 +69,6 @@ var _ = Describe("Operator Grafana", func() {
 		og = New(c, namespace, sm, values)
 
 		managedResourceName = "operatorgrafana"
-
-		deploymentGrafana = &appsv1.Deployment{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "apps/v1",
-				Kind:       "Deployment",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "grafana",
-				Namespace: namespace,
-				Labels: map[string]string{
-					"app":                 "grafana",
-					"gardener.cloud/role": "grafana",
-				},
-			},
-			Spec: appsv1.DeploymentSpec{
-				Replicas:             pointer.Int32(1),
-				RevisionHistoryLimit: pointer.Int32(2),
-				Selector: &metav1.LabelSelector{
-					MatchLabels: map[string]string{
-						"app": "grafana",
-					},
-				},
-				Template: corev1.PodTemplateSpec{
-					ObjectMeta: metav1.ObjectMeta{
-						Labels: map[string]string{
-							"app":                 "grafana",
-							"gardener.cloud/role": "grafana",
-						},
-					},
-					Spec: corev1.PodSpec{
-						ServiceAccountName: "grafana",
-						Containers: []corev1.Container{{
-							Name:            "grafana",
-							Image:           "grafana/grafana",
-							ImagePullPolicy: corev1.PullIfNotPresent,
-							Ports: []corev1.ContainerPort{{
-								Name:          "web",
-								ContainerPort: 3000,
-								Protocol:      corev1.ProtocolTCP,
-							}},
-							Resources: corev1.ResourceRequirements{
-								Requests: corev1.ResourceList{
-									corev1.ResourceCPU:    resource.MustParse("30m"),
-									corev1.ResourceMemory: resource.MustParse("50Mi"),
-								},
-								Limits: corev1.ResourceList{
-									corev1.ResourceMemory: resource.MustParse("200Mi"),
-								},
-							},
-						}},
-					},
-				},
-			},
-		}
 	})
 
 	JustBeforeEach(func() {
@@ -140,48 +87,42 @@ var _ = Describe("Operator Grafana", func() {
 	})
 
 	Describe("Deploy", func() {
-		Context("cluster type shoot", func() {
+		It("should successfully deploy all resources", func() {
+			Expect(og.Deploy(ctx)).To(Succeed())
+			Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(Succeed())
+			Expect(serialize(managedResource)).To(Equal(string(managedResourceManifest)))
+			Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResourceSecret), managedResourceSecret)).To(Succeed())
 
-			It("should successfully deploy all resources", func() {
-				_ = deploymentGrafana
-				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(MatchError(apierrors.NewNotFound(schema.GroupResource{Group: resourcesv1alpha1.SchemeGroupVersion.Group, Resource: "managedresources"}, managedResource.Name)))
-				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResourceSecret), managedResourceSecret)).To(MatchError(apierrors.NewNotFound(schema.GroupResource{Group: corev1.SchemeGroupVersion.Group, Resource: "secrets"}, managedResourceSecret.Name)))
-
-				Expect(og.Deploy(ctx)).To(Succeed())
-
-				objectList := &metav1.PartialObjectMetadataList{}
-				objectList.SetGroupVersionKind(resourcesv1alpha1.SchemeGroupVersion.WithKind("ManagedResourceList"))
-				c.List(ctx, objectList)
-
-				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(Succeed())
-				Expect(managedResource).To(DeepEqual(&resourcesv1alpha1.ManagedResource{
-					TypeMeta: metav1.TypeMeta{
-						APIVersion: resourcesv1alpha1.SchemeGroupVersion.String(),
-						Kind:       "ManagedResource",
-					},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:            managedResourceName,
-						Namespace:       namespace,
-						ResourceVersion: "1",
-						Labels:          map[string]string{"origin": "gardener"},
-					},
-					Spec: resourcesv1alpha1.ManagedResourceSpec{
-						InjectLabels: map[string]string{"shoot.gardener.cloud/no-cleanup": "true"},
-						SecretRefs: []corev1.LocalObjectReference{{
-							Name: managedResourceSecret.Name,
-						}},
-						KeepObjects: pointer.Bool(false),
-					},
-				}))
-
-				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResourceSecret), managedResourceSecret)).To(Succeed())
-				Expect(managedResourceSecret.Type).To(Equal(corev1.SecretTypeOpaque))
-				Expect(managedResourceSecret.Data).To(HaveLen(1))
-				By("checking operatorgrafana resources")
-
-				deployment := &appsv1.Deployment{}
-				Expect(c.Get(ctx, kutil.Key(namespace, "operatorgrafana"), deployment)).To(Succeed())
-			})
+			By("verifying that the content of the secret is correct")
+			for k, v := range managedResourceSecret.Data {
+				manifest, err := manifests.ReadFile("manifests/managedresourcecontents/" + k)
+				if err != nil {
+					GinkgoWriter.Println(CurrentSpecReport().FullText())
+					GinkgoWriter.Println("manifests/managedresourcecontents/" + k + " does not exist for value:\n" + string(v))
+				}
+				Expect(string(v)).To(Equal(string(manifest)))
+			}
 		})
 	})
 })
+
+func serialize(obj runtime.Object) string {
+	var (
+		scheme        = kubernetes.SeedScheme
+		groupVersions []schema.GroupVersion
+	)
+
+	for k := range scheme.AllKnownTypes() {
+		groupVersions = append(groupVersions, k.GroupVersion())
+	}
+
+	var (
+		ser   = json.NewSerializerWithOptions(json.DefaultMetaFactory, scheme, scheme, json.SerializerOptions{Yaml: true, Pretty: false, Strict: false})
+		codec = serializer.NewCodecFactory(scheme).CodecForVersions(ser, ser, schema.GroupVersions(groupVersions), schema.GroupVersions(groupVersions))
+	)
+
+	serializationYAML, err := runtime.Encode(codec, obj)
+	Expect(err).NotTo(HaveOccurred())
+
+	return string(serializationYAML)
+}

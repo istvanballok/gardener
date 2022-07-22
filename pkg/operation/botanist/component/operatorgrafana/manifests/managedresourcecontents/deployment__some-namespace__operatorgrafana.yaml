@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: operatorgrafana
+    gardener.cloud/role: operatorgrafana
+  name: operatorgrafana
+  namespace: some-namespace
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: operatorgrafana
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: operatorgrafana
+        gardener.cloud/role: operatorgrafana
+    spec:
+      containers:
+      - image: grafana/grafana
+        imagePullPolicy: IfNotPresent
+        name: grafana
+        ports:
+        - containerPort: 3000
+          name: web
+          protocol: TCP
+        resources:
+          limits:
+            memory: 400Mi
+          requests:
+            cpu: 10m
+            memory: 50Mi
+status: {}
