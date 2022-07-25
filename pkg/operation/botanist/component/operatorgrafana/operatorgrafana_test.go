@@ -16,7 +16,9 @@ package operatorgrafana_test
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"strings"
 
 	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
@@ -59,35 +61,37 @@ var _ = Describe("Operator Grafana", func() {
 		It("should successfully deploy all resources", func() {
 			Expect(og.Deploy(ctx)).To(Succeed())
 			// TODO call resourcemanager reconcile
-
-			secrets := corev1.SecretList{}
-			c.List(ctx, &secrets, client.InNamespace(corev1.NamespaceAll))
-			managedResources := resourcesv1alpha1.ManagedResourceList{}
-			c.List(ctx, &managedResources, client.InNamespace(corev1.NamespaceAll))
-			deployments := appsv1.DeploymentList{}
-			c.List(ctx, &deployments, client.InNamespace(corev1.NamespaceAll))
-			items := []interface{}{}
-			for _, secret := range secrets.Items {
-				items = append(items, &secret)
-			}
-			for _, managedResource := range managedResources.Items {
-				items = append(items, &managedResource)
-			}
-			for _, deployment := range deployments.Items {
-				items = append(items, &deployment)
-			}
-			GinkgoWriter.Print(serialize(items))
-
-			expected, err := os.ReadFile("operatorgrafana_test_1.yaml")
-			if err.Error() == "no such file or directory" {
-				os.WriteFile("operatorgrafana_test_1.yaml", []byte(serialize(items)), 0644)
-				Fail("Regenerating the expected yaml file")
-			}
-
-			Expect(serialize(items)).To(Equal(expected))
+			assertClientState(c, ctx, "operatorgrafana_test_1.yaml")
 		})
 	})
 })
+
+// Assert client state
+func assertClientState(c client.Client, ctx context.Context, filename string) {
+	secrets := corev1.SecretList{}
+	c.List(ctx, &secrets, client.InNamespace(corev1.NamespaceAll))
+	managedResources := resourcesv1alpha1.ManagedResourceList{}
+	c.List(ctx, &managedResources, client.InNamespace(corev1.NamespaceAll))
+	deployments := appsv1.DeploymentList{}
+	c.List(ctx, &deployments, client.InNamespace(corev1.NamespaceAll))
+	items := []interface{}{}
+	for _, secret := range secrets.Items {
+		items = append(items, &secret)
+	}
+	for _, managedResource := range managedResources.Items {
+		items = append(items, &managedResource)
+	}
+	for _, deployment := range deployments.Items {
+		items = append(items, &deployment)
+	}
+	expected, err := os.ReadFile(filename)
+	if err != nil && strings.Contains(err.Error(), "no such file or directory") {
+		os.WriteFile(filename, []byte(serialize(items)), 0644)
+		Fail(fmt.Sprintf("Regenerating the expected yaml file %s", filename))
+	}
+
+	Expect(serialize(items)).To(Equal(string(expected)))
+}
 
 func serialize(objs []interface{}) string {
 	var (

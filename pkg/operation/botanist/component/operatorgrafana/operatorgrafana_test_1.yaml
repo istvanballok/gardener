@@ -1,0 +1,28 @@
+apiVersion: v1
+data:
+  deployment__some-namespace__operatorgrafana.yaml: Lg==
+kind: Secret
+metadata:
+  creationTimestamp: null
+  name: managedresource-operatorgrafana
+  namespace: some-namespace
+  resourceVersion: "1"
+type: Opaque
+---
+apiVersion: resources.gardener.cloud/v1alpha1
+kind: ManagedResource
+metadata:
+  creationTimestamp: null
+  labels:
+    origin: gardener
+  name: operatorgrafana
+  namespace: some-namespace
+  resourceVersion: "1"
+spec:
+  injectLabels:
+    shoot.gardener.cloud/no-cleanup: "true"
+  keepObjects: false
+  secretRefs:
+  - name: managedresource-operatorgrafana
+status: {}
+---
