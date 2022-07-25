@@ -83,6 +83,15 @@ type reconciler struct {
 	requeueAfterOnDeletionPending time.Duration
 }
 
+func New(client, targetClient client.Client, targetRESTMapper meta.RESTMapper, targetScheme *runtime.Scheme) reconcile.Reconciler {
+	return &reconciler{
+		client:           client,
+		targetClient:     targetClient,
+		class:            &predicate.ClassFilter{},
+		targetRESTMapper: targetRESTMapper,
+		targetScheme:     targetScheme}
+}
+
 // InjectClient injects a client into the reconciler.
 func (r *reconciler) InjectClient(c client.Client) error {
 	r.client = c

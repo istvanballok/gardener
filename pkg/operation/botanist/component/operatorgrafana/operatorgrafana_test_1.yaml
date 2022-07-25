@@ -13,16 +13,84 @@ apiVersion: resources.gardener.cloud/v1alpha1
 kind: ManagedResource
 metadata:
   creationTimestamp: null
+  finalizers:
+  - ""
   labels:
     origin: gardener
   name: operatorgrafana
   namespace: some-namespace
-  resourceVersion: "1"
+  resourceVersion: "4"
 spec:
   injectLabels:
     shoot.gardener.cloud/no-cleanup: "true"
   keepObjects: false
   secretRefs:
   - name: managedresource-operatorgrafana
+status: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    resources.gardener.cloud/description: |-
+      DO NOT EDIT - This resource is managed by gardener-resource-manager.
+      Any modifications are discarded and the resource is returned to the original state.
+    resources.gardener.cloud/origin: some-namespace/operatorgrafana
+  creationTimestamp: null
+  labels:
+    app: operatorgrafana
+    gardener.cloud/role: monitoring
+    networking.gardener.cloud/to-dns: allowed
+    role: operator
+    shoot.gardener.cloud/no-cleanup: "true"
+  name: operatorgrafana
+  namespace: some-namespace
+  resourceVersion: "1"
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: operatorgrafana
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: grafana
+        gardener.cloud/role: monitoring
+        networking.gardener.cloud/to-dns: allowed
+        role: operator
+        shoot.gardener.cloud/no-cleanup: "true"
+    spec:
+      containers:
+      - env:
+        - name: GF_AUTH_BASIC_ENABLED
+          value: "true"
+        - name: GF_AUTH_DISABLE_LOGIN_FORM
+          value: "false"
+        - name: GF_USERS_VIEWERS_CAN_EDIT
+          value: "true"
+        - name: GF_AUTH_ANONYMOUS_ENABLED
+          value: "true"
+        - name: GF_SNAPSHOTS_EXTERNAL_ENABLED
+          value: "false"
+        - name: GF_ALERTING_ENABLED
+          value: "false"
+        - name: GF_DATE_FORMATS_DEFAULT_TIMEZONE
+          value: UTC
+        image: grafana/grafana
+        imagePullPolicy: IfNotPresent
+        name: grafana
+        ports:
+        - containerPort: 3000
+          name: web
+          protocol: TCP
+        resources:
+          limits:
+            memory: 400Mi
+          requests:
+            cpu: 10m
+            memory: 50Mi
 status: {}
 ---

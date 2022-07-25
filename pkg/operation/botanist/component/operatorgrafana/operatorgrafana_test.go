@@ -24,18 +24,22 @@ import (
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/operation/botanist/component"
 	. "github.com/gardener/gardener/pkg/operation/botanist/component/operatorgrafana"
+	"github.com/gardener/gardener/pkg/resourcemanager/controller/managedresource"
 	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
 	fakesecretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager/fake"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 var _ = Describe("Operator Grafana", func() {
@@ -49,25 +53,37 @@ var _ = Describe("Operator Grafana", func() {
 		c  client.Client
 		sm secretsmanager.Interface
 		og component.DeployWaiter
+		r  reconcile.Reconciler
 	)
 
 	BeforeEach(func() {
 		c = fakeclient.NewClientBuilder().WithScheme(kubernetes.SeedScheme).Build()
 		sm = fakesecretsmanager.New(c, namespace)
 		og = New(c, namespace, sm, values)
+		restMapper := meta.NewDefaultRESTMapper(nil)
+		restMapper.Add(schema.GroupVersionKind{Group: "apps", Version: "v1", Kind: "Deployment"}, meta.RESTScopeNamespace)
+		r = managedresource.New(c, c, restMapper, kubernetes.SeedScheme)
 	})
 
 	Describe("Deploy", func() {
 		It("should successfully deploy all resources", func() {
 			Expect(og.Deploy(ctx)).To(Succeed())
-			// TODO call resourcemanager reconcile
-			assertClientState(c, ctx, "operatorgrafana_test_1.yaml")
+			letResourceManagerReconcile(ctx, r)
+			assertClientState(ctx, c, "operatorgrafana_test_1.yaml")
 		})
 	})
 })
 
+func letResourceManagerReconcile(ctx context.Context, r reconcile.Reconciler) {
+	_, err := r.Reconcile(ctx, reconcile.Request{
+		NamespacedName: types.NamespacedName{
+			Namespace: "some-namespace",
+			Name:      "operatorgrafana"}})
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+}
+
 // Assert client state
-func assertClientState(c client.Client, ctx context.Context, filename string) {
+func assertClientState(ctx context.Context, c client.Client, filename string) {
 	secrets := corev1.SecretList{}
 	c.List(ctx, &secrets, client.InNamespace(corev1.NamespaceAll))
 	managedResources := resourcesv1alpha1.ManagedResourceList{}
@@ -114,6 +130,9 @@ func serialize(objs []interface{}) string {
 			for k := range obj.Data {
 				obj.Data[k] = []byte(".")
 			}
+		}
+		if obj, ok := obj.(*resourcesv1alpha1.ManagedResource); ok {
+			obj.Status = resourcesv1alpha1.ManagedResourceStatus{}
 		}
 		if obj, ok := obj.(runtime.Object); ok {
 			serializationYAML, err := runtime.Encode(codec, obj)
