@@ -16,15 +16,12 @@ package operatorgrafana_test
 
 import (
 	"context"
-	"embed"
 
-	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	. "github.com/gardener/gardener/pkg/operation/botanist/component/operatorgrafana"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -37,76 +34,41 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-//go:embed manifests/managedresourcecontents/*
-var manifests embed.FS
-
-//go:embed manifests/managedresource/managedresource.yaml
-var managedResourceManifest string
-
 var _ = Describe("Operator Grafana", func() {
 	var (
-		ctx = context.TODO()
-
+		ctx       = context.TODO()
 		namespace = "some-namespace"
-
-		values = Values{
+		values    = Values{
 			Enabled: true,
 		}
 
 		c  client.Client
 		sm secretsmanager.Interface
 		og component.DeployWaiter
-
-		managedResourceName   string
-		managedResource       *resourcesv1alpha1.ManagedResource
-		managedResourceSecret *corev1.Secret
 	)
 
 	BeforeEach(func() {
 		c = fakeclient.NewClientBuilder().WithScheme(kubernetes.SeedScheme).Build()
 		sm = fakesecretsmanager.New(c, namespace)
-
 		og = New(c, namespace, sm, values)
-
-		managedResourceName = "operatorgrafana"
-	})
-
-	JustBeforeEach(func() {
-		managedResource = &resourcesv1alpha1.ManagedResource{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      managedResourceName,
-				Namespace: namespace,
-			},
-		}
-		managedResourceSecret = &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "managedresource-" + managedResource.Name,
-				Namespace: namespace,
-			},
-		}
 	})
 
 	Describe("Deploy", func() {
 		It("should successfully deploy all resources", func() {
 			Expect(og.Deploy(ctx)).To(Succeed())
-			Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(Succeed())
-			Expect(serialize(managedResource)).To(Equal(string(managedResourceManifest)))
-			Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResourceSecret), managedResourceSecret)).To(Succeed())
+			// TODO call resourcemanager reconcile
 
-			By("verifying that the content of the secret is correct")
-			for k, v := range managedResourceSecret.Data {
-				manifest, err := manifests.ReadFile("manifests/managedresourcecontents/" + k)
-				if err != nil {
-					GinkgoWriter.Println(CurrentSpecReport().FullText())
-					GinkgoWriter.Println("manifests/managedresourcecontents/" + k + " does not exist for value:\n" + string(v))
-				}
-				Expect(string(v)).To(Equal(string(manifest)))
-			}
+			secrets := corev1.SecretList{}
+			c.List(ctx, &secrets, client.InNamespace(corev1.NamespaceAll))
+
+			GinkgoWriter.Println(serialize(secrets.Items))
+
+			Expect(secrets).To(Equal(corev1.SecretList{}))
 		})
 	})
 })
 
-func serialize(obj runtime.Object) string {
+func serialize(objs []corev1.Secret) string {
 	var (
 		scheme        = kubernetes.SeedScheme
 		groupVersions []schema.GroupVersion
@@ -117,12 +79,20 @@ func serialize(obj runtime.Object) string {
 	}
 
 	var (
-		ser   = json.NewSerializerWithOptions(json.DefaultMetaFactory, scheme, scheme, json.SerializerOptions{Yaml: true, Pretty: false, Strict: false})
+		ser   = json.NewSerializerWithOptions(json.DefaultMetaFactory, scheme, scheme, json.SerializerOptions{Yaml: true, Strict: false})
 		codec = serializer.NewCodecFactory(scheme).CodecForVersions(ser, ser, schema.GroupVersions(groupVersions), schema.GroupVersions(groupVersions))
 	)
 
-	serializationYAML, err := runtime.Encode(codec, obj)
-	Expect(err).NotTo(HaveOccurred())
+	result := ""
+	for _, obj := range objs {
+		for k := range obj.Data {
+			obj.Data[k] = []byte(".")
+		}
+		serializationYAML, err := runtime.Encode(codec, &obj)
+		result += string(serializationYAML)
+		result += "---\n"
+		Expect(err).NotTo(HaveOccurred())
+	}
 
-	return string(serializationYAML)
+	return string(result)
 }
