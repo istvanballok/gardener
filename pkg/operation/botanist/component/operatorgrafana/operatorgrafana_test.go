@@ -65,17 +65,24 @@ var _ = Describe("Operator Grafana", func() {
 			c.List(ctx, &managedResources, client.InNamespace(corev1.NamespaceAll))
 			deployments := appsv1.DeploymentList{}
 			c.List(ctx, &deployments, client.InNamespace(corev1.NamespaceAll))
-
-			GinkgoWriter.Print(serializeSecrets(secrets.Items))
-			GinkgoWriter.Print(serializeManagedResources(managedResources.Items))
-			GinkgoWriter.Print(serializeDeployments(deployments.Items))
+			items := []interface{}{}
+			for _, secret := range secrets.Items {
+				items = append(items, &secret)
+			}
+			for _, managedResource := range managedResources.Items {
+				items = append(items, &managedResource)
+			}
+			for _, deployment := range deployments.Items {
+				items = append(items, &deployment)
+			}
+			GinkgoWriter.Print(serialize(items))
 
 			Expect(secrets).To(Equal(corev1.SecretList{}))
 		})
 	})
 })
 
-func serializeSecrets(objs []corev1.Secret) string {
+func serialize(objs []interface{}) string {
 	var (
 		scheme        = kubernetes.SeedScheme
 		groupVersions []schema.GroupVersion
@@ -92,65 +99,17 @@ func serializeSecrets(objs []corev1.Secret) string {
 
 	result := ""
 	for _, obj := range objs {
-		for k := range obj.Data {
-			obj.Data[k] = []byte(".")
+		if obj, ok := obj.(*corev1.Secret); ok {
+			for k := range obj.Data {
+				obj.Data[k] = []byte(".")
+			}
 		}
-		serializationYAML, err := runtime.Encode(codec, &obj)
-		result += string(serializationYAML)
-		result += "---\n"
-		Expect(err).NotTo(HaveOccurred())
-	}
-
-	return string(result)
-}
-
-func serializeManagedResources(objs []resourcesv1alpha1.ManagedResource) string {
-	var (
-		scheme        = kubernetes.SeedScheme
-		groupVersions []schema.GroupVersion
-	)
-
-	for k := range scheme.AllKnownTypes() {
-		groupVersions = append(groupVersions, k.GroupVersion())
-	}
-
-	var (
-		ser   = json.NewSerializerWithOptions(json.DefaultMetaFactory, scheme, scheme, json.SerializerOptions{Yaml: true, Strict: false})
-		codec = serializer.NewCodecFactory(scheme).CodecForVersions(ser, ser, schema.GroupVersions(groupVersions), schema.GroupVersions(groupVersions))
-	)
-
-	result := ""
-	for _, obj := range objs {
-		serializationYAML, err := runtime.Encode(codec, &obj)
-		result += string(serializationYAML)
-		result += "---\n"
-		Expect(err).NotTo(HaveOccurred())
-	}
-
-	return string(result)
-}
-
-func serializeDeployments(objs []appsv1.Deployment) string {
-	var (
-		scheme        = kubernetes.SeedScheme
-		groupVersions []schema.GroupVersion
-	)
-
-	for k := range scheme.AllKnownTypes() {
-		groupVersions = append(groupVersions, k.GroupVersion())
-	}
-
-	var (
-		ser   = json.NewSerializerWithOptions(json.DefaultMetaFactory, scheme, scheme, json.SerializerOptions{Yaml: true, Strict: false})
-		codec = serializer.NewCodecFactory(scheme).CodecForVersions(ser, ser, schema.GroupVersions(groupVersions), schema.GroupVersions(groupVersions))
-	)
-
-	result := ""
-	for _, obj := range objs {
-		serializationYAML, err := runtime.Encode(codec, &obj)
-		result += string(serializationYAML)
-		result += "---\n"
-		Expect(err).NotTo(HaveOccurred())
+		if obj, ok := obj.(runtime.Object); ok {
+			serializationYAML, err := runtime.Encode(codec, obj)
+			result += string(serializationYAML)
+			result += "---\n"
+			Expect(err).NotTo(HaveOccurred())
+		}
 	}
 
 	return string(result)
