@@ -38,10 +38,12 @@ func (og *operatorgrafana) reconcileOperatorGrafanaDeployment(deployment *appsv1
 	deployment.Spec = appsv1.DeploymentSpec{
 		Replicas:             pointer.Int32(1),
 		RevisionHistoryLimit: pointer.Int32(2),
-		Selector:             &metav1.LabelSelector{MatchLabels: getAppLabel("operatorgrafana")},
+		Selector: &metav1.LabelSelector{
+			MatchLabels: getAppLabel("operatorgrafana"),
+		},
 		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{
-				Labels: getAllLabels("operatorgrafana"),
+				Labels: getAllLabels("grafana"),
 			},
 			Spec: corev1.PodSpec{
 				//ServiceAccountName: serviceAccount.Name,
@@ -54,6 +56,7 @@ func (og *operatorgrafana) reconcileOperatorGrafanaDeployment(deployment *appsv1
 						ContainerPort: 3000,
 						Protocol:      corev1.ProtocolTCP,
 					}},
+					Env: getEnv(),
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
 							corev1.ResourceCPU:    resource.MustParse("10m"),

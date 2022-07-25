@@ -25,6 +25,7 @@ import (
 	"github.com/gardener/gardener/pkg/utils/managedresources"
 	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -113,10 +114,58 @@ func getAppLabel(appValue string) map[string]string {
 	return map[string]string{v1beta1constants.LabelApp: appValue}
 }
 
-func getRoleLabel() map[string]string {
-	return map[string]string{v1beta1constants.GardenRole: "operatorgrafana"}
+func getRoleLabel(role string) map[string]string {
+	return map[string]string{
+		v1beta1constants.LabelRole:  role,
+		v1beta1constants.GardenRole: "monitoring",
+	}
+}
+
+func getNetpolLabel() map[string]string {
+	return map[string]string{
+		v1beta1constants.LabelNetworkPolicyToDNS: "allowed",
+		// to-loki network policy label no longer seems to exist
+	}
 }
 
 func getAllLabels(appValue string) map[string]string {
-	return utils.MergeStringMaps(getAppLabel(appValue), getRoleLabel())
+	return utils.MergeStringMaps(
+		getAppLabel(appValue),
+		getRoleLabel("operator"),
+		getNetpolLabel(),
+	)
+}
+
+func getEnv() []corev1.EnvVar {
+
+	return []corev1.EnvVar{
+		{
+			Name:  "GF_AUTH_BASIC_ENABLED",
+			Value: "true",
+		},
+		{
+			Name:  "GF_AUTH_DISABLE_LOGIN_FORM",
+			Value: "false",
+		},
+		{
+			Name:  "GF_USERS_VIEWERS_CAN_EDIT",
+			Value: "true",
+		},
+		{
+			Name:  "GF_AUTH_ANONYMOUS_ENABLED",
+			Value: "true",
+		},
+		{
+			Name:  "GF_SNAPSHOTS_EXTERNAL_ENABLED",
+			Value: "false",
+		},
+		{
+			Name:  "GF_ALERTING_ENABLED",
+			Value: "false",
+		},
+		{
+			Name:  "GF_DATE_FORMATS_DEFAULT_TIMEZONE",
+			Value: "UTC",
+		},
+	}
 }
