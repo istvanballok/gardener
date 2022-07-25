@@ -17,19 +17,20 @@ package operatorgrafana_test
 import (
 	"context"
 
+	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
+	"github.com/gardener/gardener/pkg/operation/botanist/component"
 	. "github.com/gardener/gardener/pkg/operation/botanist/component/operatorgrafana"
+	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
+	fakesecretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager/fake"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
-
-	"github.com/gardener/gardener/pkg/operation/botanist/component"
-	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
-	fakesecretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager/fake"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -60,15 +61,21 @@ var _ = Describe("Operator Grafana", func() {
 
 			secrets := corev1.SecretList{}
 			c.List(ctx, &secrets, client.InNamespace(corev1.NamespaceAll))
+			managedResources := resourcesv1alpha1.ManagedResourceList{}
+			c.List(ctx, &managedResources, client.InNamespace(corev1.NamespaceAll))
+			deployments := appsv1.DeploymentList{}
+			c.List(ctx, &deployments, client.InNamespace(corev1.NamespaceAll))
 
-			GinkgoWriter.Println(serialize(secrets.Items))
+			GinkgoWriter.Print(serializeSecrets(secrets.Items))
+			GinkgoWriter.Print(serializeManagedResources(managedResources.Items))
+			GinkgoWriter.Print(serializeDeployments(deployments.Items))
 
 			Expect(secrets).To(Equal(corev1.SecretList{}))
 		})
 	})
 })
 
-func serialize(objs []corev1.Secret) string {
+func serializeSecrets(objs []corev1.Secret) string {
 	var (
 		scheme        = kubernetes.SeedScheme
 		groupVersions []schema.GroupVersion
@@ -88,6 +95,58 @@ func serialize(objs []corev1.Secret) string {
 		for k := range obj.Data {
 			obj.Data[k] = []byte(".")
 		}
+		serializationYAML, err := runtime.Encode(codec, &obj)
+		result += string(serializationYAML)
+		result += "---\n"
+		Expect(err).NotTo(HaveOccurred())
+	}
+
+	return string(result)
+}
+
+func serializeManagedResources(objs []resourcesv1alpha1.ManagedResource) string {
+	var (
+		scheme        = kubernetes.SeedScheme
+		groupVersions []schema.GroupVersion
+	)
+
+	for k := range scheme.AllKnownTypes() {
+		groupVersions = append(groupVersions, k.GroupVersion())
+	}
+
+	var (
+		ser   = json.NewSerializerWithOptions(json.DefaultMetaFactory, scheme, scheme, json.SerializerOptions{Yaml: true, Strict: false})
+		codec = serializer.NewCodecFactory(scheme).CodecForVersions(ser, ser, schema.GroupVersions(groupVersions), schema.GroupVersions(groupVersions))
+	)
+
+	result := ""
+	for _, obj := range objs {
+		serializationYAML, err := runtime.Encode(codec, &obj)
+		result += string(serializationYAML)
+		result += "---\n"
+		Expect(err).NotTo(HaveOccurred())
+	}
+
+	return string(result)
+}
+
+func serializeDeployments(objs []appsv1.Deployment) string {
+	var (
+		scheme        = kubernetes.SeedScheme
+		groupVersions []schema.GroupVersion
+	)
+
+	for k := range scheme.AllKnownTypes() {
+		groupVersions = append(groupVersions, k.GroupVersion())
+	}
+
+	var (
+		ser   = json.NewSerializerWithOptions(json.DefaultMetaFactory, scheme, scheme, json.SerializerOptions{Yaml: true, Strict: false})
+		codec = serializer.NewCodecFactory(scheme).CodecForVersions(ser, ser, schema.GroupVersions(groupVersions), schema.GroupVersions(groupVersions))
+	)
+
+	result := ""
+	for _, obj := range objs {
 		serializationYAML, err := runtime.Encode(codec, &obj)
 		result += string(serializationYAML)
 		result += "---\n"
