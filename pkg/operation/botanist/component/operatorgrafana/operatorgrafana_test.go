@@ -16,6 +16,7 @@ package operatorgrafana_test
 
 import (
 	"context"
+	"os"
 
 	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
@@ -77,7 +78,13 @@ var _ = Describe("Operator Grafana", func() {
 			}
 			GinkgoWriter.Print(serialize(items))
 
-			Expect(secrets).To(Equal(corev1.SecretList{}))
+			expected, err := os.ReadFile("operatorgrafana_test_1.yaml")
+			if err.Error() == "no such file or directory" {
+				os.WriteFile("operatorgrafana_test_1.yaml", []byte(serialize(items)), 0644)
+				Fail("Regenerating the expected yaml file")
+			}
+
+			Expect(serialize(items)).To(Equal(expected))
 		})
 	})
 })
