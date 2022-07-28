@@ -100,7 +100,7 @@ var _ = Describe("Operator Grafana", func() {
 					GinkgoWriter.Println(CurrentSpecReport().FullText())
 					GinkgoWriter.Println("manifests/managedresourcecontents/" + k + " does not exist for value:\n" + string(v))
 				}
-				Expect(string(v)).To(Equal(string(manifest)))
+				Expect(string(v)).To(MatchYAML(string(manifest)))
 			}
 		})
 	})
