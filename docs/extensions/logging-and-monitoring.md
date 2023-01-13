@@ -174,7 +174,7 @@ The three types of Grafana instances found in a seed cluster are configured to e
   - VPA components
 - Shoot Operator Grafana dashboards expose logs from the shoot cluster namespace where they belong
   - All user's dashboards
-  - [Kubernetes Pods](../../charts/seed-monitoring/charts/grafana/dashboards/operators/kubernetes-pods-dashboard.json)
+  - [Kubernetes Pods](../../charts/seed-monitoring/charts/plutono/dashboards/operators/kubernetes-pods-dashboard.json)
 
 If the type of logs exposed in the Grafana instances needs to be changed, it is necessary to update the coresponding instance dashboard configurations.
 

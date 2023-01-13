@@ -59,7 +59,7 @@ spec:
   - from:
     - podSelector:
         matchLabels:
-          component: grafana
+          component: plutono
           gardener.cloud/role: monitoring
     - podSelector:
         matchLabels:

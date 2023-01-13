@@ -13,10 +13,10 @@ metadata:
 {{- else }}
     nginx.ingress.kubernetes.io/configuration-snippet: "proxy_set_header X-Scope-OrgID operator;"
 {{- end }}
-  name: grafana-{{ .Values.role }}
+  name: plutono-{{ .Values.role }}
   namespace: {{ .Release.Namespace }}
   labels:
-    component: grafana
+    component: plutono
     role: {{ .Values.role }}
 spec:
 {{- if semverCompare ">= 1.22-0" .Capabilities.KubeVersion.GitVersion }}
@@ -35,9 +35,9 @@ spec:
       paths:
       - backend:
           service:
-            name: grafana-{{ $.Values.role }}
+            name: plutono-{{ $.Values.role }}
             port:
-              number: {{ required ".ports.grafana is required" $.Values.ports.grafana }}
+              number: {{ required ".ports.plutono is required" $.Values.ports.plutono }}
         path: /
         pathType: Prefix
   {{- end }}

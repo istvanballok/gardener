@@ -1,42 +1,42 @@
-{{- define "grafana.deployment.annotations" -}}
-reference.resources.gardener.cloud/configmap-{{ include "grafana.providers.name" . | sha256sum | trunc 8 }}: {{ include "grafana.providers.name" . }}
-reference.resources.gardener.cloud/configmap-{{ include "grafana.datasources.name" . | sha256sum | trunc 8 }}: {{ include "grafana.datasources.name" . }}
-reference.resources.gardener.cloud/configmap-{{ include "grafana.dashboards.name" . | sha256sum | trunc 8 }}: {{ include "grafana.dashboards.name" . }}
+{{- define "plutono.deployment.annotations" -}}
+reference.resources.gardener.cloud/configmap-{{ include "plutono.providers.name" . | sha256sum | trunc 8 }}: {{ include "plutono.providers.name" . }}
+reference.resources.gardener.cloud/configmap-{{ include "plutono.datasources.name" . | sha256sum | trunc 8 }}: {{ include "plutono.datasources.name" . }}
+reference.resources.gardener.cloud/configmap-{{ include "plutono.dashboards.name" . | sha256sum | trunc 8 }}: {{ include "plutono.dashboards.name" . }}
 {{- end -}}
 ---
 apiVersion: {{ include "deploymentversion" . }}
 kind: Deployment
 metadata:
-  name: grafana-{{ .Values.role }}
+  name: plutono-{{ .Values.role }}
   namespace: {{ .Release.Namespace }}
   labels:
     gardener.cloud/role: monitoring
-    component: grafana
+    component: plutono
     role: {{ .Values.role }}
   annotations:
-{{ include "grafana.deployment.annotations" . | indent 4 }}
+{{ include "plutono.deployment.annotations" . | indent 4 }}
 spec:
   revisionHistoryLimit: 1
   replicas: {{ .Values.replicas }}
   selector:
     matchLabels:
-      component: grafana
+      component: plutono
       role: {{ .Values.role }}
   template:
     metadata:
       annotations:
-{{ include "grafana.deployment.annotations" . | indent 8 }}
+{{ include "plutono.deployment.annotations" . | indent 8 }}
       labels:
         gardener.cloud/role: monitoring
-        component: grafana
+        component: plutono
         networking.gardener.cloud/to-dns: allowed
         role: {{ .Values.role }}
         networking.gardener.cloud/to-loki: allowed
     spec:
       priorityClassName: gardener-system-100
       containers:
-      - name: grafana
-        image: {{ index .Values.images "grafana" }}
+      - name: plutono
+        image: {{ index .Values.images "plutono" }}
         imagePullPolicy: IfNotPresent
         env:
 {{- if eq .Values.role "operators" }}
@@ -61,17 +61,17 @@ spec:
         - name: GF_DATE_FORMATS_DEFAULT_TIMEZONE
           value: "UTC"
         volumeMounts:
-        - name: grafana-storage
-          mountPath: /var/grafana-storage
-        - name: grafana-dashboards
-          mountPath: /var/lib/grafana/dashboards
-        - name: grafana-datasources
-          mountPath: /etc/grafana/provisioning/datasources
-        - name: grafana-dashboard-providers
-          mountPath: /etc/grafana/provisioning/dashboards
+        - name: plutono-storage
+          mountPath: /var/plutono-storage
+        - name: plutono-dashboards
+          mountPath: /var/lib/plutono/dashboards
+        - name: plutono-datasources
+          mountPath: /etc/plutono/provisioning/datasources
+        - name: plutono-dashboard-providers
+          mountPath: /etc/plutono/provisioning/dashboards
         ports:
         - name: web
-          containerPort: {{ required ".ports.grafana is required" .Values.ports.grafana }}
+          containerPort: {{ required ".ports.plutono is required" .Values.ports.plutono }}
         resources:
           requests:
             cpu: 10m
@@ -79,14 +79,14 @@ spec:
           limits:
             memory: 400Mi
       volumes:
-      - name: grafana-storage
+      - name: plutono-storage
         emptyDir: {}
-      - name: grafana-dashboards
+      - name: plutono-dashboards
         configMap:
-          name: {{ include "grafana.dashboards.name" . }}
-      - name: grafana-datasources
+          name: {{ include "plutono.dashboards.name" . }}
+      - name: plutono-datasources
         configMap:
-          name: {{ include "grafana.datasources.name" . }}
-      - name: grafana-dashboard-providers
+          name: {{ include "plutono.datasources.name" . }}
+      - name: plutono-dashboard-providers
         configMap:
-          name: {{ include "grafana.providers.name" . }}
+          name: {{ include "plutono.providers.name" . }}

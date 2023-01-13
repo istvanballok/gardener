@@ -192,7 +192,7 @@ func DeleteGrafanaByRole(ctx context.Context, k8sClient kubernetes.Interface, na
 	deleteOptions := []client.DeleteAllOfOption{
 		client.InNamespace(namespace),
 		client.MatchingLabels{
-			"component": "grafana",
+			"component": "plutono",
 			"role":      role,
 		},
 	}
@@ -217,7 +217,7 @@ func DeleteGrafanaByRole(ctx context.Context, k8sClient kubernetes.Interface, na
 		ctx,
 		&corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "grafana-" + role,
+				Name:      "plutono-" + role,
 				Namespace: namespace,
 			}},
 	); client.IgnoreNotFound(err) != nil {

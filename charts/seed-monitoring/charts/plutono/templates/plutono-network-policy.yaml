@@ -5,11 +5,11 @@ metadata:
     gardener.cloud/description: |
       Allows Ingress to the Grafana from the nginx controller and Egress to Prometheus.
   namespace: {{ .Release.Namespace }}
-  name: allow-grafana
+  name: allow-plutono
 spec:
   podSelector:
     matchLabels:
-      component: grafana
+      component: plutono
       gardener.cloud/role: monitoring
   egress:
   - to:
@@ -39,7 +39,7 @@ spec:
           component: controller
     ports:
     - protocol: TCP
-      port: {{ required ".ports.grafana is required" .Values.ports.grafana }}
+      port: {{ required ".ports.plutono is required" .Values.ports.plutono }}
   policyTypes:
   - Egress
   - Ingress
