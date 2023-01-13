@@ -8,7 +8,7 @@ Kubernetes uses the underlying container runtime logging, which does not persist
 ![](images/logging-architecture.png)
 * A Fluent-bit daemonset which works like a log collector and custom Golang plugin which spreads log messages to their Loki instances
 * One Loki Statefulset in the `garden` namespace which contains logs for the seed cluster and one per shoot namespace which contains logs for shoot's controlplane.
-* One Grafana Deployment in `garden` namespace and two Deployments per shoot namespace (one exposed to the end users and one for the operators). Grafana is the UI component used in the logging stack.
+* One Plutono Deployment in `garden` namespace and two Deployments per shoot namespace (one exposed to the end users and one for the operators). Plutono is the UI component used in the logging stack.
 
 ### Container Logs rotation and retention
 
@@ -48,29 +48,29 @@ The logging stack is extended to scrape logs from the systemd services of each s
 Also, in the shoot control plane an `event-logger` pod is deployed which scrapes events from the shoot `kube-system` namespace and shoot `control-plane` namespace in the seed. The `event-logger` logs the events to the standard output. Then the `fluent-bit` gets these events as container logs and sends them to the Loki in the shoot control plane (similar to how it works for any other control plane component).
 
 ### How to access the logs
-The first step is to authenticate in front of the Grafana ingress.
-There are two Grafana instances where the logs are accessible from.
-  1. The user (stakeholder/cluster-owner) Grafana consist of a predefined  `Monitoring and Logging` dashboards which help the end-user to get the most important metrics and logs out of the box. This Grafana UI is dedicated only for the end-user and does not show logs from components which could log a sensitive information. Also, the `Explore` tab is not available. Those logs are in the predefined dashboard named `Controlplane Logs Dashboard`.
+The first step is to authenticate in front of the Plutono ingress.
+There are two Plutono instances where the logs are accessible from.
+  1. The user (stakeholder/cluster-owner) Plutono consist of a predefined  `Monitoring and Logging` dashboards which help the end-user to get the most important metrics and logs out of the box. This Plutono UI is dedicated only for the end-user and does not show logs from components which could log a sensitive information. Also, the `Explore` tab is not available. Those logs are in the predefined dashboard named `Controlplane Logs Dashboard`.
   In this dashboard the user can search logs by `pod name`, `container name`, `severity` and `a phrase or regex`.
-  The user Grafana URL can be found in the `Logging and Monitoring` section of a cluster in the Gardener Dashboard alongside with the credentials, when opened as cluster owner/user.
+  The user Plutono URL can be found in the `Logging and Monitoring` section of a cluster in the Gardener Dashboard alongside with the credentials, when opened as cluster owner/user.
   The secret with the credentials can be found in `garden-<project>` namespace under `<shoot-name>.monitoring` in the garden cluster or in the `control-plane` (shoot--project--shoot-name) namespace under `observability-ingress-users-<hash>` secrets in the seed cluster.
-  Also, the Grafana URL can be found in the `control-plane` namespace under the `plutono-users` ingress in the seed.
+  Also, the Plutono URL can be found in the `control-plane` namespace under the `plutono-users` ingress in the seed.
   The end-user has access only to the logs of some of the control-plane components.
 
-  2. In addition to the dashboards in the User Grafana, the Operator Grafana contains several other dashboards that aim to facilitate the work of operators.
-  The operator Grafana URL can be found in the `Logging and Monitoring` section of a cluster in the Gardener Dashboard alongside with the credentials, when opened as Gardener operator.
+  2. In addition to the dashboards in the User Plutono, the Operator Plutono contains several other dashboards that aim to facilitate the work of operators.
+  The operator Plutono URL can be found in the `Logging and Monitoring` section of a cluster in the Gardener Dashboard alongside with the credentials, when opened as Gardener operator.
   Also, it can be found in the `control-plane` namespace under the `plutono-operators` ingress in the seed.
   Operators have access to the `Explore` tab.
   The secret with the credentials can be found in the `control-plane` (shoot--project--shoot-name) namespace under `observability-ingress-<hash>-<hash>` secrets in the seed.
   From `Explore` tab, operators have unlimited abilities to extract and manipulate logs.
-  The Grafana itself helps them with suggestions and auto-completion.
+  The Plutono itself helps them with suggestions and auto-completion.
   > **_NOTE:_** Operators are people part of the Gardener team with operator permissions, not operators of the end-user cluster!
 
 #### How to use `Explore` tab.
 If you click on the `Log browser >` button you will see all of the available labels.
 Clicking on the label you can see all of its available values for the given period of time you have specified.
 If you are searching for logs for the past one hour do not expect to see labels or values for which there were no logs for that period of time.
-By clicking on a value, Grafana automatically eliminates all other label and/or values with which no valid log stream can be made.
+By clicking on a value, Plutono automatically eliminates all other label and/or values with which no valid log stream can be made.
 After choosing the right labels and their values, click on `Show logs` button.
 This will build `Log query` and execute it.
 This approach is convenient when you don't know the labels names or they values.
@@ -86,7 +86,7 @@ Examples:
 
     ```{pod_name=~"calico-node-.+", nodename="ip-10-222-31-182.eu-central-1.compute.internal"} |~ "error"```
 
-     Here, you will get as much help as possible from the Grafana by giving you suggestions and auto-completion.
+     Here, you will get as much help as possible from the Plutono by giving you suggestions and auto-completion.
 
 2. If you want to get the logs from `kubelet` systemd service of a given node and search for a pod name in the logs.
 
@@ -109,8 +109,8 @@ Examples:
 
   > **_NOTE:_** In order to group events by origin one has to specify `origin_extracted` because `origin` label is reserved for all of the logs from the seed and the `event-logger` resides in the seed, so all of its logs are coming as they are only from the seed. The actual origin is embedded in the unpacked event. When unpacked the embedded `origin` becomes `origin_extracted`.
 
-### Expose logs for component to User Grafana
-Exposing logs for a new component to the User's Grafana is described [here](../extensions/logging-and-monitoring.md#how-to-expose-logs-to-the-users)
+### Expose logs for component to User Plutono
+Exposing logs for a new component to the User's Plutono is described [here](../extensions/logging-and-monitoring.md#how-to-expose-logs-to-the-users)
 ### Configuration
 
 #### Fluent-bit
@@ -183,11 +183,11 @@ The main specifications there are:
 ```
 `table_manager.retention_period` is the living time for each log message. Loki will keep messages for sure for (`table_manager.retention_period` - `index.period`) time due to specification in the Loki implementation.
 
-#### Grafana
-The Grafana configurations can be found on  `charts/seed-bootstrap/charts/templates/plutono/plutono-datasources-configmap.yaml` and
+#### Plutono
+The Plutono configurations can be found on  `charts/seed-bootstrap/charts/templates/plutono/plutono-datasources-configmap.yaml` and
 `charts/seed-monitoring/charts/plutono/tempates/plutono-datasources-configmap.yaml`
 
-This is the Loki configuration that Grafana uses:
+This is the Loki configuration that Plutono uses:
 
 ```
     - name: vali
@@ -203,6 +203,6 @@ This is the Loki configuration that Grafana uses:
 * `access`: should be set to proxy
 * `url`: Loki's url
 * `svc`: Loki's port
-* `jsonData.maxLines`: The limit of the log messages which Grafana will show to the users.
+* `jsonData.maxLines`: The limit of the log messages which Plutono will show to the users.
 
 **Decrease this value if the browser works slowly!**

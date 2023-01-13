@@ -539,11 +539,11 @@ func (o *Operation) DeleteClusterResourceFromSeed(ctx context.Context) error {
 	return client.IgnoreNotFound(o.SeedClientSet.Client().Delete(ctx, &extensionsv1alpha1.Cluster{ObjectMeta: metav1.ObjectMeta{Name: o.Shoot.SeedNamespace}}))
 }
 
-// ComputeGrafanaHosts computes the host for both plutonos.
-func (o *Operation) ComputeGrafanaHosts() []string {
+// ComputePlutonoHosts computes the host for both plutonos.
+func (o *Operation) ComputePlutonoHosts() []string {
 	return []string{
-		o.ComputeGrafanaOperatorsHost(),
-		o.ComputeGrafanaUsersHost(),
+		o.ComputePlutonoOperatorsHost(),
+		o.ComputePlutonoUsersHost(),
 	}
 }
 
@@ -561,9 +561,9 @@ func (o *Operation) ComputeAlertManagerHosts() []string {
 	}
 }
 
-// ComputeGrafanaOperatorsHost computes the host for users Grafana.
-func (o *Operation) ComputeGrafanaOperatorsHost() string {
-	return o.ComputeIngressHost(common.GrafanaOperatorsPrefix)
+// ComputePlutonoOperatorsHost computes the host for users Plutono.
+func (o *Operation) ComputePlutonoOperatorsHost() string {
+	return o.ComputeIngressHost(common.PlutonoOperatorsPrefix)
 }
 
 // ComputeLokiHosts computes the host for vali.
@@ -578,14 +578,14 @@ func (o *Operation) IsShootMonitoringEnabled() bool {
 	return helper.IsMonitoringEnabled(o.Config) && o.Shoot.Purpose != gardencorev1beta1.ShootPurposeTesting
 }
 
-// WantsGrafana returns true if shoot is not of purpose testing and either shoot monitoring or vali is enabled.
-func (o *Operation) WantsGrafana() bool {
+// WantsPlutono returns true if shoot is not of purpose testing and either shoot monitoring or vali is enabled.
+func (o *Operation) WantsPlutono() bool {
 	return o.Shoot.Purpose != gardencorev1beta1.ShootPurposeTesting && (helper.IsMonitoringEnabled(o.Config) || helper.IsLokiEnabled(o.Config))
 }
 
-// ComputeGrafanaUsersHost computes the host for operators Grafana.
-func (o *Operation) ComputeGrafanaUsersHost() string {
-	return o.ComputeIngressHost(common.GrafanaUsersPrefix)
+// ComputePlutonoUsersHost computes the host for operators Plutono.
+func (o *Operation) ComputePlutonoUsersHost() string {
+	return o.ComputeIngressHost(common.PlutonoUsersPrefix)
 }
 
 // ComputeAlertManagerHost computes the host for alert manager.
