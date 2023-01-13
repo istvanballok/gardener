@@ -32,10 +32,10 @@ const (
 
 	// PathDirectory is the path for the promtail's directory.
 	PathDirectory = "/var/lib/promtail"
-	// PathFetchTokenScript is the path to a script which fetches promtail's token for communication with the Loki
+	// PathFetchTokenScript is the path to a script which fetches promtail's token for communication with the Vali
 	// sidecar proxy.
 	PathFetchTokenScript = PathDirectory + "/scripts/fetch-token.sh"
-	// PathAuthToken is the path for the file containing promtail's authentication token for communication with the Loki
+	// PathAuthToken is the path for the file containing promtail's authentication token for communication with the Vali
 	// sidecar proxy.
 	PathAuthToken = PathDirectory + "/auth-token"
 	// PathConfig is the path for the promtail's configuration file.

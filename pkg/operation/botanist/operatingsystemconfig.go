@@ -59,7 +59,7 @@ func (b *Botanist) DefaultOperatingSystemConfig() (operatingsystemconfig.Interfa
 
 	promtailEnabled, valiIngressHost := false, ""
 	if b.isShootNodeLoggingEnabled() {
-		promtailEnabled, valiIngressHost = true, b.ComputeLokiHost()
+		promtailEnabled, valiIngressHost = true, b.ComputeValiHost()
 	}
 
 	return operatingsystemconfig.New(
@@ -78,7 +78,7 @@ func (b *Botanist) DefaultOperatingSystemConfig() (operatingsystemconfig.Interfa
 				MachineTypes:        b.Shoot.CloudProfile.Spec.MachineTypes,
 				SSHAccessEnabled:    v1beta1helper.ShootEnablesSSHAccess(b.Shoot.GetInfo()),
 				PromtailEnabled:     promtailEnabled,
-				LokiIngressHostName: valiIngressHost,
+				ValiIngressHostName: valiIngressHost,
 				NodeLocalDNSEnabled: v1beta1helper.IsNodeLocalDNSEnabled(b.Shoot.GetInfo().Spec.SystemComponents, b.Shoot.GetInfo().Annotations),
 			},
 		},

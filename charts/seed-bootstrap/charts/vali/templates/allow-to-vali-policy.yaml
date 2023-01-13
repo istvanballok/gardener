@@ -4,7 +4,7 @@ metadata:
   annotations:
     gardener.cloud/description: |
       Allows Egress from pods labeled with 'networking.gardener.cloud/to-vali=allowed'
-      to the Loki API.
+      to the Vali API.
   name: allow-to-vali
   namespace: {{ .Release.Namespace }}
 spec:

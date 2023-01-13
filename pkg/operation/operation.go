@@ -566,10 +566,10 @@ func (o *Operation) ComputePlutonoOperatorsHost() string {
 	return o.ComputeIngressHost(common.PlutonoOperatorsPrefix)
 }
 
-// ComputeLokiHosts computes the host for vali.
-func (o *Operation) ComputeLokiHosts() []string {
+// ComputeValiHosts computes the host for vali.
+func (o *Operation) ComputeValiHosts() []string {
 	return []string{
-		o.ComputeLokiHost(),
+		o.ComputeValiHost(),
 	}
 }
 
@@ -580,7 +580,7 @@ func (o *Operation) IsShootMonitoringEnabled() bool {
 
 // WantsPlutono returns true if shoot is not of purpose testing and either shoot monitoring or vali is enabled.
 func (o *Operation) WantsPlutono() bool {
-	return o.Shoot.Purpose != gardencorev1beta1.ShootPurposeTesting && (helper.IsMonitoringEnabled(o.Config) || helper.IsLokiEnabled(o.Config))
+	return o.Shoot.Purpose != gardencorev1beta1.ShootPurposeTesting && (helper.IsMonitoringEnabled(o.Config) || helper.IsValiEnabled(o.Config))
 }
 
 // ComputePlutonoUsersHost computes the host for operators Plutono.
@@ -598,9 +598,9 @@ func (o *Operation) ComputePrometheusHost() string {
 	return o.ComputeIngressHost(common.PrometheusPrefix)
 }
 
-// ComputeLokiHost computes the host for vali.
-func (o *Operation) ComputeLokiHost() string {
-	return o.ComputeIngressHost(common.LokiPrefix)
+// ComputeValiHost computes the host for vali.
+func (o *Operation) ComputeValiHost() string {
+	return o.ComputeIngressHost(common.ValiPrefix)
 }
 
 // ComputeIngressHost computes the host for a given prefix.

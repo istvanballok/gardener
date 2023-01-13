@@ -6,8 +6,8 @@ Kubernetes uses the underlying container runtime logging, which does not persist
 
 ### Components:
 ![](images/logging-architecture.png)
-* A Fluent-bit daemonset which works like a log collector and custom Golang plugin which spreads log messages to their Loki instances
-* One Loki Statefulset in the `garden` namespace which contains logs for the seed cluster and one per shoot namespace which contains logs for shoot's controlplane.
+* A Fluent-bit daemonset which works like a log collector and custom Golang plugin which spreads log messages to their Vali instances
+* One Vali Statefulset in the `garden` namespace which contains logs for the seed cluster and one per shoot namespace which contains logs for shoot's controlplane.
 * One Plutono Deployment in `garden` namespace and two Deployments per shoot namespace (one exposed to the end users and one for the operators). Plutono is the UI component used in the logging stack.
 
 ### Container Logs rotation and retention
@@ -45,7 +45,7 @@ In the majority of the cases, the defaults shall do just. Custom configuration m
 ![](images/shoot-node-logging-architecture.png)
 The logging stack is extended to scrape logs from the systemd services of each shoots' nodes and from all Gardener components in the shoot `kube-system` namespace. These logs are exposed only to the Gardener operators.
 
-Also, in the shoot control plane an `event-logger` pod is deployed which scrapes events from the shoot `kube-system` namespace and shoot `control-plane` namespace in the seed. The `event-logger` logs the events to the standard output. Then the `fluent-bit` gets these events as container logs and sends them to the Loki in the shoot control plane (similar to how it works for any other control plane component).
+Also, in the shoot control plane an `event-logger` pod is deployed which scrapes events from the shoot `kube-system` namespace and shoot `control-plane` namespace in the seed. The `event-logger` logs the events to the standard output. Then the `fluent-bit` gets these events as container logs and sends them to the Vali in the shoot control plane (similar to how it works for any other control plane component).
 
 ### How to access the logs
 The first step is to authenticate in front of the Plutono ingress.
@@ -120,12 +120,12 @@ There are five different specifications:
 
 * SERVICE: Defines the location of the server specifications
 * INPUT: Defines the location of the input stream of the logs
-* OUTPUT: Defines the location of the output source (Loki for example)
+* OUTPUT: Defines the location of the output source (Vali for example)
 * FILTER: Defines filters which match specific keys
 * PARSER: Defines parsers which are used by the filters
 
-#### Loki
-The Loki configurations can be found on `charts/seed-bootstrap/charts/vali/templates/vali-configmap.yaml`
+#### Vali
+The Vali configurations can be found on `charts/seed-bootstrap/charts/vali/templates/vali-configmap.yaml`
 
 The main specifications there are:
 
@@ -181,13 +181,13 @@ The main specifications there are:
       retention_deletes_enabled: true
       retention_period: 336h
 ```
-`table_manager.retention_period` is the living time for each log message. Loki will keep messages for sure for (`table_manager.retention_period` - `index.period`) time due to specification in the Loki implementation.
+`table_manager.retention_period` is the living time for each log message. Vali will keep messages for sure for (`table_manager.retention_period` - `index.period`) time due to specification in the Vali implementation.
 
 #### Plutono
 The Plutono configurations can be found on  `charts/seed-bootstrap/charts/templates/plutono/plutono-datasources-configmap.yaml` and
 `charts/seed-monitoring/charts/plutono/tempates/plutono-datasources-configmap.yaml`
 
-This is the Loki configuration that Plutono uses:
+This is the Vali configuration that Plutono uses:
 
 ```
     - name: vali
@@ -201,8 +201,8 @@ This is the Loki configuration that Plutono uses:
 * `name`: is the name of the datasource
 * `type`: is the type of the datasource
 * `access`: should be set to proxy
-* `url`: Loki's url
-* `svc`: Loki's port
+* `url`: Vali's url
+* `svc`: Vali's port
 * `jsonData.maxLines`: The limit of the log messages which Plutono will show to the users.
 
 **Decrease this value if the browser works slowly!**
