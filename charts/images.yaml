@@ -215,7 +215,7 @@ images:
       availability_requirement: 'low'
 - name: fluent-bit-plugin-installer
   sourceRepository: github.com/gardener/logging
-  repository: eu.gcr.io/gardener-project/gardener/fluent-bit-to-loki
+  repository: eu.gcr.io/gardener-project/gardener/fluent-bit-to-vali
   tag: "v0.47.0"
   labels:
   - name: 'gardener.cloud/cve-categorisation'
@@ -227,7 +227,7 @@ images:
       integrity_requirement: 'none'
       availability_requirement: 'none'
       comment: no data is stored or processed by the installer
-- name: loki
+- name: vali
   sourceRepository: github.com/credativ/vali
   repository: ghcr.io/credativ/vali
   tag: "main" # TODO
@@ -240,9 +240,9 @@ images:
       confidentiality_requirement: 'high'
       integrity_requirement: 'high'
       availability_requirement: 'low'
-- name: loki-curator
+- name: vali-curator
   sourceRepository: github.com/gardener/logging
-  repository: eu.gcr.io/gardener-project/gardener/loki-curator
+  repository: eu.gcr.io/gardener-project/gardener/vali-curator
   tag: "v0.47.0"
   labels:
   - name: 'gardener.cloud/cve-categorisation'

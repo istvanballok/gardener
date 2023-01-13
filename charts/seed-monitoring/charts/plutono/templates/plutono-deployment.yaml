@@ -31,7 +31,7 @@ spec:
         component: plutono
         networking.gardener.cloud/to-dns: allowed
         role: {{ .Values.role }}
-        networking.gardener.cloud/to-loki: allowed
+        networking.gardener.cloud/to-vali: allowed
     spec:
       priorityClassName: gardener-system-100
       containers:

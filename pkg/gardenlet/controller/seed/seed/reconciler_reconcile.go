@@ -481,24 +481,24 @@ func (r *Reconciler) runReconcileSeedFlow(
 	var (
 		additionalEgressIPBlocks          []string
 		fluentBitConfigurationsOverwrites = map[string]interface{}{}
-		lokiValues                        = map[string]interface{}{}
+		valiValues                        = map[string]interface{}{}
 
 		filters               = strings.Builder{}
 		parsers               = strings.Builder{}
 		userAllowedComponents []string
 	)
-	lokiValues["enabled"] = loggingEnabled
+	valiValues["enabled"] = loggingEnabled
 
 	if loggingEnabled {
-		// check if loki is disabled in gardenlet config
+		// check if vali is disabled in gardenlet config
 		if !gardenlethelper.IsLokiEnabled(&r.Config) {
-			lokiValues["enabled"] = false
+			valiValues["enabled"] = false
 			if err := common.DeleteLoki(ctx, seedClient, gardenNamespace.Name); err != nil {
 				return err
 			}
 		} else {
-			lokiValues["authEnabled"] = false
-			lokiValues["storage"] = loggingConfig.Loki.Garden.Storage
+			valiValues["authEnabled"] = false
+			valiValues["storage"] = loggingConfig.Loki.Garden.Storage
 			if err := ResizeOrDeleteLokiDataVolumeIfStorageNotTheSame(ctx, log, seedClient, *loggingConfig.Loki.Garden.Storage); err != nil {
 				return err
 			}
@@ -525,7 +525,7 @@ func (r *Reconciler) runReconcileSeedFlow(
 					maintenanceEnd = shootMaintenanceEnd.Add(1, 0, 0).Formatted()
 				}
 
-				lokiValues["hvpa"] = map[string]interface{}{
+				valiValues["hvpa"] = map[string]interface{}{
 					"enabled": true,
 					"maintenanceTimeWindow": map[string]interface{}{
 						"begin": maintenanceBegin,
@@ -538,7 +538,7 @@ func (r *Reconciler) runReconcileSeedFlow(
 					return err
 				}
 				if len(currentResources) != 0 && currentResources[v1beta1constants.StatefulSetNameLoki] != nil {
-					lokiValues["resources"] = map[string]interface{}{
+					valiValues["resources"] = map[string]interface{}{
 						// Copy requests only, effectively removing limits
 						v1beta1constants.StatefulSetNameLoki: &corev1.ResourceRequirements{
 							Requests: currentResources[v1beta1constants.StatefulSetNameLoki].Requests,
@@ -547,7 +547,7 @@ func (r *Reconciler) runReconcileSeedFlow(
 				}
 			}
 
-			lokiValues["priorityClassName"] = v1beta1constants.PriorityClassNameSeedSystem600
+			valiValues["priorityClassName"] = v1beta1constants.PriorityClassNameSeedSystem600
 		}
 
 		componentsFunctions := []component.CentralLoggingConfiguration{
@@ -819,7 +819,7 @@ func (r *Reconciler) runReconcileSeedFlow(
 				"additionalEgressIPBlocks": additionalEgressIPBlocks,
 			},
 		},
-		"loki":         lokiValues,
+		"vali":         valiValues,
 		"alertmanager": alertManagerConfig,
 		"hvpa": map[string]interface{}{
 			"enabled": hvpaEnabled,
@@ -1055,7 +1055,7 @@ func deployBackupBucketInGarden(ctx context.Context, k8sGardenClient client.Clie
 func ResizeOrDeleteLokiDataVolumeIfStorageNotTheSame(ctx context.Context, log logr.Logger, k8sClient client.Client, newStorageQuantity resource.Quantity) error {
 	// Check if we need resizing
 	pvc := &corev1.PersistentVolumeClaim{}
-	if err := k8sClient.Get(ctx, kubernetesutils.Key(v1beta1constants.GardenNamespace, "loki-loki-0"), pvc); err != nil {
+	if err := k8sClient.Get(ctx, kubernetesutils.Key(v1beta1constants.GardenNamespace, "vali-vali-0"), pvc); err != nil {
 		return client.IgnoreNotFound(err)
 	}
 
@@ -1089,8 +1089,8 @@ func ResizeOrDeleteLokiDataVolumeIfStorageNotTheSame(ctx context.Context, log lo
 		}
 	}
 
-	lokiSts := &appsv1.StatefulSet{ObjectMeta: metav1.ObjectMeta{Name: v1beta1constants.StatefulSetNameLoki, Namespace: v1beta1constants.GardenNamespace}}
-	return client.IgnoreNotFound(k8sClient.Delete(ctx, lokiSts))
+	valiSts := &appsv1.StatefulSet{ObjectMeta: metav1.ObjectMeta{Name: v1beta1constants.StatefulSetNameLoki, Namespace: v1beta1constants.GardenNamespace}}
+	return client.IgnoreNotFound(k8sClient.Delete(ctx, valiSts))
 }
 
 func cleanupOrphanExposureClassHandlerResources(
@@ -1275,7 +1275,7 @@ func waitForNginxIngressServiceAndGetDNSComponent(
 
 // CleanupLegacyPriorityClasses deletes reversed-vpn-auth-server and fluent-bit priority classes.
 func CleanupLegacyPriorityClasses(ctx context.Context, seedClient client.Client) error {
-	// TODO(ialidzhikov): Clean up the loki PriorityClass as well in a future release.
+	// TODO(ialidzhikov): Clean up the vali PriorityClass as well in a future release.
 	for _, name := range []string{"reversed-vpn-auth-server", "fluent-bit"} {
 		priorityClass := &schedulingv1.PriorityClass{
 			ObjectMeta: metav1.ObjectMeta{

@@ -4,8 +4,8 @@ kind: NetworkPolicy
 metadata:
   annotations:
     gardener.cloud/description: |
-      Allows Ingress from Prometheus to loki pods and ports named 'telegraf' in the PodSpecification.
-  name: allow-from-prometheus-to-loki-telegraf
+      Allows Ingress from Prometheus to vali pods and ports named 'telegraf' in the PodSpecification.
+  name: allow-from-prometheus-to-vali-telegraf
   namespace: {{ .Release.Namespace }}
 spec:
   podSelector:

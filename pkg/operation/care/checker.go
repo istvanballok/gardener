@@ -508,7 +508,7 @@ func (b *HealthChecker) CheckLoggingControlPlane(
 	namespace string,
 	isTestingShoot bool,
 	eventLoggingEnabled bool,
-	lokiEnabled bool,
+	valiEnabled bool,
 	condition gardencorev1beta1.Condition,
 ) (
 	*gardencorev1beta1.Condition,
@@ -518,7 +518,7 @@ func (b *HealthChecker) CheckLoggingControlPlane(
 		return nil, nil
 	}
 
-	if lokiEnabled {
+	if valiEnabled {
 		statefulSetList := &appsv1.StatefulSetList{}
 		if err := b.reader.List(ctx, statefulSetList, client.InNamespace(namespace), client.MatchingLabelsSelector{Selector: loggingSelector}); err != nil {
 			return nil, err
