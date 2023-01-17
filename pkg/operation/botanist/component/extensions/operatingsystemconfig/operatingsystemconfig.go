@@ -122,8 +122,8 @@ type OriginalValues struct {
 	SSHPublicKeys []string
 	// SSHAccessEnabled states whether sshd.service service in systemd should be enabled and running for the worker nodes.
 	SSHAccessEnabled bool
-	// PromtailEnabled states whether Promtail shall be enabled.
-	PromtailEnabled bool
+	// ValitailEnabled states whether Valitail shall be enabled.
+	ValitailEnabled bool
 	// ValiIngressHostName is the ingress host name of the shoot's Vali.
 	ValiIngressHostName string
 	// NodeLocalDNSEnabled indicates whether node local dns is enabled or not.
@@ -519,7 +519,7 @@ func (o *operatingSystemConfig) newDeployer(osc *extensionsv1alpha1.OperatingSys
 		sshPublicKeys:           o.values.SSHPublicKeys,
 		sshAccessEnabled:        o.values.SSHAccessEnabled,
 		valiIngressHostName:     o.values.ValiIngressHostName,
-		promtailEnabled:         o.values.PromtailEnabled,
+		valitailEnabled:         o.values.ValitailEnabled,
 		nodeLocalDNSEnabled:     o.values.NodeLocalDNSEnabled,
 	}, nil
 }
@@ -580,7 +580,7 @@ type deployer struct {
 	sshPublicKeys           []string
 	sshAccessEnabled        bool
 	valiIngressHostName     string
-	promtailEnabled         bool
+	valitailEnabled         bool
 	nodeLocalDNSEnabled     bool
 }
 
@@ -629,7 +629,7 @@ func (d *deployer) deploy(ctx context.Context, operation string) (extensionsv1al
 			KubernetesVersion:       d.kubernetesVersion,
 			SSHPublicKeys:           d.sshPublicKeys,
 			SSHAccessEnabled:        d.sshAccessEnabled,
-			PromtailEnabled:         d.promtailEnabled,
+			ValitailEnabled:         d.valitailEnabled,
 			ValiIngress:             d.valiIngressHostName,
 			APIServerURL:            d.apiServerURL,
 		})

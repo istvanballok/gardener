@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package promtail
+package valitail
 
 import (
 	"bytes"
@@ -38,10 +38,10 @@ var (
 	tplContentFetchToken string
 	tplFetchToken        *template.Template
 
-	tplNamePromtail = "fetch-token"
-	//go:embed templates/promtail-config.tpl.yaml
-	tplContentPromtail string
-	tplPromtail        *template.Template
+	tplNameValitail = "fetch-token"
+	//go:embed templates/valitail-config.tpl.yaml
+	tplContentValitail string
+	tplValitail        *template.Template
 )
 
 func init() {
@@ -54,16 +54,16 @@ func init() {
 		panic(err)
 	}
 
-	tplPromtail, err = template.
-		New(tplNamePromtail).
+	tplValitail, err = template.
+		New(tplNameValitail).
 		Funcs(sprig.TxtFuncMap()).
-		Parse(tplContentPromtail)
+		Parse(tplContentValitail)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func getPromtailConfigurationFile(ctx components.Context) (extensionsv1alpha1.File, error) {
+func getValitailConfigurationFile(ctx components.Context) (extensionsv1alpha1.File, error) {
 	var config bytes.Buffer
 
 	if ctx.ValiIngress == "" {
@@ -75,7 +75,7 @@ func getPromtailConfigurationFile(ctx components.Context) (extensionsv1alpha1.Fi
 		return extensionsv1alpha1.File{}, err
 	}
 
-	if err := tplPromtail.Execute(&config, map[string]interface{}{
+	if err := tplValitail.Execute(&config, map[string]interface{}{
 		"clientURL":         "https://" + ctx.ValiIngress + "/vali/api/v1/push",
 		"pathCACert":        PathCACert,
 		"valiIngress":       ctx.ValiIngress,
@@ -98,7 +98,7 @@ func getPromtailConfigurationFile(ctx components.Context) (extensionsv1alpha1.Fi
 	}, nil
 }
 
-func getPromtailCAFile(ctx components.Context) extensionsv1alpha1.File {
+func getValitailCAFile(ctx components.Context) extensionsv1alpha1.File {
 	var cABundle []byte
 	if ctx.CABundle != nil {
 		cABundle = []byte(*ctx.CABundle)
@@ -115,13 +115,13 @@ func getPromtailCAFile(ctx components.Context) extensionsv1alpha1.File {
 	}
 }
 
-func getPromtailUnit(execStartPre, execStart string) extensionsv1alpha1.Unit {
+func getValitailUnit(execStartPre, execStart string) extensionsv1alpha1.Unit {
 	return extensionsv1alpha1.Unit{
 		Name:    UnitName,
 		Command: pointer.String("start"),
 		Enable:  pointer.Bool(true),
 		Content: pointer.String(`[Unit]
-Description=promtail daemon
+Description=valitail daemon
 Documentation=https://github.com/credativ/plutono
 After=` + unitNameFetchToken + `
 [Install]
@@ -152,7 +152,7 @@ func getFetchTokenScriptFile() (extensionsv1alpha1.File, error) {
 		"pathCredentialsCACert": downloader.PathCredentialsCACert,
 		"pathAuthToken":         PathAuthToken,
 		"dataKeyToken":          resourcesv1alpha1.DataKeyToken,
-		"secretName":            kuberbacproxy.PromtailTokenSecretName,
+		"secretName":            kuberbacproxy.ValitailTokenSecretName,
 	}); err != nil {
 		return extensionsv1alpha1.File{}, err
 	}
@@ -171,7 +171,7 @@ func getFetchTokenScriptFile() (extensionsv1alpha1.File, error) {
 
 func getFetchTokenScriptUnit(execStartPre, execStart string) extensionsv1alpha1.Unit {
 	unitContent := `[Unit]
-Description=promtail token fetcher
+Description=valitail token fetcher
 After=` + downloader.UnitName + `
 [Install]
 WantedBy=multi-user.target

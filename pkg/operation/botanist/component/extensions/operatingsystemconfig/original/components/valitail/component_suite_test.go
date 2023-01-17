@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package promtail_test
+package valitail_test
 
 import (
 	"testing"
@@ -21,7 +21,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestPromtail(t *testing.T) {
+func TestValitail(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Botanist Component Extensions OperatingSystemConfig Original Components Promtail Suite")
+	RunSpecs(t, "Botanist Component Extensions OperatingSystemConfig Original Components Valital Suite")
 }
