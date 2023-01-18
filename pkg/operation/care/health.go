@@ -350,7 +350,7 @@ func (h *Health) checkControlPlane(
 		return exitCondition, err
 	}
 
-	valiEnabled := gardenlethelper.IsLokiEnabled(h.gardenletConfiguration)
+	valiEnabled := gardenlethelper.IsValiEnabled(h.gardenletConfiguration)
 	loggingEnabled := gardenlethelper.IsLoggingEnabled(h.gardenletConfiguration)
 	eventLoggingEnabled := gardenlethelper.IsEventLoggingEnabled(h.gardenletConfiguration)
 

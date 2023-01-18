@@ -59,7 +59,7 @@ var (
 	)
 
 	requiredLoggingStatefulSets = sets.NewString(
-		v1beta1constants.StatefulSetNameLoki,
+		v1beta1constants.StatefulSetNameVali,
 	)
 
 	requiredLoggingDeployments = sets.NewString(
