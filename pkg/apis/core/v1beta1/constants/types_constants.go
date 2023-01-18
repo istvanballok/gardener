@@ -118,12 +118,12 @@ const (
 	// DeploymentNameGardenerResourceManager is a constant for the name of a Kubernetes deployment object that contains
 	// the gardener-resource-manager pod.
 	DeploymentNameGardenerResourceManager = "gardener-resource-manager"
-	// DeploymentNameGrafanaOperators is a constant for the name of a Kubernetes deployment object that contains
+	// DeploymentNamePlutonoOperators is a constant for the name of a Kubernetes deployment object that contains
 	// the plutono-operators pod.
-	DeploymentNameGrafanaOperators = "plutono-operators"
-	// DeploymentNameGrafanaUsers is a constant for the name of a Kubernetes deployment object that contains
+	DeploymentNamePlutonoOperators = "plutono-operators"
+	// DeploymentNamePlutonoUsers is a constant for the name of a Kubernetes deployment object that contains
 	// the plutono-users pod.
-	DeploymentNameGrafanaUsers = "plutono-users"
+	DeploymentNamePlutonoUsers = "plutono-users"
 	// DeploymentNameEventLogger is a constant for the name of a Kubernetes deployment object that contains
 	// the event-logger pod.
 	DeploymentNameEventLogger = "event-logger"
@@ -616,10 +616,10 @@ const (
 	PrometheusConfigMapAlertingRules = "alerting_rules"
 	// PrometheusConfigMapScrapeConfig is a constant for the Prometheus scrape config tag in provider-specific monitoring configuration
 	PrometheusConfigMapScrapeConfig = "scrape_config"
-	// GrafanaConfigMapUserDashboard is a constant for the Grafana user dashboard tag in provider-specific monitoring configuration
-	GrafanaConfigMapUserDashboard = "dashboard_users"
-	// GrafanaConfigMapOperatorDashboard is a constant for the Grafana operator dashboard tag in provider-specific monitoring configuration
-	GrafanaConfigMapOperatorDashboard = "dashboard_operators"
+	// PlutonoConfigMapUserDashboard is a constant for the Plutono user dashboard tag in provider-specific monitoring configuration
+	PlutonoConfigMapUserDashboard = "dashboard_users"
+	// PlutonoConfigMapOperatorDashboard is a constant for the Plutono operator dashboard tag in provider-specific monitoring configuration
+	PlutonoConfigMapOperatorDashboard = "dashboard_operators"
 
 	// LabelControllerRegistrationName is the key of a label on extension namespaces that indicates the controller registration name.
 	LabelControllerRegistrationName = "controllerregistration.core.gardener.cloud/name"

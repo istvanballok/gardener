@@ -18,11 +18,11 @@ const (
 	// VPNTunnel dictates that VPN is used as a tunnel between seed and shoot networks.
 	VPNTunnel string = "vpn-shoot"
 
-	// GrafanaOperatorsPrefix is a constant for a prefix used for the operators Grafana instance.
-	GrafanaOperatorsPrefix = "go"
+	// PlutonoOperatorsPrefix is a constant for a prefix used for the operators Plutono instance.
+	PlutonoOperatorsPrefix = "go"
 
-	// GrafanaUsersPrefix is a constant for a prefix used for the users Grafana instance.
-	GrafanaUsersPrefix = "gu"
+	// PlutonoUsersPrefix is a constant for a prefix used for the users Plutono instance.
+	PlutonoUsersPrefix = "gu"
 
 	// PrometheusPrefix is a constant for a prefix used for the Prometheus instance.
 	PrometheusPrefix = "p"

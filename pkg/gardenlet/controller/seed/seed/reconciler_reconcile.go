@@ -361,7 +361,7 @@ func (r *Reconciler) runReconcileSeedFlow(
 			images.ImageNameLokiCurator,
 			images.ImageNameFluentBit,
 			images.ImageNameFluentBitPluginInstaller,
-			images.ImageNameGrafana,
+			images.ImageNamePlutono,
 			images.ImageNamePrometheus,
 		},
 		imagevector.RuntimeVersion(kubernetesVersion.String()),
@@ -609,7 +609,7 @@ func (r *Reconciler) runReconcileSeedFlow(
 			return err
 		}
 
-		// Need stable order before passing the dashboards to Grafana config to avoid unnecessary changes
+		// Need stable order before passing the dashboards to Plutono config to avoid unnecessary changes
 		kubernetesutils.ByName().Sort(existingConfigMaps)
 		modifyFilter := `
     Name          modify
