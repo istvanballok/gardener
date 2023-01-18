@@ -3,14 +3,14 @@ kind: NetworkPolicy
 metadata:
   annotations:
     gardener.cloud/description: |
-      Allows Egress from pods labeled with 'networking.gardener.cloud/to-loki=allowed'
+      Allows Egress from pods labeled with 'networking.gardener.cloud/to-vali=allowed'
       to the Loki API.
-  name: allow-to-loki
+  name: allow-to-vali
   namespace: {{ .Release.Namespace }}
 spec:
   podSelector:
     matchLabels:
-      networking.gardener.cloud/to-loki: allowed
+      networking.gardener.cloud/to-vali: allowed
   egress:
   - to:
     - podSelector:

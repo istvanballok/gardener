@@ -39,10 +39,10 @@ datasources.yaml: |-
     editable: false
     jsonData:
       timeInterval: 1m
-  - name: loki
-    type: loki
+  - name: vali
+    type: vali
     access: proxy
-    url: http://loki.{{ .Release.Namespace }}.svc:3100
+    url: http://vali.{{ .Release.Namespace }}.svc:3100
     jsonData:
       maxLines: 1000
 {{- end -}}

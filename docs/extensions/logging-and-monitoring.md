@@ -135,7 +135,7 @@ data:
 
 ##### How to expose logs to the users
 
-To expose logs from extension components to the users, the extension owners have to specify a `modify` filter which will add `__gardener_multitenant_id__=operator;user` entry to the log record. This entry contains all of the tenants, which have to receive this log. The tenants are semicolon separated. This specific dedicated entry will be extracted and removed from the log in the `gardener fluent-bit-to-loki` output plugin and added to the label set of that log. Then it will be parsed and removed from the label set. Any whitespace will be truncated during the parsing. The extension components logs can be found in `Controlplane Logs Dashboard` Grafana dashboard.
+To expose logs from extension components to the users, the extension owners have to specify a `modify` filter which will add `__gardener_multitenant_id__=operator;user` entry to the log record. This entry contains all of the tenants, which have to receive this log. The tenants are semicolon separated. This specific dedicated entry will be extracted and removed from the log in the `gardener fluent-bit-to-vali` output plugin and added to the label set of that log. Then it will be parsed and removed from the label set. Any whitespace will be truncated during the parsing. The extension components logs can be found in `Controlplane Logs Dashboard` Grafana dashboard.
 
 **Example:** In this example we configure fluent-bit when it finds a log with field `tag`, which match the `Condition`, to add `__gardener_multitenant_id__=operator;user` into the log record.
 

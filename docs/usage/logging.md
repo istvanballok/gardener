@@ -125,7 +125,7 @@ There are five different specifications:
 * PARSER: Defines parsers which are used by the filters
 
 #### Loki
-The Loki configurations can be found on `charts/seed-bootstrap/charts/loki/templates/loki-configmap.yaml`
+The Loki configurations can be found on `charts/seed-bootstrap/charts/vali/templates/vali-configmap.yaml`
 
 The main specifications there are:
 
@@ -190,10 +190,10 @@ The Grafana configurations can be found on  `charts/seed-bootstrap/charts/templa
 This is the Loki configuration that Grafana uses:
 
 ```
-    - name: loki
-      type: loki
+    - name: vali
+      type: vali
       access: proxy
-      url: http://loki.{{ .Release.Namespace }}.svc:3100
+      url: http://vali.{{ .Release.Namespace }}.svc:3100
       jsonData:
         maxLines: 5000
 ```

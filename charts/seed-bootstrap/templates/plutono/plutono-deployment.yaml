@@ -29,7 +29,7 @@ spec:
         networking.gardener.cloud/to-dns: allowed
         networking.gardener.cloud/to-aggregate-prometheus: allowed
         networking.gardener.cloud/to-seed-prometheus: allowed
-        networking.gardener.cloud/to-loki: allowed
+        networking.gardener.cloud/to-vali: allowed
         component: plutono
     spec:
       automountServiceAccountToken: false
