@@ -2,10 +2,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: grafana-{{ .Values.role }}
+  name: plutono-{{ .Values.role }}
   namespace: {{ .Release.Namespace }}
   labels:
-    component: grafana
+    component: plutono
     role: {{ .Values.role }}
 spec:
   type: ClusterIP
@@ -14,5 +14,5 @@ spec:
     port: 3000
     protocol: TCP
   selector:
-    component: grafana
+    component: plutono
     role: {{ .Values.role }}

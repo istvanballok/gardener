@@ -120,7 +120,7 @@ images:
   sourceRepository: github.com/prometheus/node_exporter
   repository: quay.io/prometheus/node-exporter
   tag: v1.5.0
-- name: grafana
+- name: plutono
   sourceRepository: github.com/credativ/plutono
   repository: ghcr.io/credativ/plutono
   tag: "v7.5.19"

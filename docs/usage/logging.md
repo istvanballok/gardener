@@ -54,12 +54,12 @@ There are two Grafana instances where the logs are accessible from.
   In this dashboard the user can search logs by `pod name`, `container name`, `severity` and `a phrase or regex`.
   The user Grafana URL can be found in the `Logging and Monitoring` section of a cluster in the Gardener Dashboard alongside with the credentials, when opened as cluster owner/user.
   The secret with the credentials can be found in `garden-<project>` namespace under `<shoot-name>.monitoring` in the garden cluster or in the `control-plane` (shoot--project--shoot-name) namespace under `observability-ingress-users-<hash>` secrets in the seed cluster.
-  Also, the Grafana URL can be found in the `control-plane` namespace under the `grafana-users` ingress in the seed.
+  Also, the Grafana URL can be found in the `control-plane` namespace under the `plutono-users` ingress in the seed.
   The end-user has access only to the logs of some of the control-plane components.
 
   2. In addition to the dashboards in the User Grafana, the Operator Grafana contains several other dashboards that aim to facilitate the work of operators.
   The operator Grafana URL can be found in the `Logging and Monitoring` section of a cluster in the Gardener Dashboard alongside with the credentials, when opened as Gardener operator.
-  Also, it can be found in the `control-plane` namespace under the `grafana-operators` ingress in the seed.
+  Also, it can be found in the `control-plane` namespace under the `plutono-operators` ingress in the seed.
   Operators have access to the `Explore` tab.
   The secret with the credentials can be found in the `control-plane` (shoot--project--shoot-name) namespace under `observability-ingress-<hash>-<hash>` secrets in the seed.
   From `Explore` tab, operators have unlimited abilities to extract and manipulate logs.
@@ -184,8 +184,8 @@ The main specifications there are:
 `table_manager.retention_period` is the living time for each log message. Loki will keep messages for sure for (`table_manager.retention_period` - `index.period`) time due to specification in the Loki implementation.
 
 #### Grafana
-The Grafana configurations can be found on  `charts/seed-bootstrap/charts/templates/grafana/grafana-datasources-configmap.yaml` and
-`charts/seed-monitoring/charts/grafana/tempates/grafana-datasources-configmap.yaml`
+The Grafana configurations can be found on  `charts/seed-bootstrap/charts/templates/plutono/plutono-datasources-configmap.yaml` and
+`charts/seed-monitoring/charts/plutono/tempates/plutono-datasources-configmap.yaml`
 
 This is the Loki configuration that Grafana uses:
 
