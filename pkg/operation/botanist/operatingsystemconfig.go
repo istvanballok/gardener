@@ -44,7 +44,7 @@ import (
 
 // DefaultOperatingSystemConfig creates the default deployer for the OperatingSystemConfig custom resource.
 func (b *Botanist) DefaultOperatingSystemConfig() (operatingsystemconfig.Interface, error) {
-	oscImages, err := imagevector.FindImages(b.ImageVector, []string{images.ImageNameHyperkube, images.ImageNamePauseContainer, images.ImageNamePromtail}, imagevector.RuntimeVersion(b.ShootVersion()), imagevector.TargetVersion(b.ShootVersion()))
+	oscImages, err := imagevector.FindImages(b.ImageVector, []string{images.ImageNameHyperkube, images.ImageNamePauseContainer, images.ImageNameValitail}, imagevector.RuntimeVersion(b.ShootVersion()), imagevector.TargetVersion(b.ShootVersion()))
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func (b *Botanist) DefaultOperatingSystemConfig() (operatingsystemconfig.Interfa
 				KubeletConfig:       b.Shoot.GetInfo().Spec.Kubernetes.Kubelet,
 				MachineTypes:        b.Shoot.CloudProfile.Spec.MachineTypes,
 				SSHAccessEnabled:    v1beta1helper.ShootEnablesSSHAccess(b.Shoot.GetInfo()),
-				PromtailEnabled:     valitailEnabled,
+				ValitailEnabled:     valitailEnabled,
 				ValiIngressHostName: valiIngressHost,
 				NodeLocalDNSEnabled: v1beta1helper.IsNodeLocalDNSEnabled(b.Shoot.GetInfo().Spec.SystemComponents, b.Shoot.GetInfo().Annotations),
 			},
