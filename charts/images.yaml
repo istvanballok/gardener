@@ -122,8 +122,8 @@ images:
   tag: v1.5.0
 - name: grafana
   sourceRepository: github.com/credativ/plutono
-  repository: grafana/grafana
-  tag: "7.5.17"
+  repository: ghcr.io/credativ/plutono
+  tag: "v7.5.19"
 - name: blackbox-exporter
   sourceRepository: github.com/prometheus/blackbox_exporter
   repository: quay.io/prometheus/blackbox-exporter
