@@ -227,7 +227,7 @@ func (r *Reconciler) checkMinimumK8SVersion(version string) (string, error) {
 
 const (
 	seedBootstrapChartName        = "seed-bootstrap"
-	plutonoPrefix                 = "g-seed"
+	plutonoPrefix                 = "pl-seed"
 	prometheusPrefix              = "p-seed"
 	ingressTLSCertificateValidity = 730 * 24 * time.Hour // ~2 years, see https://support.apple.com/en-us/HT210176
 )

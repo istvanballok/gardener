@@ -4,7 +4,7 @@ images:
 ingress:
   class: nginx
   hosts:
-  - hostName: g.seed-1.example.com
+  - hostName: pl.seed-1.example.com
     secretName: plutono-tls
   # admin : admin base64 encoded
   authSecretName: auth-secret-name
