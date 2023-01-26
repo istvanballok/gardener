@@ -19,10 +19,10 @@ const (
 	VPNTunnel string = "vpn-shoot"
 
 	// PlutonoOperatorsPrefix is a constant for a prefix used for the operators Plutono instance.
-	PlutonoOperatorsPrefix = "go"
+	PlutonoOperatorsPrefix = "plo"
 
 	// PlutonoUsersPrefix is a constant for a prefix used for the users Plutono instance.
-	PlutonoUsersPrefix = "gu"
+	PlutonoUsersPrefix = "plu"
 
 	// PrometheusPrefix is a constant for a prefix used for the Prometheus instance.
 	PrometheusPrefix = "p"
