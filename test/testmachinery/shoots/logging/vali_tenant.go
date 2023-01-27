@@ -77,9 +77,9 @@ var _ = ginkgo.Describe("Seed logging testing", func() {
 		// Get shoot namespace name
 		shootNamespace.ObjectMeta.Name = f.ShootSeedNamespace()
 		// Get the plutono-operators Ingress
-		framework.ExpectNoError(f.SeedClient.Client().Get(ctx, types.NamespacedName{Namespace: f.ShootSeedNamespace(), Name: v1beta1constants.DeploymentNameGrafanaOperators}, plutonoOperatorsIngress))
+		framework.ExpectNoError(f.SeedClient.Client().Get(ctx, types.NamespacedName{Namespace: f.ShootSeedNamespace(), Name: v1beta1constants.DeploymentNamePlutonoOperators}, plutonoOperatorsIngress))
 		// Get the plutono-users Ingress
-		framework.ExpectNoError(f.SeedClient.Client().Get(ctx, types.NamespacedName{Namespace: f.ShootSeedNamespace(), Name: v1beta1constants.DeploymentNameGrafanaUsers}, plutonoUsersIngress))
+		framework.ExpectNoError(f.SeedClient.Client().Get(ctx, types.NamespacedName{Namespace: f.ShootSeedNamespace(), Name: v1beta1constants.DeploymentNamePlutonoUsers}, plutonoUsersIngress))
 		// Set label to the testing namespace
 		_, err := controllerutils.GetAndCreateOrMergePatch(ctx, f.SeedClient.Client(), shootNamespace, func() error {
 			metav1.SetMetaDataLabel(&shootNamespace.ObjectMeta, shootNamespaceLabelKey, shootNamespaceLabelValue)

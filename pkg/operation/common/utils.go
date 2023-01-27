@@ -183,8 +183,8 @@ func DeleteAlertmanager(ctx context.Context, k8sClient client.Client, namespace 
 	return kubernetesutils.DeleteObjects(ctx, k8sClient, objs...)
 }
 
-// DeleteGrafanaByRole deletes the monitoring stack for the shoot owner.
-func DeleteGrafanaByRole(ctx context.Context, k8sClient kubernetes.Interface, namespace, role string) error {
+// DeletePlutonoByRole deletes the monitoring stack for the shoot owner.
+func DeletePlutonoByRole(ctx context.Context, k8sClient kubernetes.Interface, namespace, role string) error {
 	if k8sClient == nil {
 		return fmt.Errorf("require kubernetes client")
 	}

@@ -224,8 +224,8 @@ var _ = Describe("health check", func() {
 			etcdEvents,
 		}
 
-		plutonoDeploymentOperators      = newDeployment(seedNamespace, v1beta1constants.DeploymentNameGrafanaOperators, v1beta1constants.GardenRoleMonitoring, true)
-		plutonoDeploymentUsers          = newDeployment(seedNamespace, v1beta1constants.DeploymentNameGrafanaUsers, v1beta1constants.GardenRoleMonitoring, true)
+		plutonoDeploymentOperators      = newDeployment(seedNamespace, v1beta1constants.DeploymentNamePlutonoOperators, v1beta1constants.GardenRoleMonitoring, true)
+		plutonoDeploymentUsers          = newDeployment(seedNamespace, v1beta1constants.DeploymentNamePlutonoUsers, v1beta1constants.GardenRoleMonitoring, true)
 		kubeStateMetricsShootDeployment = newDeployment(seedNamespace, v1beta1constants.DeploymentNameKubeStateMetrics, v1beta1constants.GardenRoleMonitoring, true)
 
 		requiredMonitoringControlPlaneDeployments = []*appsv1.Deployment{

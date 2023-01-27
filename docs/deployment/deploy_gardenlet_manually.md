@@ -26,7 +26,7 @@ Manually deploying a gardenlet is required in the following cases:
   You need to configure this information in the `Seed` configuration.
   Gardener uses this information to check that the shoot cluster isn’t created with overlapping CIDR ranges.
 
-- Every seed cluster needs an Ingress controller which distributes external requests to internal components like Grafana and Prometheus. Gardener supports two approaches to achieve this:
+- Every seed cluster needs an Ingress controller which distributes external requests to internal components like Plutono and Prometheus. Gardener supports two approaches to achieve this:
 
 a. Gardener managed Ingress controller and DNS records. For this, configure the following lines in your [Seed resource](../../example/50-seed.yaml):
 ```yaml
