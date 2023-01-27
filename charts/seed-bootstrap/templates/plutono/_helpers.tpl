@@ -48,10 +48,10 @@ datasources.yaml: |-
     editable: false
     jsonData:
       timeInterval: 1m
-  - name: loki
-    type: loki
+  - name: vali
+    type: vali
     access: proxy
-    url: http://loki.garden.svc:3100
+    url: http://vali.garden.svc:3100
     jsonData:
       maxLines: 5000
 {{- end -}}

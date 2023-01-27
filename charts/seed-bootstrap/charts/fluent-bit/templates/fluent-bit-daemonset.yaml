@@ -42,7 +42,7 @@ spec:
         command:
           - /fluent-bit/bin/fluent-bit
           - -e
-          - /fluent-bit/plugins/out_loki.so
+          - /fluent-bit/plugins/out_vali.so
           - -c
           - /fluent-bit/etc/fluent-bit.conf
         env:

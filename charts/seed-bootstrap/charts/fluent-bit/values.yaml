@@ -1,8 +1,8 @@
 global:
-  lokiPort: 3100
-  lokiLabels:
+  valiPort: 3100
+  valiLabels:
       gardener.cloud/role: logging
-      app: loki
+      app: vali
       role: logging
   images:
     fluent-bit: image-repository:image-tag
@@ -23,7 +23,7 @@ networkPolicy:
 additionalFilters: ""
 additionalParsers: ""
 fluentBitConfigurationsOverwrites: {}
-lokiLabels:
+valiLabels:
   kubernetesLabels:
     container_name: "container_name"
     namespace_name: "namespace_name"

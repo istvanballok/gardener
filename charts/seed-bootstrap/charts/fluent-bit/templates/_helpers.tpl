@@ -104,16 +104,16 @@ filter-kubernetes.conf: |-
 
   [FILTER]
       Name                parser
-      Match               kubernetes.*loki*loki*
+      Match               kubernetes.*vali*vali*
       Key_Name            log
-      Parser              lokiParser
+      Parser              valiParser
       Reserve_Data        True
 
   [FILTER]
       Name                parser
-      Match               kubernetes.*loki*curator*
+      Match               kubernetes.*vali*curator*
       Key_Name            log
-      Parser              lokiCuratorParser
+      Parser              valiCuratorParser
       Reserve_Data        True
 
   # Extension filters
@@ -199,7 +199,7 @@ parsers.conf: |-
       Time_Format %Y-%m-%dT%H:%M:%S%z
 
   [PARSER]
-      Name        lokiParser
+      Name        valiParser
       Format      regex
       Regex       ^level=(?<severity>\w+)\s+ts=(?<time>\d{4}-\d{2}-\d{2}[Tt]{1}\d{2}:\d{2}:\d{2}\.\d+\S+?)\S*?\s+caller=(?<source>.*?)\s+(?<log>.*)$
       Time_Key    time
@@ -213,7 +213,7 @@ parsers.conf: |-
       Time_Format %Y-%m-%dT%H:%M:%S.%L%z
 
   [PARSER]
-      Name        lokiCuratorParser
+      Name        valiCuratorParser
       Format      regex
       Regex       ^level=(?<severity>\w+)\s+caller=(?<source>.*?)\s+ts=(?<time>\d{4}-\d{2}-\d{2}[Tt]{1}\d{2}:\d{2}:\d{2}\.\d+\S+?)\S*?\s+(?<log>.*)$
       Time_Key    time
@@ -231,7 +231,7 @@ parsers.conf: |-
 
 plugin.conf: |-
   [PLUGINS]
-      Path /fluent-bit/plugins/out_loki.so
+      Path /fluent-bit/plugins/out_vali.so
 
 modify_severity.lua: |-
   function cb_modify(tag, timestamp, record)
@@ -288,13 +288,13 @@ add_tag_to_record.lua: |-
 
 kubernetes_label_map.json: |-
   {
-    "kubernetes": {{ toJson .Values.lokiLabels.kubernetesLabels }} ,
+    "kubernetes": {{ toJson .Values.valiLabels.kubernetesLabels }} ,
     "severity": "severity",
     "job": "job"
   }
 
 systemd_label_map.json: |-
-{{ toJson .Values.lokiLabels.systemdLabels | indent 2 }}
+{{ toJson .Values.valiLabels.systemdLabels | indent 2 }}
 {{- end -}}
 
 {{- define "fluent-bit.config.name" -}}

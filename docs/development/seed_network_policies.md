@@ -72,7 +72,7 @@ allow-from-prometheus             networking.gardener.cloud/from-prometheus=allo
 allow-plutono                     component=plutono,gardener.cloud/role=monitoring
 allow-prometheus                  app=prometheus,gardener.cloud/role=monitoring,role=monitoring
 allow-to-aggregate-prometheus     networking.gardener.cloud/to-aggregate-prometheus=allowed
-allow-to-loki                     networking.gardener.cloud/to-loki=allowed
+allow-to-vali                     networking.gardener.cloud/to-vali=allowed
 ```
 
 For instance, let's take a look at the network policy `from-prometheus`.
@@ -105,7 +105,7 @@ allow-to-aggregate-prometheus     networking.gardener.cloud/to-aggregate-prometh
 allow-to-all-shoot-apiservers     networking.gardener.cloud/to-all-shoot-apiservers=allowed                
 allow-to-blocked-cidrs            networking.gardener.cloud/to-blocked-cidrs=allowed                       
 allow-to-dns                      networking.gardener.cloud/to-dns=allowed                                 
-allow-to-loki                     networking.gardener.cloud/to-loki=allowed                       
+allow-to-vali                     networking.gardener.cloud/to-vali=allowed                       
 allow-to-private-networks         networking.gardener.cloud/to-private-networks=allowed                    
 allow-to-public-networks          networking.gardener.cloud/to-public-networks=allowed                     
 allow-to-seed-apiserver           networking.gardener.cloud/to-seed-apiserver=allowed                      

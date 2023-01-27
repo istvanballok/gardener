@@ -55,8 +55,8 @@ const (
 
 	fluentBitName                 = "fluent-bit"
 	fluentBitConfigVolumeName     = "config-dir"
-	lokiName                      = "loki"
-	lokiConfigDiskName            = "config"
+	valiName                      = "vali"
+	valiConfigDiskName            = "config"
 	garden                        = "garden"
 	fluentBitClusterRoleName      = "fluent-bit-read"
 	simulatesShootNamespacePrefix = "shoot--logging--test-"
@@ -89,11 +89,11 @@ var _ = ginkgo.Describe("Seed logging testing", func() {
 		// This shoot is used as seed for this test only
 		shootClient     kubernetes.Interface
 		shootLokiLabels = map[string]string{
-			"app":  "loki-shoot",
+			"app":  "vali-shoot",
 			"role": "logging",
 		}
 		gardenLokiLabels = map[string]string{
-			"app":  "loki",
+			"app":  "vali",
 			"role": "logging",
 		}
 	)
@@ -114,15 +114,15 @@ var _ = ginkgo.Describe("Seed logging testing", func() {
 		fluentBitPriorityClassName := fluentBit.Spec.Template.Spec.PriorityClassName
 		framework.ExpectNoError(f.SeedClient.Client().Get(ctx, types.NamespacedName{Namespace: v1beta1constants.GardenNamespace, Name: fluentBitPriorityClassName}, fluentBitPriorityClass))
 		framework.ExpectNoError(f.SeedClient.Client().Get(ctx, types.NamespacedName{Namespace: "", Name: "clusters.extensions.gardener.cloud"}, clusterCRD))
-		framework.ExpectNoError(f.SeedClient.Client().Get(ctx, types.NamespacedName{Namespace: v1beta1constants.GardenNamespace, Name: lokiName}, gardenLokiSts))
-		framework.ExpectNoError(f.SeedClient.Client().Get(ctx, types.NamespacedName{Namespace: v1beta1constants.GardenNamespace, Name: lokiName}, gardenLokiService))
-		framework.ExpectNoError(f.SeedClient.Client().Get(ctx, types.NamespacedName{Namespace: v1beta1constants.GardenNamespace, Name: getConfigMapName(gardenLokiSts.Spec.Template.Spec.Volumes, lokiConfigDiskName)}, gardenLokiConfMap))
-		lokiPriorityClassName := gardenLokiSts.Spec.Template.Spec.PriorityClassName
-		framework.ExpectNoError(f.SeedClient.Client().Get(ctx, types.NamespacedName{Namespace: v1beta1constants.GardenNamespace, Name: lokiPriorityClassName}, gardenLokiPriorityClass))
+		framework.ExpectNoError(f.SeedClient.Client().Get(ctx, types.NamespacedName{Namespace: v1beta1constants.GardenNamespace, Name: valiName}, gardenLokiSts))
+		framework.ExpectNoError(f.SeedClient.Client().Get(ctx, types.NamespacedName{Namespace: v1beta1constants.GardenNamespace, Name: valiName}, gardenLokiService))
+		framework.ExpectNoError(f.SeedClient.Client().Get(ctx, types.NamespacedName{Namespace: v1beta1constants.GardenNamespace, Name: getConfigMapName(gardenLokiSts.Spec.Template.Spec.Volumes, valiConfigDiskName)}, gardenLokiConfMap))
+		valiPriorityClassName := gardenLokiSts.Spec.Template.Spec.PriorityClassName
+		framework.ExpectNoError(f.SeedClient.Client().Get(ctx, types.NamespacedName{Namespace: v1beta1constants.GardenNamespace, Name: valiPriorityClassName}, gardenLokiPriorityClass))
 		// Get the shoot logging components from the shoot running the test
-		framework.ExpectNoError(f.SeedClient.Client().Get(ctx, types.NamespacedName{Namespace: f.ShootSeedNamespace(), Name: lokiName}, shootLokiService))
-		framework.ExpectNoError(f.SeedClient.Client().Get(ctx, types.NamespacedName{Namespace: f.ShootSeedNamespace(), Name: lokiName}, shootLokiSts))
-		framework.ExpectNoError(f.SeedClient.Client().Get(ctx, types.NamespacedName{Namespace: f.ShootSeedNamespace(), Name: getConfigMapName(shootLokiSts.Spec.Template.Spec.Volumes, lokiConfigDiskName)}, shootLokiConfMap))
+		framework.ExpectNoError(f.SeedClient.Client().Get(ctx, types.NamespacedName{Namespace: f.ShootSeedNamespace(), Name: valiName}, shootLokiService))
+		framework.ExpectNoError(f.SeedClient.Client().Get(ctx, types.NamespacedName{Namespace: f.ShootSeedNamespace(), Name: valiName}, shootLokiSts))
+		framework.ExpectNoError(f.SeedClient.Client().Get(ctx, types.NamespacedName{Namespace: f.ShootSeedNamespace(), Name: getConfigMapName(shootLokiSts.Spec.Template.Spec.Volumes, valiConfigDiskName)}, shootLokiConfMap))
 		shootLokiPriorityClassName := shootLokiSts.Spec.Template.Spec.PriorityClassName
 		framework.ExpectNoError(f.SeedClient.Client().Get(ctx, types.NamespacedName{Namespace: f.ShootSeedNamespace(), Name: shootLokiPriorityClassName}, shootLokiPriorityClass))
 		// Get the plutono-operators Ingress
@@ -131,11 +131,11 @@ var _ = ginkgo.Describe("Seed logging testing", func() {
 		framework.ExpectNoError(f.SeedClient.Client().Get(ctx, types.NamespacedName{Namespace: f.ShootSeedNamespace(), Name: v1beta1constants.DeploymentNameGrafanaUsers}, plutonoUsersIngress))
 	}, initializationTimeout)
 
-	f.Beta().Serial().CIt("should get container logs from loki for all namespaces", func(ctx context.Context) {
+	f.Beta().Serial().CIt("should get container logs from vali for all namespaces", func(ctx context.Context) {
 		const (
 			emptyDirSize             = "500Mi"
-			lokiPersistentVolumeName = "loki"
-			shootLokiName            = "loki-shoots"
+			valiPersistentVolumeName = "vali"
+			shootLokiName            = "vali-shoots"
 			userLoggerName           = "kube-apiserver"
 			operatorLoggerName       = "logger"
 			userLoggerRegex          = userLoggerName + "-.*"
@@ -162,13 +162,13 @@ var _ = ginkgo.Describe("Seed logging testing", func() {
 		framework.ExpectNoError(create(ctx, f.ShootClient.Client(), gardenLokiConfMap))
 		framework.ExpectNoError(create(ctx, f.ShootClient.Client(), prepareGardenLokiService(gardenLokiService)))
 		framework.ExpectNoError(create(ctx, f.ShootClient.Client(), gardenLokiPriorityClass))
-		framework.ExpectNoError(create(ctx, f.ShootClient.Client(), prepareGardenLokiStatefulSet(gardenLokiSts, lokiPersistentVolumeName, emptyDirSize, shootLokiLabels)))
+		framework.ExpectNoError(create(ctx, f.ShootClient.Client(), prepareGardenLokiStatefulSet(gardenLokiSts, valiPersistentVolumeName, emptyDirSize, shootLokiLabels)))
 
 		ginkgo.By("Deploy the Loki StatefulSet for Shoot namespaces")
 		framework.ExpectNoError(create(ctx, f.ShootClient.Client(), prepareShootLokiService(shootLokiService, shootLokiName, shootLokiLabels)))
 		framework.ExpectNoError(create(ctx, f.ShootClient.Client(), shootLokiPriorityClass))
 		framework.ExpectNoError(create(ctx, f.ShootClient.Client(), prepareShootLokiConfigMap(shootLokiConfMap)))
-		framework.ExpectNoError(create(ctx, f.ShootClient.Client(), prepareShootLokiStatefulSet(shootLokiSts, gardenLokiSts, shootLokiName, shootLokiConfMap.Name, lokiPersistentVolumeName, emptyDirSize, shootLokiLabels, gardenLokiLabels)))
+		framework.ExpectNoError(create(ctx, f.ShootClient.Client(), prepareShootLokiStatefulSet(shootLokiSts, gardenLokiSts, shootLokiName, shootLokiConfMap.Name, valiPersistentVolumeName, emptyDirSize, shootLokiLabels, gardenLokiLabels)))
 
 		ginkgo.By("Wait until Loki StatefulSet for Garden namespace is ready")
 		framework.ExpectNoError(f.WaitUntilStatefulSetIsRunning(ctx, gardenLokiSts.Name, v1beta1constants.GardenNamespace, f.ShootClient))
@@ -208,9 +208,9 @@ var _ = ginkgo.Describe("Seed logging testing", func() {
 			ginkgo.By(fmt.Sprintf("Deploy cluster %s", cluster.Name))
 			framework.ExpectNoError(create(ctx, shootClient.Client(), cluster))
 
-			ginkgo.By(fmt.Sprintf("Deploy the loki service in namespace %s", shootNamespace.Name))
-			lokiShootService := getLokiShootService(i)
-			framework.ExpectNoError(create(ctx, f.ShootClient.Client(), lokiShootService))
+			ginkgo.By(fmt.Sprintf("Deploy the vali service in namespace %s", shootNamespace.Name))
+			valiShootService := getLokiShootService(i)
+			framework.ExpectNoError(create(ctx, f.ShootClient.Client(), valiShootService))
 
 			ginkgo.By(fmt.Sprintf("Deploy the logger application in namespace %s", shootNamespace.Name))
 			loggerParams := map[string]interface{}{
@@ -250,18 +250,18 @@ var _ = ginkgo.Describe("Seed logging testing", func() {
 			framework.ExpectNoError(f.WaitUntilDeploymentsWithLabelsIsReady(ctx, l, shootNamespace, f.ShootClient))
 		}
 
-		ginkgo.By("Verify loki received all operator's logs from operator's logger application for all shoot namespaces")
+		ginkgo.By("Verify vali received all operator's logs from operator's logger application for all shoot namespaces")
 		framework.ExpectNoError(WaitUntilLokiReceivesLogs(ctx, 30*time.Second, f, shootLokiLabels, operatorID, v1beta1constants.GardenNamespace, "pod_name", operatorLoggerRegex, (logsCount*numberOfSimulatedClusters)/2, numberOfSimulatedClusters/2, f.ShootClient))
-		ginkgo.By("Verify loki received all operator's logs from user's logger application for all shoot namespaces")
+		ginkgo.By("Verify vali received all operator's logs from user's logger application for all shoot namespaces")
 		framework.ExpectNoError(WaitUntilLokiReceivesLogs(ctx, 30*time.Second, f, shootLokiLabels, operatorID, v1beta1constants.GardenNamespace, "pod_name", userLoggerRegex, (logsCount*numberOfSimulatedClusters)/2, numberOfSimulatedClusters/2, f.ShootClient))
-		ginkgo.By("Verify loki received user logger application logs for all shoot namespaces")
+		ginkgo.By("Verify vali received user logger application logs for all shoot namespaces")
 		framework.ExpectNoError(WaitUntilLokiReceivesLogs(ctx, 30*time.Second, f, shootLokiLabels, userID, v1beta1constants.GardenNamespace, "pod_name", userLoggerRegex, (logsCount*numberOfSimulatedClusters)/2, numberOfSimulatedClusters/2, f.ShootClient))
-		ginkgo.By("Verify loki didn't get the logs from the operator's application as user's logs for all shoot namespaces")
+		ginkgo.By("Verify vali didn't get the logs from the operator's application as user's logs for all shoot namespaces")
 		framework.ExpectNoError(WaitUntilLokiReceivesLogs(ctx, 30*time.Second, f, shootLokiLabels, userID, v1beta1constants.GardenNamespace, "pod_name", operatorLoggerRegex, 0, 0, f.ShootClient))
 
-		ginkgo.By("Verify loki received logger application logs for garden namespace")
+		ginkgo.By("Verify vali received logger application logs for garden namespace")
 		framework.ExpectNoError(WaitUntilLokiReceivesLogs(ctx, 30*time.Second, f, gardenLokiLabels, "", v1beta1constants.GardenNamespace, "pod_name", operatorLoggerRegex, (logsCount*numberOfSimulatedClusters)/2, numberOfSimulatedClusters/2, f.ShootClient))
-		ginkgo.By("Verify loki received user application logs for garden namespace")
+		ginkgo.By("Verify vali received user application logs for garden namespace")
 		framework.ExpectNoError(WaitUntilLokiReceivesLogs(ctx, 30*time.Second, f, gardenLokiLabels, "", v1beta1constants.GardenNamespace, "pod_name", userLoggerRegex, (logsCount*numberOfSimulatedClusters)/2, numberOfSimulatedClusters/2, f.ShootClient))
 
 	}, getLogsFromLokiTimeout, framework.WithCAfterTest(func(ctx context.Context) {
@@ -284,8 +284,8 @@ var _ = ginkgo.Describe("Seed logging testing", func() {
 			cluster := getCluster(i)
 			framework.ExpectNoError(kubernetesutils.DeleteObject(ctx, shootClient.Client(), cluster))
 
-			lokiShootService := getLokiShootService(i)
-			framework.ExpectNoError(kubernetesutils.DeleteObject(ctx, f.ShootClient.Client(), lokiShootService))
+			valiShootService := getLokiShootService(i)
+			framework.ExpectNoError(kubernetesutils.DeleteObject(ctx, f.ShootClient.Client(), valiShootService))
 
 			framework.ExpectNoError(kubernetesutils.DeleteObject(ctx, f.ShootClient.Client(), shootNamespace))
 		}
@@ -323,12 +323,12 @@ func prepareGardenLokiService(service *corev1.Service) *corev1.Service {
 	return service
 }
 
-func prepareGardenLokiStatefulSet(gardenLokiSts *appsv1.StatefulSet, lokiPersistentVolumeName, emptyDirSize string, antiAffinityLabels map[string]string) *appsv1.StatefulSet {
+func prepareGardenLokiStatefulSet(gardenLokiSts *appsv1.StatefulSet, valiPersistentVolumeName, emptyDirSize string, antiAffinityLabels map[string]string) *appsv1.StatefulSet {
 	// Remove the Loki PVC as it is no needed for the test
 	gardenLokiSts.Spec.VolumeClaimTemplates = nil
 	// Instead use an empty dir volume
-	gardenLokiSts.Spec.Template.Spec.Volumes = append(gardenLokiSts.Spec.Template.Spec.Volumes, newEmptyDirVolume(lokiPersistentVolumeName, emptyDirSize))
-	// Spread the loki instances on separate nodes to let deploying of loggers afterwards to be relatively equal through the nodes
+	gardenLokiSts.Spec.Template.Spec.Volumes = append(gardenLokiSts.Spec.Template.Spec.Volumes, newEmptyDirVolume(valiPersistentVolumeName, emptyDirSize))
+	// Spread the vali instances on separate nodes to let deploying of loggers afterwards to be relatively equal through the nodes
 	gardenLokiSts.Spec.Template.Spec.Affinity = &corev1.Affinity{PodAntiAffinity: newPodAntiAffinity(antiAffinityLabels)}
 
 	capLokiContainerResources(gardenLokiSts)
@@ -337,7 +337,7 @@ func prepareGardenLokiStatefulSet(gardenLokiSts *appsv1.StatefulSet, lokiPersist
 }
 
 func prepareShootLokiService(shootLokiService *corev1.Service, name string, selector map[string]string) *corev1.Service {
-	shootLokiService.Name = name // "loki-shoots"
+	shootLokiService.Name = name // "vali-shoots"
 	shootLokiService.Namespace = v1beta1constants.GardenNamespace
 	shootLokiService.Spec.Selector = selector
 	shootLokiService.Spec.ClusterIP = ""
@@ -350,7 +350,7 @@ func prepareShootLokiConfigMap(confMap *corev1.ConfigMap) *corev1.ConfigMap {
 	return confMap
 }
 
-func prepareShootLokiStatefulSet(shootLokiSts, gardenLokiSts *appsv1.StatefulSet, name, configMapNAme, lokiPersistentVolumeName, emptyDirSize string, newLabels, antiAffinityLabels map[string]string) *appsv1.StatefulSet {
+func prepareShootLokiStatefulSet(shootLokiSts, gardenLokiSts *appsv1.StatefulSet, name, configMapNAme, valiPersistentVolumeName, emptyDirSize string, newLabels, antiAffinityLabels map[string]string) *appsv1.StatefulSet {
 	// Extract the containers related only to the seed logging stack
 	var containers []corev1.Container
 	for _, gardenCon := range gardenLokiSts.Spec.Template.Spec.Containers {
@@ -368,7 +368,7 @@ func prepareShootLokiStatefulSet(shootLokiSts, gardenLokiSts *appsv1.StatefulSet
 		for _, shootVolume := range shootLokiSts.Spec.Template.Spec.Volumes {
 			if shootVolume.Name == gardenVolume.Name {
 				volumes = append(volumes, shootVolume)
-				if gardenVolume.Name == lokiPersistentVolumeName && gardenVolume.EmptyDir != nil {
+				if gardenVolume.Name == valiPersistentVolumeName && gardenVolume.EmptyDir != nil {
 					alreadyHasEmptyDirAsLokiPVC = true
 				}
 			}
@@ -380,12 +380,12 @@ func prepareShootLokiStatefulSet(shootLokiSts, gardenLokiSts *appsv1.StatefulSet
 	shootLokiSts.Spec.VolumeClaimTemplates = nil
 	// Instead use an empty dir volume
 	if !alreadyHasEmptyDirAsLokiPVC {
-		shootLokiSts.Spec.Template.Spec.Volumes = append(shootLokiSts.Spec.Template.Spec.Volumes, newEmptyDirVolume(lokiPersistentVolumeName, emptyDirSize))
+		shootLokiSts.Spec.Template.Spec.Volumes = append(shootLokiSts.Spec.Template.Spec.Volumes, newEmptyDirVolume(valiPersistentVolumeName, emptyDirSize))
 	}
-	// Spread the loki instances on separate nodes to let deploying of loggers afterwards to be relatively equal through the nodes
+	// Spread the vali instances on separate nodes to let deploying of loggers afterwards to be relatively equal through the nodes
 	shootLokiSts.Spec.Template.Spec.Affinity = &corev1.Affinity{PodAntiAffinity: newPodAntiAffinity(antiAffinityLabels)}
 	// Rename the shoot Loki because it has the same name as the garden one
-	shootLokiSts.Name = name // "loki-shoots"
+	shootLokiSts.Name = name // "vali-shoots"
 	// Change the labels and the selectors because the shoot Loki has the same ones as garden Loki
 	shootLokiSts.Labels = newLabels
 	shootLokiSts.Spec.Selector.MatchLabels = newLabels
@@ -398,10 +398,10 @@ func prepareShootLokiStatefulSet(shootLokiSts, gardenLokiSts *appsv1.StatefulSet
 	return shootLokiSts
 }
 
-func capLokiContainerResources(lokiSts *appsv1.StatefulSet) {
-	for i, container := range lokiSts.Spec.Template.Spec.Containers {
-		if container.Name == "loki" {
-			lokiSts.Spec.Template.Spec.Containers[i].Resources = corev1.ResourceRequirements{
+func capLokiContainerResources(valiSts *appsv1.StatefulSet) {
+	for i, container := range valiSts.Spec.Template.Spec.Containers {
+		if container.Name == "vali" {
+			valiSts.Spec.Template.Spec.Containers[i].Resources = corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceCPU:    resource.MustParse("50m"),
 					corev1.ResourceMemory: resource.MustParse("300Mi"),
