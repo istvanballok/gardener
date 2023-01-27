@@ -127,7 +127,7 @@ var _ = Describe("OperatingSystemConfig", func() {
 						{Path: *cctx.KubeletDataVolumeName},
 						{Path: cctx.KubernetesVersion.String()},
 						{Path: fmt.Sprintf("%s", cctx.SSHPublicKeys)},
-						{Path: strconv.FormatBool(cctx.PromtailEnabled)},
+						{Path: strconv.FormatBool(cctx.ValitailEnabled)},
 					},
 					nil
 			}
@@ -202,7 +202,7 @@ var _ = Describe("OperatingSystemConfig", func() {
 					KubeletConfig:     kubeletConfig,
 					MachineTypes:      machineTypes,
 					SSHPublicKeys:     sshPublicKeys,
-					PromtailEnabled:   valitailEnabled,
+					ValitailEnabled:   valitailEnabled,
 				},
 			}
 
@@ -250,7 +250,7 @@ var _ = Describe("OperatingSystemConfig", func() {
 					KubeletDataVolumeName: &kubeletDataVolumeName,
 					KubernetesVersion:     k8sVersion,
 					SSHPublicKeys:         sshPublicKeys,
-					PromtailEnabled:       valitailEnabled,
+					ValitailEnabled:       valitailEnabled,
 				})
 
 				oscDownloader := &extensionsv1alpha1.OperatingSystemConfig{
