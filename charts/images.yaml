@@ -228,7 +228,7 @@ images:
       availability_requirement: 'none'
       comment: no data is stored or processed by the installer
 - name: loki
-  sourceRepository: github.com/grafana/loki
+  sourceRepository: github.com/credativ/vali
   repository: grafana/loki
   tag: "2.2.1"
   labels:
@@ -268,7 +268,7 @@ images:
       availability_requirement: 'low'
       comment: kube-rbac-proxy is an authentication proxy working with credentials
 - name: promtail
-  sourceRepository: github.com/grafana/loki
+  sourceRepository: github.com/credativ/vali
   repository: "docker.io/grafana/promtail"
   tag: "2.2.1"
   labels:

@@ -62,7 +62,7 @@ allow-kube-apiserver              app=kubernetes,gardener.cloud/role=controlplan
 
 ### Network Policies for Logging & Monitoring
 
-Gardener currently introduces a logging stack based on [Loki](https://github.com/grafana/loki). So this section is subject to change. 
+Gardener currently introduces a logging stack based on [Loki](https://github.com/credativ/vali). So this section is subject to change. 
 For more information, see the [Loki Gardener Community Meeting ](https://www.youtube.com/watch?v=345b8xCcB-U&t=1166s).
 
 These are the logging and monitoring related network policies:
