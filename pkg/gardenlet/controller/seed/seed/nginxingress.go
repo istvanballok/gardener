@@ -130,7 +130,7 @@ func migrateIngressClassForShootIngresses(ctx context.Context, gardenClient, see
 	if err := switchIngressClass(ctx, seedClient, kubernetesutils.Key(v1beta1constants.GardenNamespace, "aggregate-prometheus"), newClass, kubernetesVersion); err != nil {
 		return err
 	}
-	if err := switchIngressClass(ctx, seedClient, kubernetesutils.Key(v1beta1constants.GardenNamespace, "grafana"), newClass, kubernetesVersion); err != nil {
+	if err := switchIngressClass(ctx, seedClient, kubernetesutils.Key(v1beta1constants.GardenNamespace, "plutono"), newClass, kubernetesVersion); err != nil {
 		return err
 	}
 
@@ -141,10 +141,10 @@ func migrateIngressClassForShootIngresses(ctx context.Context, gardenClient, see
 		if err := switchIngressClass(ctx, seedClient, kubernetesutils.Key(ns.Name, "prometheus"), newClass, kubernetesVersion); err != nil {
 			return err
 		}
-		if err := switchIngressClass(ctx, seedClient, kubernetesutils.Key(ns.Name, "grafana-operators"), newClass, kubernetesVersion); err != nil {
+		if err := switchIngressClass(ctx, seedClient, kubernetesutils.Key(ns.Name, "plutono-operators"), newClass, kubernetesVersion); err != nil {
 			return err
 		}
-		if err := switchIngressClass(ctx, seedClient, kubernetesutils.Key(ns.Name, "grafana-users"), newClass, kubernetesVersion); err != nil {
+		if err := switchIngressClass(ctx, seedClient, kubernetesutils.Key(ns.Name, "plutono-users"), newClass, kubernetesVersion); err != nil {
 			return err
 		}
 	}
