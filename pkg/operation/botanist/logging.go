@@ -38,6 +38,8 @@ import (
 	kubernetesutils "github.com/gardener/gardener/pkg/utils/kubernetes"
 	"github.com/gardener/gardener/pkg/utils/secrets"
 	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
+	appsv1 "k8s.io/api/apps/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // DeploySeedLogging will install the Helm release "seed-bootstrap/charts/vali" in the Seed clusters.
@@ -152,7 +154,80 @@ func (b *Botanist) DeploySeedLogging(ctx context.Context) error {
 		}
 	}
 
+	// TODO (nickytd) delete next line and the scaleUpLokiGrafana(context) method after the loki to vali transition
+	b.scaleUpLokiGrafana(ctx)
+
 	return b.SeedClientSet.ChartApplier().Apply(ctx, filepath.Join(ChartsPath, "seed-bootstrap", "charts", "vali"), b.Shoot.SeedNamespace, fmt.Sprintf("%s-logging", b.Shoot.SeedNamespace), kubernetes.Values(valiValues))
+}
+
+// We shall keep loki and grafana instances in shoot control plane namespaces for the default log retention period of two weeks.
+// During this transition period we keep 1 replica of loki, grafana-users and grafana-operators.
+// After this transition period of Grafana -> Plutono, Loki -> Vali, the loki statefulset, PVs and grafana deployments have to be deleted.
+// This method sets the replicas of those components to 1.
+// Usually those replicas are set to 0 during shoot hibernation and has to be scaled back to 1 after a shoot is awaken.
+// TODO (nickytd) delete this scaleUpLokiGrafana(context) method after loki to vali transition
+func (b *Botanist) scaleUpLokiGrafana(ctx context.Context) {
+	var (
+		err                            error
+		replicas                       = int32(1)
+		_logger                        = b.Logger.WithValues("namespace", b.Shoot.SeedNamespace)
+		loki                           = &appsv1.StatefulSet{}
+		grafanaUsers, grafanaOperators = &appsv1.Deployment{}, &appsv1.Deployment{}
+	)
+
+	// get loki statefulset resource
+	err = b.SeedClientSet.Client().Get(ctx, client.ObjectKey{
+		Namespace: b.Shoot.SeedNamespace,
+		Name:      "loki",
+	}, loki)
+	if err != nil {
+		_logger.Error(err, "cannot get the loki statefulset")
+	}
+	// scale replicas to 1
+	if err == nil && loki.Spec.Replicas != nil && *loki.Spec.Replicas != 1 {
+		loki.Spec.Replicas = &replicas
+		if err = b.SeedClientSet.Client().Update(ctx, loki); err != nil {
+			_logger.Error(err, "failed to scale the loki statefulset back to 1 replica")
+		} else {
+			_logger.Info("loki statefulset is scaled to 1 replica")
+		}
+	}
+
+	// get grafana-users deployment resource
+	err = b.SeedClientSet.Client().Get(ctx, client.ObjectKey{
+		Namespace: b.Shoot.SeedNamespace,
+		Name:      "grafana-users",
+	}, grafanaUsers)
+	if err != nil {
+		_logger.Error(err, "cannot get the grafana-users deployment")
+	}
+	// scale deployment to 1
+	if err == nil && grafanaUsers.Spec.Replicas != nil && *grafanaUsers.Spec.Replicas != 1 {
+		grafanaUsers.Spec.Replicas = &replicas
+		if err = b.SeedClientSet.Client().Update(ctx, grafanaUsers); err != nil {
+			_logger.Error(err, "failed to scale the grafana-users deployment back to 1 replica")
+		} else {
+			_logger.Info("grafana-users deployment is scaled to 1 replica")
+		}
+	}
+
+	// get grafana-operators deployment resource
+	err = b.SeedClientSet.Client().Get(ctx, client.ObjectKey{
+		Namespace: b.Shoot.SeedNamespace,
+		Name:      "grafana-operators",
+	}, grafanaOperators)
+	if err != nil {
+		_logger.Error(err, "cannot get grafana-operator deployment")
+	}
+	// scale deployment to 1
+	if err == nil && grafanaOperators.Spec.Replicas != nil && *grafanaOperators.Spec.Replicas != 1 {
+		grafanaOperators.Spec.Replicas = &replicas
+		if err = b.SeedClientSet.Client().Update(ctx, grafanaOperators); err != nil {
+			_logger.Error(err, "failed to scale the grafana-operators deployment back to 1 replica")
+		} else {
+			_logger.Info("grafana-operators deployment is scaled to 1 replica")
+		}
+	}
 }
 
 func (b *Botanist) destroyShootLoggingStack(ctx context.Context) error {
