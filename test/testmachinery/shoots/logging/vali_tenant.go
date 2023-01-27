@@ -39,7 +39,7 @@ import (
 
 const (
 	tenantInitializationTimeout          = 2 * time.Minute
-	tenantGetLogsFromLokiTimeout         = 5 * time.Minute
+	tenantGetLogsFromValiTimeout         = 5 * time.Minute
 	tenantLoggerDeploymentCleanupTimeout = 5 * time.Minute
 
 	randomLength           = 11
@@ -87,7 +87,7 @@ var _ = ginkgo.Describe("Seed logging testing", func() {
 		})
 		framework.ExpectNoError(err)
 
-		// Deploy Loki ValidatingWebhookConfiguration
+		// Deploy Vali ValidatingWebhookConfiguration
 		validatingWebhookParams := map[string]interface{}{
 			"NamespaceLabelKey":   shootNamespaceLabelKey,
 			"NamespaceLabelValue": shootNamespaceLabelValue,
@@ -110,7 +110,7 @@ esfcqFwji6JyAKFRACPowykQONFwUSom89uYESSCJFvNCk9MJmjJ2PzDUt6CypR4
 epFdd1fXLwuwn7fvPMmJqD3HtLalX1AZmPk+BI8ezfAiVcVqnTJQMXlYPpYe9A==
 -----END CERTIFICATE-----`)),
 		}
-		err = f.RenderAndDeployTemplate(ctx, f.SeedClient, templates.BlockLokiValidatingWebhookConfiguration, validatingWebhookParams)
+		err = f.RenderAndDeployTemplate(ctx, f.SeedClient, templates.BlockValiValidatingWebhookConfiguration, validatingWebhookParams)
 		framework.ExpectNoError(err)
 	}, tenantInitializationTimeout)
 
@@ -121,22 +121,22 @@ epFdd1fXLwuwn7fvPMmJqD3HtLalX1AZmPk+BI8ezfAiVcVqnTJQMXlYPpYe9A==
 		operatorLoggerName = operatorLoggerName + utilrand.String(randomLength)
 		operatorLoggerRegex := operatorLoggerName + "-.*"
 
-		ginkgo.By("Get Loki tenant IDs")
+		ginkgo.By("Get Vali tenant IDs")
 		userID := getXScopeOrgID(plutonoUsersIngress.GetAnnotations())
 		operatorID := getXScopeOrgID(plutonoOperatorsIngress.GetAnnotations())
 
-		ginkgo.By("Wait until Loki StatefulSet is ready")
+		ginkgo.By("Wait until Vali StatefulSet is ready")
 		framework.ExpectNoError(f.WaitUntilStatefulSetIsRunning(ctx, valiName, f.ShootSeedNamespace(), f.SeedClient))
 
 		ginkgo.By("Compute expected logs for the user tenant")
-		search, err := f.GetLokiLogs(ctx, valiLabels, userID, f.ShootSeedNamespace(), "pod_name", userLoggerRegex, f.SeedClient)
+		search, err := f.GetValiLogs(ctx, valiLabels, userID, f.ShootSeedNamespace(), "pod_name", userLoggerRegex, f.SeedClient)
 		framework.ExpectNoError(err)
 		initialUsersLogs, err := getLogCountFromResult(search)
 		framework.ExpectNoError(err)
 		expectedUserLogs := tenantLogsCount + initialUsersLogs
 
 		ginkgo.By("Compute expected logs for the operator tenant")
-		search, err = f.GetLokiLogs(ctx, valiLabels, operatorID, f.ShootSeedNamespace(), "pod_name", operatorLoggerRegex, f.SeedClient)
+		search, err = f.GetValiLogs(ctx, valiLabels, operatorID, f.ShootSeedNamespace(), "pod_name", operatorLoggerRegex, f.SeedClient)
 		framework.ExpectNoError(err)
 		initialOperatorsLogs, err := getLogCountFromResult(search)
 		framework.ExpectNoError(err)
@@ -151,7 +151,7 @@ epFdd1fXLwuwn7fvPMmJqD3HtLalX1AZmPk+BI8ezfAiVcVqnTJQMXlYPpYe9A==
 			"LogsDuration":        tenantLogsDuration,
 		}
 
-		ginkgo.By("Check again if Loki StatefulSet is ready")
+		ginkgo.By("Check again if Vali StatefulSet is ready")
 		framework.ExpectNoError(f.WaitUntilStatefulSetIsRunning(ctx, valiName, f.ShootSeedNamespace(), f.SeedClient))
 
 		err = f.RenderAndDeployTemplate(ctx, f.SeedClient, templates.LoggerAppName, loggerParams)
@@ -181,22 +181,22 @@ epFdd1fXLwuwn7fvPMmJqD3HtLalX1AZmPk+BI8ezfAiVcVqnTJQMXlYPpYe9A==
 		framework.ExpectNoError(err)
 
 		ginkgo.By("Verify vali received all user logger application logs")
-		err = WaitUntilLokiReceivesLogs(ctx, 30*time.Second, f, valiLabels, userID, f.ShootSeedNamespace(), "pod_name", userLoggerRegex, expectedUserLogs, tenantDeltaLogsCount, f.SeedClient)
+		err = WaitUntilValiReceivesLogs(ctx, 30*time.Second, f, valiLabels, userID, f.ShootSeedNamespace(), "pod_name", userLoggerRegex, expectedUserLogs, tenantDeltaLogsCount, f.SeedClient)
 		framework.ExpectNoError(err)
 
 		ginkgo.By("Verify vali received all user logger application logs as an operator")
-		err = WaitUntilLokiReceivesLogs(ctx, 30*time.Second, f, valiLabels, operatorID, f.ShootSeedNamespace(), "pod_name", userLoggerRegex, expectedUserLogs, tenantDeltaLogsCount, f.SeedClient)
+		err = WaitUntilValiReceivesLogs(ctx, 30*time.Second, f, valiLabels, operatorID, f.ShootSeedNamespace(), "pod_name", userLoggerRegex, expectedUserLogs, tenantDeltaLogsCount, f.SeedClient)
 		framework.ExpectNoError(err)
 
 		ginkgo.By("Verify vali received all operator logger application logs")
-		err = WaitUntilLokiReceivesLogs(ctx, 30*time.Second, f, valiLabels, operatorID, f.ShootSeedNamespace(), "pod_name", operatorLoggerRegex, expectedOperatorLogs, tenantDeltaLogsCount, f.SeedClient)
+		err = WaitUntilValiReceivesLogs(ctx, 30*time.Second, f, valiLabels, operatorID, f.ShootSeedNamespace(), "pod_name", operatorLoggerRegex, expectedOperatorLogs, tenantDeltaLogsCount, f.SeedClient)
 		framework.ExpectNoError(err)
 
 		ginkgo.By("Verify that vali will not show the operator logs to the user tenant")
-		err = WaitUntilLokiReceivesLogs(ctx, 30*time.Second, f, valiLabels, userID, f.ShootSeedNamespace(), "pod_name", operatorLoggerRegex, 0, tenantDeltaLogsCount, f.SeedClient)
+		err = WaitUntilValiReceivesLogs(ctx, 30*time.Second, f, valiLabels, userID, f.ShootSeedNamespace(), "pod_name", operatorLoggerRegex, 0, tenantDeltaLogsCount, f.SeedClient)
 		framework.ExpectNoError(err)
 
-	}, tenantGetLogsFromLokiTimeout, framework.WithCAfterTest(func(ctx context.Context) {
+	}, tenantGetLogsFromValiTimeout, framework.WithCAfterTest(func(ctx context.Context) {
 		ginkgo.By("Cleanup user logger app resources")
 		loggerDeploymentToDelete := &appsv1.Deployment{
 			ObjectMeta: metav1.ObjectMeta{

@@ -97,8 +97,8 @@ func GenerateAddonConfig(values map[string]interface{}, enabled bool) map[string
 	return v
 }
 
-// DeleteLoki  deletes all resources of the Loki in a given namespace.
-func DeleteLoki(ctx context.Context, k8sClient client.Client, namespace string) error {
+// DeleteVali  deletes all resources of the Vali in a given namespace.
+func DeleteVali(ctx context.Context, k8sClient client.Client, namespace string) error {
 	resources := []client.Object{
 		&networkingv1.NetworkPolicy{ObjectMeta: metav1.ObjectMeta{Name: "allow-vali", Namespace: namespace}},
 		&networkingv1.NetworkPolicy{ObjectMeta: metav1.ObjectMeta{Name: "allow-to-vali", Namespace: namespace}},
@@ -130,7 +130,7 @@ func DeleteSeedLoggingStack(ctx context.Context, k8sClient client.Client) error 
 		return err
 	}
 
-	return DeleteLoki(ctx, k8sClient, v1beta1constants.GardenNamespace)
+	return DeleteVali(ctx, k8sClient, v1beta1constants.GardenNamespace)
 }
 
 // DeleteAlertmanager deletes all resources of the Alertmanager in a given namespace.

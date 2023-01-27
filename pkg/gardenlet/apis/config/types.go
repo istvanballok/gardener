@@ -414,19 +414,19 @@ type FluentBitNetworkPolicy struct {
 	AdditionalEgressIPBlocks []string
 }
 
-// Loki contains configuration for the Loki.
-type Loki struct {
-	// Enabled is used to enable or disable the shoot and seed Loki.
-	// If FluentBit is used with a custom output the Loki can, Loki is maybe unused and can be disabled.
-	// If not set, by default Loki is enabled.
+// Vali contains configuration for the Vali.
+type Vali struct {
+	// Enabled is used to enable or disable the shoot and seed Vali.
+	// If FluentBit is used with a custom output the Vali can, Vali is maybe unused and can be disabled.
+	// If not set, by default Vali is enabled.
 	Enabled *bool
-	// Garden contains configuration for the Loki in garden namespace.
-	Garden *GardenLoki
+	// Garden contains configuration for the Vali in garden namespace.
+	Garden *GardenVali
 }
 
-// GardenLoki contains configuration for the Loki in garden namespace.
-type GardenLoki struct {
-	// Storage is the disk storage capacity of the central Loki.
+// GardenVali contains configuration for the Vali in garden namespace.
+type GardenVali struct {
+	// Storage is the disk storage capacity of the central Vali.
 	// Defaults to 100Gi.
 	Storage *resource.Quantity
 }
@@ -449,8 +449,8 @@ type Logging struct {
 	Enabled *bool
 	// FluentBit contains configurations for the fluent-bit.
 	FluentBit *FluentBit
-	// Loki contains configuration for the Loki.
-	Loki *Loki
+	// Vali contains configuration for the Vali.
+	Vali *Vali
 	// ShootNodeLogging contains configurations for the shoot node logging.
 	ShootNodeLogging *ShootNodeLogging
 	// ShootEventLogging contains configurations for the shoot event logger.

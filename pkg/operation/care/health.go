@@ -362,7 +362,7 @@ func (h *Health) checkControlPlane(
 	return &c, nil
 }
 
-// checkControlPlane checks whether the  observability components of the Shoot control plane (Prometheus, Loki, Plutono..) are healthy.
+// checkControlPlane checks whether the  observability components of the Shoot control plane (Prometheus, Vali, Plutono..) are healthy.
 func (h *Health) checkObservabilityComponents(
 	ctx context.Context,
 	checker *HealthChecker,
@@ -374,7 +374,7 @@ func (h *Health) checkObservabilityComponents(
 		return exitCondition, err
 	}
 
-	valiEnabled := gardenlethelper.IsLokiEnabled(h.gardenletConfiguration)
+	valiEnabled := gardenlethelper.IsValiEnabled(h.gardenletConfiguration)
 	loggingEnabled := gardenlethelper.IsLoggingEnabled(h.gardenletConfiguration)
 	eventLoggingEnabled := gardenlethelper.IsEventLoggingEnabled(h.gardenletConfiguration)
 

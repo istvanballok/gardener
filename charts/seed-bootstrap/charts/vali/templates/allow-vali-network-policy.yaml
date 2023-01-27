@@ -3,7 +3,7 @@ kind: NetworkPolicy
 metadata:
   annotations:
     gardener.cloud/description: |
-      Allows Ingress to the Loki API pods labeled with 'networking.gardener.cloud/to-vali=allowed'.
+      Allows Ingress to the Vali API pods labeled with 'networking.gardener.cloud/to-vali=allowed'.
   name: allow-vali
   namespace: {{ .Release.Namespace }}
 spec:
