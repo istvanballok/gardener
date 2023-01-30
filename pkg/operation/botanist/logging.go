@@ -169,11 +169,13 @@ func (b *Botanist) DeploySeedLogging(ctx context.Context) error {
 func (b *Botanist) scaleUpLokiGrafana(ctx context.Context) {
 	var (
 		err                            error
-		replicas                       = int32(1)
+		replicas                       = b.Shoot.GetReplicas(1)
 		_logger                        = b.Logger.WithValues("namespace", b.Shoot.SeedNamespace)
 		loki                           = &appsv1.StatefulSet{}
 		grafanaUsers, grafanaOperators = &appsv1.Deployment{}, &appsv1.Deployment{}
 	)
+
+	_logger.Info("scaling grafana & loki", "replicas", replicas)
 
 	// get loki statefulset resource
 	err = b.SeedClientSet.Client().Get(ctx, client.ObjectKey{
@@ -184,7 +186,7 @@ func (b *Botanist) scaleUpLokiGrafana(ctx context.Context) {
 		_logger.Error(err, "cannot get the loki statefulset")
 	}
 	// scale replicas to 1
-	if err == nil && loki.Spec.Replicas != nil && *loki.Spec.Replicas != 1 {
+	if err == nil && loki.Spec.Replicas != nil && *loki.Spec.Replicas != replicas {
 		loki.Spec.Replicas = &replicas
 		if err = b.SeedClientSet.Client().Update(ctx, loki); err != nil {
 			_logger.Error(err, "failed to scale the loki statefulset back to 1 replica")
@@ -202,7 +204,7 @@ func (b *Botanist) scaleUpLokiGrafana(ctx context.Context) {
 		_logger.Error(err, "cannot get the grafana-users deployment")
 	}
 	// scale deployment to 1
-	if err == nil && grafanaUsers.Spec.Replicas != nil && *grafanaUsers.Spec.Replicas != 1 {
+	if err == nil && grafanaUsers.Spec.Replicas != nil && *grafanaUsers.Spec.Replicas != replicas {
 		grafanaUsers.Spec.Replicas = &replicas
 		if err = b.SeedClientSet.Client().Update(ctx, grafanaUsers); err != nil {
 			_logger.Error(err, "failed to scale the grafana-users deployment back to 1 replica")
@@ -220,7 +222,7 @@ func (b *Botanist) scaleUpLokiGrafana(ctx context.Context) {
 		_logger.Error(err, "cannot get grafana-operator deployment")
 	}
 	// scale deployment to 1
-	if err == nil && grafanaOperators.Spec.Replicas != nil && *grafanaOperators.Spec.Replicas != 1 {
+	if err == nil && grafanaOperators.Spec.Replicas != nil && *grafanaOperators.Spec.Replicas != replicas {
 		grafanaOperators.Spec.Replicas = &replicas
 		if err = b.SeedClientSet.Client().Update(ctx, grafanaOperators); err != nil {
 			_logger.Error(err, "failed to scale the grafana-operators deployment back to 1 replica")
