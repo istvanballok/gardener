@@ -112,6 +112,22 @@ func DeleteVali(ctx context.Context, k8sClient client.Client, namespace string) 
 	return kubernetesutils.DeleteObjects(ctx, k8sClient, resources...)
 }
 
+// DeleteLoki  deletes all resources of the Loki in a given namespace.
+func DeleteLokiRetainPvc(ctx context.Context, k8sClient client.Client, namespace string) error {
+	resources := []client.Object{
+		&networkingv1.NetworkPolicy{ObjectMeta: metav1.ObjectMeta{Name: "allow-loki", Namespace: namespace}},
+		&networkingv1.NetworkPolicy{ObjectMeta: metav1.ObjectMeta{Name: "allow-to-loki", Namespace: namespace}},
+		&hvpav1alpha1.Hvpa{ObjectMeta: metav1.ObjectMeta{Name: "loki", Namespace: namespace}},
+		&corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "loki-config", Namespace: namespace}},
+		&corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: "loki", Namespace: namespace}},
+		&appsv1.StatefulSet{ObjectMeta: metav1.ObjectMeta{Name: "loki", Namespace: namespace}},
+		// We retain the PVC and reuse it with Vali.
+		//&corev1.PersistentVolumeClaim{ObjectMeta: metav1.ObjectMeta{Name: "loki-loki-0", Namespace: namespace}},
+	}
+
+	return kubernetesutils.DeleteObjects(ctx, k8sClient, resources...)
+}
+
 // DeleteSeedLoggingStack deletes all seed resource of the logging stack in the garden namespace.
 func DeleteSeedLoggingStack(ctx context.Context, k8sClient client.Client) error {
 	resources := []client.Object{
