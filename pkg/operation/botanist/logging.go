@@ -21,7 +21,9 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	gardencore "github.com/gardener/gardener/pkg/apis/core"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
@@ -48,6 +50,11 @@ func (b *Botanist) DeploySeedLogging(ctx context.Context) error {
 
 	//TODO(rickardsjp, istvanballok): Remove in the next release once the Loki to Vali migration is complete.
 	if err := b.destroyLokiBasedShootLoggingStackRetainingPvc(ctx); err != nil {
+		return err
+	}
+
+	// If a Loki PVC exists, rename it to Vali.
+	if err := b.renameLokiPvcToVali(ctx); err != nil {
 		return err
 	}
 
@@ -181,6 +188,101 @@ func (b *Botanist) destroyShootLoggingStack(ctx context.Context) error {
 	}
 
 	return common.DeleteVali(ctx, b.SeedClientSet.Client(), b.Shoot.SeedNamespace)
+}
+
+func (b *Botanist) renameLokiPvcToVali(ctx context.Context) error {
+	b.Logger.Info("Renaming Loki PVC to Vali")
+
+	// Get Loki PVC.
+	b.Logger.Info("Step 1/7: Get Loki PVC")
+	pvc := &corev1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "loki-loki-0",
+			Namespace: b.Shoot.SeedNamespace,
+		},
+	}
+	if err := b.SeedClientSet.Client().Get(ctx, client.ObjectKeyFromObject(pvc), pvc); err != nil {
+		if apierrors.IsNotFound(err) {
+			b.Logger.Info("Loki PVC not found, skipping rename")
+			return nil
+		} else {
+			return err
+		}
+	}
+
+	// Get Loki PV.
+	b.Logger.Info("Step 2/7: Get Loki PV")
+	pvId := pvc.Spec.VolumeName
+	pv := &corev1.PersistentVolume{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      pvId,
+			Namespace: b.Shoot.SeedNamespace,
+		},
+	}
+	if err := b.SeedClientSet.Client().Get(ctx, client.ObjectKeyFromObject(pv), pv); err != nil {
+		return err
+	}
+
+	// When the Loki PVC is deleted, the PV is retained.
+	b.Logger.Info("Step 3/7: Patch Loki PV's PersistentVolumeReclaimPolicy")
+	patch := client.MergeFrom(pv.DeepCopy())
+	pv.Spec.PersistentVolumeReclaimPolicy = corev1.PersistentVolumeReclaimRetain
+	if err := b.SeedClientSet.Client().Patch(ctx, pv, patch); err != nil {
+		return err
+	}
+
+	// Delete Loki PVC
+	b.Logger.Info("Step 4/7: Delete Loki PVC")
+	if err := kubernetesutils.DeleteObject(ctx, b.SeedClientSet.Client(), pvc); err != nil {
+		return err
+	}
+
+	// Delete the ClaimRef from the PV.
+	b.Logger.Info("Step 5/7: Remove Loki PV's ClaimRef")
+	patch = client.MergeFrom(pv.DeepCopy())
+	pv.Spec.ClaimRef = nil
+	if err := b.SeedClientSet.Client().Patch(ctx, pv, patch); err != nil {
+		return err
+	}
+
+	// Recreate the PVC with the vali name.
+	b.Logger.Info("Step 6/7: Create Vali PVC")
+
+	// Copy and adapt labels for the new PVC
+	labels := pvc.DeepCopy().Labels
+	for k, v := range labels {
+		if v == "loki" {
+			labels[k] = "vali"
+		}
+	}
+
+	// Create new PVC for vali.
+	valiPvc := &corev1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: pvc.Namespace,
+			Name: "vali-vali-0",
+			Annotations: pvc.DeepCopy().Annotations,
+			Labels: labels,
+		},
+		Spec: *pvc.Spec.DeepCopy(),
+	}
+
+	if err := b.SeedClientSet.Client().Create(ctx, valiPvc); err != nil {
+		b.Logger.Error(err, "Step 6/7: Create Vali PVC failed")
+		return err
+	}
+
+	// Change the PV ReclaimPolicy back to Delete, so that when a vali PVC is deleted, we don't leak the PV.
+	b.Logger.Info("Step 7/7: Patch Vali PV's PersistentVolumeReclaimPolicy")
+	patch = client.MergeFrom(pv.DeepCopy())
+	pv.Spec.PersistentVolumeReclaimPolicy = corev1.PersistentVolumeReclaimDelete
+	if err := b.SeedClientSet.Client().Patch(ctx, pv, patch); err != nil {
+		return err
+	}
+
+	b.Logger.Info("Successfully renamed Loki PVC to Vali")
+
+	return nil
 }
 
 func (b *Botanist) destroyLokiBasedShootLoggingStackRetainingPvc(ctx context.Context) error {
