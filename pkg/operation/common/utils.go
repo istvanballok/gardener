@@ -20,12 +20,15 @@ import (
 	"math/big"
 	"net"
 	"strings"
+	"time"
 
 	hvpav1alpha1 "github.com/gardener/hvpa-controller/api/v1alpha1"
+	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -152,6 +155,174 @@ func DeleteLokiRetainPvc(ctx context.Context, k8sClient client.Client, namespace
 	}
 
 	return k8sClient.DeleteAllOf(ctx, &corev1.ConfigMap{}, deleteOptions...)
+}
+
+// RenameLokiPvcToValiPvc "renames" the PVC used by loki "loki-loki-0" to "vali-vali-0" so that it can be used by vali.
+// It is not possible in kubernetes to rename a PVC, so we have to create a new PVC and delete the old one.
+// The PV is not deleted, but reused by the new PVC. To achieve this, the PV's ReclaimPolicy is temporarily set to "Retain".
+// For this to succeed it is important that the old PVC is deleted before the new one is created.
+func RenameLokiPvcToValiPvc(ctx context.Context, k8sClient client.Client, namespace string, log logr.Logger) error {
+	log.Info("loki2vali: Entering RenameLokiPvcToValiPvc")
+
+	// Get Loki PVC.
+	log.Info("loki2vali: Get Loki PVC")
+	pvc := &corev1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "loki-loki-0",
+			Namespace: namespace,
+		},
+	}
+	if err := k8sClient.Get(ctx, client.ObjectKeyFromObject(pvc), pvc); err != nil {
+		if apierrors.IsNotFound(err) {
+			log.Info("loki2vali: Loki PVC not found, nothing to do")
+			return nil
+		} else {
+			return err
+		}
+	}
+
+	log.Info("loki2vali: Verify that the pod loki-0 is not running, otherwise we cannot rename the PVC")
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "loki-0",
+			Namespace: namespace,
+		},
+	}
+	for {
+		if err := k8sClient.Get(ctx, client.ObjectKeyFromObject(pod), pod); err != nil {
+			if apierrors.IsNotFound(err) {
+				log.Info("loki2vali: pod loki-0 not found, continuing with rename")
+				break
+			} else {
+				return err
+			}
+		}
+		log.Info("loki2vali: Waiting for pod loki-0 to terminate")
+		time.Sleep(1 * time.Second)
+	}
+	deadline, ok := ctx.Deadline()
+	if ok {
+		if time.Until(deadline) < 15*time.Second {
+			return fmt.Errorf("loki2vali: Bailing out to avoid hitting context deadline in this reconciliation loop, time remaining is %vs", time.Until(deadline))
+		} else {
+			log.Info(fmt.Sprintf("loki2vali: Context deadline is %vs in the future, continuing with rename", time.Until(deadline)))
+		}
+	}
+
+	log.Info("loki2vali: Get Loki PV")
+	pvId := pvc.Spec.VolumeName
+	pv := &corev1.PersistentVolume{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: pvId,
+		},
+	}
+	if err := k8sClient.Get(ctx, client.ObjectKeyFromObject(pv), pv); err != nil {
+		return err
+	}
+
+	log.Info("loki2vali: Patch Loki PV's PersistentVolumeReclaimPolicy to be Retain so that it is not deleted when the PVC is deleted")
+	patch := client.MergeFrom(pv.DeepCopy())
+	pv.Spec.PersistentVolumeReclaimPolicy = corev1.PersistentVolumeReclaimRetain
+	if err := k8sClient.Patch(ctx, pv, patch); err != nil {
+		return err
+	}
+
+	defer func() error {
+		log.Info("loki2vali: Patch Vali PV's PersistentVolumeReclaimPolicy to be Delete so that the PV is deleted when the PVC is deleted and we avoid leaking the PV")
+		patch = client.MergeFrom(pv.DeepCopy())
+		pv.Spec.PersistentVolumeReclaimPolicy = corev1.PersistentVolumeReclaimDelete
+		// Ensure that this is executed even when the reconciliation context deadline is exceeded.
+		if err := k8sClient.Patch(context.TODO(), pv, patch); err != nil {
+			return err
+		}
+		return nil
+	}()
+
+	// Wait for one second so kube-controller-manager has time to pick up the PV's new ReclaimPolicy.
+	// The ReclaimPolicy update and the PVC deletion happen very close to each other and we need to ensure that the
+	// ReclaimPolicy update is picked up before the PVC is deleted.
+	time.Sleep(1 * time.Second)
+	log.Info("loki2vali: Delete Loki PVC")
+	if err := kubernetesutils.DeleteObject(ctx, k8sClient, pvc); err != nil {
+		return err
+	}
+
+	lokiPvc := &corev1.PersistentVolumeClaim{}
+	// Until we receive a NotFound error, we assume that the PVC is still there.
+	for {
+		if err := k8sClient.Get(ctx, client.ObjectKeyFromObject(pvc), lokiPvc); err != nil {
+			if apierrors.IsNotFound(err) {
+				log.Info("loki2vali: Loki PVC not found, deletion completed")
+				break
+			} else {
+				return err
+			}
+		}
+		log.Info("loki2vali: Wait for Loki PVC deletion to complete...")
+		time.Sleep(1 * time.Second)
+	}
+
+	// We assert that the PV is still there
+	if err := k8sClient.Get(ctx, client.ObjectKeyFromObject(pv), pv); err != nil {
+		if apierrors.IsNotFound(err) {
+			log.Info("Loki PV not found, it seems that it was deleted as a consequence of deleting the PVC, although the PV's ReclaimPolicy was set to Retain. A new PV will be created in the next iteration.")
+		}
+		return err
+	}
+	if pv.ObjectMeta.DeletionTimestamp != nil {
+		return fmt.Errorf("loki PV has been deleted. A new PV will be created in the next iteration")
+	}
+
+	log.Info("loki2vali: Remove Loki PV's ClaimRef")
+	patch = client.MergeFrom(pv.DeepCopy())
+	pv.Spec.ClaimRef = nil
+	if err := k8sClient.Patch(ctx, pv, patch); err != nil {
+		return err
+	}
+
+	log.Info("loki2vali: Create Vali PVC")
+
+	// Copy and adapt labels for the new PVC
+	labels := pvc.DeepCopy().Labels
+	for k, v := range labels {
+		if v == "loki" {
+			labels[k] = "vali"
+		}
+	}
+
+	valiPvc := &corev1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace:   pvc.Namespace,
+			Name:        "vali-vali-0",
+			Annotations: pvc.DeepCopy().Annotations,
+			Labels:      labels,
+		},
+		Spec: *pvc.Spec.DeepCopy(),
+	}
+	if err := k8sClient.Create(ctx, valiPvc); err != nil {
+		log.Error(err, "loki2vali: Create Vali PVC failed")
+		return err
+	}
+
+	for {
+		if err := k8sClient.Get(ctx, client.ObjectKeyFromObject(valiPvc), valiPvc); err != nil {
+			return err
+		}
+		if valiPvc.Status.Phase == corev1.ClaimBound {
+			break
+		} else if valiPvc.Status.Phase == corev1.ClaimLost {
+			if err := kubernetesutils.DeleteObject(ctx, k8sClient, valiPvc); err != nil {
+				return err
+			}
+			return fmt.Errorf("loki2vali: Vali PVC is in Lost status, deleted it to avoid deadlock. A new PVC will be created in the next iteration")
+		}
+		log.Info("loki2vali: Waiting for Vali PVC to be bound")
+		time.Sleep(1 * time.Second)
+	}
+
+	log.Info("loki2vali: Successfully replaced PVC loki-loki-0 with vali-vali-0")
+
+	return nil
 }
 
 // DeleteSeedLoggingStack deletes all seed resource of the logging stack in the garden namespace.

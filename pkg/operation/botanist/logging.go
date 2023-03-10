@@ -50,6 +50,11 @@ func (b *Botanist) DeploySeedLogging(ctx context.Context) error {
 		return err
 	}
 
+	// If a Loki PVC exists, rename it to Vali.
+	if err := b.renameLokiPvcToVali(ctx); err != nil {
+		return err
+	}
+
 	seedImages, err := b.InjectSeedSeedImages(map[string]interface{}{},
 		images.ImageNameVali,
 		images.ImageNameValiCurator,
@@ -180,6 +185,14 @@ func (b *Botanist) destroyShootLoggingStack(ctx context.Context) error {
 	}
 
 	return common.DeleteVali(ctx, b.SeedClientSet.Client(), b.Shoot.SeedNamespace)
+}
+
+func (b *Botanist) renameLokiPvcToVali(ctx context.Context) error {
+	if err := common.RenameLokiPvcToValiPvc(ctx, b.SeedClientSet.Client(), b.Shoot.SeedNamespace, b.Logger); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (b *Botanist) destroyLokiBasedShootLoggingStackRetainingPvc(ctx context.Context) error {
