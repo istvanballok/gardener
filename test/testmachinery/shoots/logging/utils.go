@@ -62,10 +62,10 @@ func checkRequiredResources(ctx context.Context, k8sSeedClient kubernetes.Interf
 	}
 }
 
-// WaitUntilLokiReceivesLogs waits until the vali instance in <valiNamespace> receives <expected> logs for <key>=<value>
-func WaitUntilLokiReceivesLogs(ctx context.Context, interval time.Duration, f *framework.ShootFramework, valiLabels map[string]string, tenant, valiNamespace, key, value string, expected, delta int, c kubernetes.Interface) error {
+// WaitUntilValiReceivesLogs waits until the vali instance in <valiNamespace> receives <expected> logs for <key>=<value>
+func WaitUntilValiReceivesLogs(ctx context.Context, interval time.Duration, f *framework.ShootFramework, valiLabels map[string]string, tenant, valiNamespace, key, value string, expected, delta int, c kubernetes.Interface) error {
 	err := retry.Until(ctx, interval, func(ctx context.Context) (done bool, err error) {
-		search, err := f.GetLokiLogs(ctx, valiLabels, tenant, valiNamespace, key, value, c)
+		search, err := f.GetValiLogs(ctx, valiLabels, tenant, valiNamespace, key, value, c)
 		if err != nil {
 			return retry.SevereError(err)
 		}
@@ -100,7 +100,7 @@ func WaitUntilLokiReceivesLogs(ctx context.Context, interval time.Duration, f *f
 		dumpLogsCtx, dumpLogsCancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer dumpLogsCancel()
 
-		f.Logger.Info("Dump Loki logs")
+		f.Logger.Info("Dump Vali logs")
 		if dumpError := f.DumpLogsForPodInNamespace(dumpLogsCtx, c, valiNamespace, "vali-0"); dumpError != nil {
 			f.Logger.Error(dumpError, "Error dumping logs for pod")
 		}
@@ -165,7 +165,7 @@ func getCluster(number int) *extensionsv1alpha1.Cluster {
 	}
 }
 
-func getLokiShootService(number int) *corev1.Service {
+func getValiShootService(number int) *corev1.Service {
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      valiName,
