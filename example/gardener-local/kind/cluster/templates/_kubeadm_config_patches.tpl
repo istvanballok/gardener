@@ -2,15 +2,22 @@
 - |
   kind: ClusterConfiguration
   apiServer:
-{{- if .Values.gardener.apiserverRelay.deployed }}  
+{{- if .Values.gardener.apiserverRelay.deployed }}
     certSANs:
       - localhost
       - 127.0.0.1
       - gardener-apiserver.relay.svc.cluster.local
 {{- end }}
     extraArgs:
+      audit-log-path: "-"
+      audit-policy-file: /etc/gardener/controlplane/audit-policy.yaml
 {{- if not .Values.gardener.controlPlane.deployed }}
       authorization-mode: RBAC,Node
+    - name: audit-policy
+      hostPath: /etc/gardener/controlplane/audit-policy.yaml
+      mountPath: /etc/gardener/controlplane/audit-policy.yaml
+      readOnly: true
+      pathType: File
 {{- else }}
       authorization-mode: RBAC,Node,Webhook
       authorization-webhook-config-file: /etc/gardener/controlplane/auth-webhook-kubeconfig-{{ .Values.environment }}.yaml
@@ -20,6 +27,11 @@
     - name: gardener
       hostPath: /etc/gardener/controlplane/auth-webhook-kubeconfig-{{ .Values.environment }}.yaml
       mountPath: /etc/gardener/controlplane/auth-webhook-kubeconfig-{{ .Values.environment }}.yaml
+      readOnly: true
+      pathType: File
+    - name: audit-policy
+      hostPath: /etc/gardener/controlplane/audit-policy.yaml
+      mountPath: /etc/gardener/controlplane/audit-policy.yaml
       readOnly: true
       pathType: File
 {{- end }}
