@@ -57,6 +57,23 @@ spec:
         volumeMounts:
         - mountPath: /data
           name: vali
+      - command:
+        - sh
+        - -c
+        - |
+          set -x
+          # TODO (istvanballok): remove in a future release
+          if [[ -d /data/loki ]]; then
+            echo "Renaming loki folder to vali"
+            time mv /data/loki /data/vali
+          else
+            echo "No loki folder found"
+          fi
+        image: {{ index .Values.global.images "alpine" }}
+        name: rename-loki-to-vali
+        volumeMounts:
+        - mountPath: /data
+          name: vali
       containers:
 {{- if .Values.rbacSidecarEnabled }}
         - name: kube-rbac-proxy
