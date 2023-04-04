@@ -61,6 +61,7 @@ func (b *Botanist) DeploySeedLogging(ctx context.Context) error {
 		images.ImageNameKubeRbacProxy,
 		images.ImageNameTelegraf,
 		images.ImageNameTune2fs,
+		images.ImageNameAlpine,
 	)
 	if err != nil {
 		return err
