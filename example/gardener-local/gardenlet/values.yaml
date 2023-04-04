@@ -1,5 +1,7 @@
 replicaCount: 1
 config:
+  leaderElection:
+    leaderElect: false
   gardenClientConnection:
     kubeconfigSecret:
       name: gardenlet-kubeconfig
