@@ -347,22 +347,24 @@ kind-operator-down: $(KIND)
 
 # speed-up skaffold deployments by building all images concurrently
 export SKAFFOLD_BUILD_CONCURRENCY = 0
-gardener%up gardener%dev gardenlet%up gardenlet%dev operator-up operator-dev: export SKAFFOLD_DEFAULT_REPO = localhost:5001
-gardener%up gardener%dev gardenlet%up gardenlet%dev operator-up operator-dev: export SKAFFOLD_PUSH = true
+gardener%up gardener%dev gardener%debug gardenlet%up gardenlet%dev operator-up operator-dev: export SKAFFOLD_DEFAULT_REPO = localhost:5001
+gardener%up gardener%dev gardener%debug gardenlet%up gardenlet%dev operator-up operator-dev: export SKAFFOLD_PUSH = true
 # use static label for skaffold to prevent rolling all gardener components on every `skaffold` invocation
-gardener%up gardener%dev gardener%down gardenlet%up gardenlet%dev gardenlet%down: export SKAFFOLD_LABEL = skaffold.dev/run-id=gardener-local
+gardener%up gardener%dev gardener%debug gardener%down gardenlet%up gardenlet%dev gardenlet%down: export SKAFFOLD_LABEL = skaffold.dev/run-id=gardener-local
 # set ldflags for skaffold
-gardener%up gardener%dev gardenlet%up gardenlet%dev operator-up operator-dev: export LD_FLAGS = $(shell $(REPO_ROOT)/hack/get-build-ld-flags.sh)
+gardener%up gardener%dev gardener%debug gardenlet%up gardenlet%dev operator-up operator-dev: export LD_FLAGS = $(shell $(REPO_ROOT)/hack/get-build-ld-flags.sh)
 # skaffold dev cleans up deployed modules by default, disable this
-gardener%dev gardenlet%dev operator-dev: export SKAFFOLD_CLEANUP = false
+gardener%dev gardener%debug gardenlet%dev operator-dev: export SKAFFOLD_CLEANUP = false
 # skaffold dev triggers new builds and deployments immediately on file changes by default,
 # this is too heavy in a large project like gardener, so trigger new builds and deployments manually instead.
-gardener%dev gardenlet%dev operator-dev: export SKAFFOLD_TRIGGER = manual
+gardener%dev gardener%debug gardenlet%dev operator-dev: export SKAFFOLD_TRIGGER = manual
 
 gardener-up: $(SKAFFOLD) $(HELM) $(KUBECTL) $(YQ)
 	$(SKAFFOLD) run
 gardener-dev: $(SKAFFOLD) $(HELM) $(KUBECTL) $(YQ)
 	$(SKAFFOLD) dev
+gardener-debug: $(SKAFFOLD) $(HELM) $(KUBECTL) $(YQ)
+	$(SKAFFOLD) debug
 gardener-down: $(SKAFFOLD) $(HELM) $(KUBECTL)
 	./hack/gardener-down.sh
 
