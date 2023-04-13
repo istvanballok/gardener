@@ -63,6 +63,10 @@ var (
 		v1beta1constants.DeploymentNameKubeStateMetrics,
 	)
 
+	requiredLoggingStatefulSetsBefore169 = sets.New(
+		v1beta1constants.StatefulSetNameLoki,
+	)
+
 	requiredLoggingStatefulSets = sets.New(
 		v1beta1constants.StatefulSetNameVali,
 	)
@@ -580,7 +584,12 @@ func (b *HealthChecker) CheckLoggingControlPlane(
 			return nil, err
 		}
 
-		if exitCondition := b.checkRequiredStatefulSets(condition, requiredLoggingStatefulSets, statefulSetList.Items); exitCondition != nil {
+		// TODO(rickardsjp, istvanballok): remove in a future release
+		requiredStatefulSets := requiredLoggingStatefulSets
+		if versionConstraintLessThan169.Check(b.gardenerVersion) {
+			requiredStatefulSets = requiredLoggingStatefulSetsBefore169
+		}
+		if exitCondition := b.checkRequiredStatefulSets(condition, requiredStatefulSets, statefulSetList.Items); exitCondition != nil {
 			return exitCondition, nil
 		}
 		if exitCondition := b.checkStatefulSets(condition, statefulSetList.Items); exitCondition != nil {
