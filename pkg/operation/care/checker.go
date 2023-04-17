@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/clock"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -52,6 +53,11 @@ var (
 		v1beta1constants.ETCDEvents,
 	)
 
+	requiredMonitoringSeedDeploymentsBefore169 = sets.New(
+		v1beta1constants.DeploymentNameGrafana,
+		v1beta1constants.DeploymentNameKubeStateMetrics,
+	)
+
 	requiredMonitoringSeedDeployments = sets.New(
 		v1beta1constants.DeploymentNamePlutono,
 		v1beta1constants.DeploymentNameKubeStateMetrics,
@@ -65,6 +71,16 @@ var (
 		v1beta1constants.DeploymentNameEventLogger,
 	)
 )
+
+// TODO(rickardsjp, istvanballok): remove in a future release
+var versionConstraintLessThan169 *semver.Constraints
+
+func init() {
+	var err error
+
+	versionConstraintLessThan169, err = semver.NewConstraint("< 1.69-0")
+	utilruntime.Must(err)
+}
 
 func mustGardenRoleLabelSelector(gardenRoles ...string) labels.Selector {
 	if len(gardenRoles) == 1 {
@@ -519,9 +535,15 @@ func (b *HealthChecker) CheckMonitoringControlPlane(
 		return nil, err
 	}
 
-	if exitCondition := b.checkRequiredDeployments(condition, requiredMonitoringSeedDeployments, deploymentList.Items); exitCondition != nil {
+	// TODO(rickardsjp, istvanballok): remove in a future release
+	requiredDeployments := requiredMonitoringSeedDeployments
+	if versionConstraintLessThan169.Check(b.gardenerVersion) {
+		requiredDeployments = requiredMonitoringSeedDeploymentsBefore169
+	}
+	if exitCondition := b.checkRequiredDeployments(condition, requiredDeployments, deploymentList.Items); exitCondition != nil {
 		return exitCondition, nil
 	}
+
 	if exitCondition := b.checkDeployments(condition, deploymentList.Items); exitCondition != nil {
 		return exitCondition, nil
 	}
