@@ -122,7 +122,7 @@ featureGates:
 #     <Check out the `spec` in the `50-seed.yaml` file to see what's possible to configure here>
 logging:
   enabled: true
-  loki:
+  vali:
     enabled: true
   shootNodeLogging:
     shootPurposes:
@@ -139,7 +139,7 @@ logging:
 #     output: |-
 #       [Output]
 #           ...
-#   loki:
+#   vali:
 #     enabled: true
 #     garden:
 #       storage: "100Gi"

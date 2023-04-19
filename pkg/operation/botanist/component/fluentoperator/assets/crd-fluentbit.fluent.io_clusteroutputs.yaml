@@ -873,7 +873,7 @@ spec:
                       will be used.
                     type: string
                 type: object
-              loki:
+              vali:
                 description: Loki defines Loki Output configuration.
                 properties:
                   autoKubernetesLabels:

@@ -1,5 +1,5 @@
-{{- define "loki.config.data" -}}
-loki.yaml: |-
+{{- define "vali.config.data" -}}
+vali.yaml: |-
   auth_enabled: {{ .Values.authEnabled }}
   ingester:
     chunk_target_size: 1536000
@@ -29,9 +29,9 @@ loki.yaml: |-
     http_listen_port: 3100
   storage_config:
     boltdb:
-      directory: /data/loki/index
+      directory: /data/vali/index
     filesystem:
-      directory: /data/loki/chunks
+      directory: /data/vali/chunks
   chunk_store_config:
     max_look_back_period: 360h
   table_manager:
@@ -39,7 +39,7 @@ loki.yaml: |-
     retention_period: 360h
 curator.yaml: |-
   LogLevel: info
-  DiskPath: /data/loki/chunks
+  DiskPath: /data/vali/chunks
   TriggerInterval: 1h
   InodeConfig:
     MinFreePercentages: 10
@@ -51,8 +51,8 @@ curator.yaml: |-
     PageSizeForDeletionPercentages: 1
 {{- end -}}
 
-{{- define "loki.config.name" -}}
-loki-config-{{ include "loki.config.data" . | sha256sum | trunc 8 }}
+{{- define "vali.config.name" -}}
+vali-config-{{ include "vali.config.data" . | sha256sum | trunc 8 }}
 {{- end }}
 
 {{- define "telegraf.config.data" -}}
