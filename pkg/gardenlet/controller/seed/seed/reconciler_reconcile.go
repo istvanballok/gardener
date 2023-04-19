@@ -221,7 +221,7 @@ func (r *Reconciler) checkMinimumK8SVersion(version string) (string, error) {
 const (
 	seedBootstrapChartName        = "seed-bootstrap"
 	kubeAPIServerPrefix           = "api-seed"
-	grafanaPrefix                 = "g-seed"
+	plutonoPrefix                 = "g-seed"
 	prometheusPrefix              = "p-seed"
 	ingressTLSCertificateValidity = 730 * 24 * time.Hour // ~2 years, see https://support.apple.com/en-us/HT210176
 )
@@ -682,7 +682,7 @@ func (r *Reconciler) runReconcileSeedFlow(
 			// Apply status from old Object to retain status information
 			new.Object["status"] = old.Object["status"]
 		}
-		grafanaHost    = seed.GetIngressFQDN(grafanaPrefix)
+		plutonoHost    = seed.GetIngressFQDN(plutonoPrefix)
 		prometheusHost = seed.GetIngressFQDN(prometheusPrefix)
 	)
 
@@ -696,19 +696,19 @@ func (r *Reconciler) runReconcileSeedFlow(
 	}
 
 	var (
-		grafanaIngressTLSSecretName    string
+		plutonoIngressTLSSecretName    string
 		prometheusIngressTLSSecretName string
 	)
 
 	if wildcardCert != nil {
-		grafanaIngressTLSSecretName = wildcardCert.GetName()
+		plutonoIngressTLSSecretName = wildcardCert.GetName()
 		prometheusIngressTLSSecretName = wildcardCert.GetName()
 	} else {
-		grafanaIngressTLSSecret, err := secretsManager.Generate(ctx, &secretsutils.CertificateSecretConfig{
-			Name:                        "grafana-tls",
-			CommonName:                  "grafana",
+		plutonoIngressTLSSecret, err := secretsManager.Generate(ctx, &secretsutils.CertificateSecretConfig{
+			Name:                        "plutono-tls",
+			CommonName:                  "plutono",
 			Organization:                []string{"gardener.cloud:monitoring:ingress"},
-			DNSNames:                    []string{seed.GetIngressFQDN(grafanaPrefix)},
+			DNSNames:                    []string{seed.GetIngressFQDN(plutonoPrefix)},
 			CertType:                    secretsutils.ServerCert,
 			Validity:                    pointer.Duration(ingressTLSCertificateValidity),
 			SkipPublishingCACertificate: true,
@@ -730,7 +730,7 @@ func (r *Reconciler) runReconcileSeedFlow(
 			return err
 		}
 
-		grafanaIngressTLSSecretName = grafanaIngressTLSSecret.Name
+		plutonoIngressTLSSecretName = plutonoIngressTLSSecret.Name
 		prometheusIngressTLSSecretName = prometheusIngressTLSSecret.Name
 	}
 
@@ -779,9 +779,9 @@ func (r *Reconciler) runReconcileSeedFlow(
 			"secretName":              prometheusIngressTLSSecretName,
 			"additionalScrapeConfigs": aggregateScrapeConfigs.String(),
 		},
-		"grafana": map[string]interface{}{
-			"hostName":   grafanaHost,
-			"secretName": grafanaIngressTLSSecretName,
+		"plutono": map[string]interface{}{
+			"hostName":   plutonoHost,
+			"secretName": plutonoIngressTLSSecretName,
 		},
 		"fluent-bit": map[string]interface{}{
 			"enabled":                           loggingEnabled,

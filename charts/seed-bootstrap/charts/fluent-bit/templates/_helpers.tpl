@@ -97,9 +97,9 @@ filter-kubernetes.conf: |-
 
   [FILTER]
       Name                parser
-      Match               kubernetes.*grafana*grafana*
+      Match               kubernetes.*plutono*plutono*
       Key_Name            log
-      Parser              grafanaParser
+      Parser              plutonoParser
       Reserve_Data        True
 
   [FILTER]
@@ -192,7 +192,7 @@ parsers.conf: |-
       Time_Format %Y-%m-%dT%H:%M:%S.%L
 
   [PARSER]
-      Name        grafanaParser
+      Name        plutonoParser
       Format      regex
       Regex       ^t=(?<time>\d{4}-\d{2}-\d{2}T[^ ]*)\s+lvl=(?<severity>\w+)\smsg="(?<log>.*)"\s+logger=(?<source>.*)
       Time_Key    time
