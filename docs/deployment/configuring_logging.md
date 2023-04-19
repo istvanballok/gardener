@@ -62,7 +62,7 @@ logging:
 
 ## Configure Central Logging
 
-For central logging, the output configuration of the fluent-bit log processor can be overwritten (`logging.fluentBit.output`) and the Loki instances deployments in the Garden and Shoot namespace can be enabled/disabled (`logging.vali.enabled`), by default Loki is enabled.
+For central logging, the output configuration of the fluent-bit log processor can be overwritten (`logging.fluentBit.output`) and the Vali instances deployments in the Garden and Shoot namespace can be enabled/disabled (`logging.vali.enabled`), by default Vali is enabled.
 
 ```yaml
 logging:
@@ -75,11 +75,11 @@ logging:
     enabled: false
 ```
 
-## Configuring Central Loki Storage Capacity
+## Configuring Central Vali Storage Capacity
 
-By default, the central Loki has `100Gi` of storage capacity.
-To overwrite the current central Loki storage capacity, the `logging.vali.garden.storage` setting in the gardenlet's component configuration should be altered.
-If you need to increase it, you can do so without losing the current data by specifying a higher capacity. By doing so, the Loki's `PersistentVolume` capacity will be increased instead of deleting the current PV.
+By default, the central Vali has `100Gi` of storage capacity.
+To overwrite the current central Vali storage capacity, the `logging.vali.garden.storage` setting in the gardenlet's component configuration should be altered.
+If you need to increase it, you can do so without losing the current data by specifying a higher capacity. By doing so, the Vali's `PersistentVolume` capacity will be increased instead of deleting the current PV.
 However, if you specify less capacity, then the `PersistentVolume` will be deleted and with it the logs, too.
 
 ```yaml
