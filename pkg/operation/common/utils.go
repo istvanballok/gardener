@@ -202,14 +202,10 @@ func RenameLokiPvcToValiPvc(ctx context.Context, k8sClient client.Client, namesp
 	}
 	deadline, ok := ctx.Deadline()
 	if ok {
-		if time.Until(deadline) < 15*time.Second {
-			return fmt.Errorf("loki2vali: Bailing out to avoid hitting context deadline in this reconciliation loop, time remaining is %vs", time.Until(deadline))
-		} else {
-			log.Info(fmt.Sprintf("loki2vali: Context deadline is %vs in the future, continuing with rename", time.Until(deadline)))
-		}
+		log.Info(fmt.Sprintf("loki2vali: Context deadline is %v in the future, continuing with rename", time.Until(deadline)))
 	}
 
-	log.Info("loki2vali: Get Loki PV")
+	log.Info(fmt.Sprintf("loki2vali: Get Loki PV. Time until deadline: %v", time.Until(deadline)))
 	pvId := pvc.Spec.VolumeName
 	pv := &corev1.PersistentVolume{
 		ObjectMeta: metav1.ObjectMeta{
@@ -220,7 +216,7 @@ func RenameLokiPvcToValiPvc(ctx context.Context, k8sClient client.Client, namesp
 		return err
 	}
 
-	log.Info("loki2vali: Patch Loki PV's PersistentVolumeReclaimPolicy to be Retain so that it is not deleted when the PVC is deleted")
+	log.Info(fmt.Sprintf("loki2vali: Patch Loki PV's PersistentVolumeReclaimPolicy to be Retain so that it is not deleted when the PVC is deleted. Time until deadline: %v", time.Until(deadline)))
 	patch := client.MergeFrom(pv.DeepCopy())
 	pv.Spec.PersistentVolumeReclaimPolicy = corev1.PersistentVolumeReclaimRetain
 	if err := k8sClient.Patch(ctx, pv, patch); err != nil {
@@ -228,11 +224,10 @@ func RenameLokiPvcToValiPvc(ctx context.Context, k8sClient client.Client, namesp
 	}
 
 	defer func() error {
-		log.Info("loki2vali: Patch Vali PV's PersistentVolumeReclaimPolicy to be Delete so that the PV is deleted when the PVC is deleted and we avoid leaking the PV")
+		log.Info(fmt.Sprintf("loki2vali: Patch Vali PV's PersistentVolumeReclaimPolicy to be Delete so that the PV is deleted when the PVC is deleted and we avoid leaking the PV. Time until deadline: %v", time.Until(deadline)))
 		patch = client.MergeFrom(pv.DeepCopy())
 		pv.Spec.PersistentVolumeReclaimPolicy = corev1.PersistentVolumeReclaimDelete
-		// Ensure that this is executed even when the reconciliation context deadline is exceeded.
-		if err := k8sClient.Patch(context.TODO(), pv, patch); err != nil {
+		if err := k8sClient.Patch(ctx, pv, patch); err != nil {
 			return err
 		}
 		return nil
@@ -242,7 +237,7 @@ func RenameLokiPvcToValiPvc(ctx context.Context, k8sClient client.Client, namesp
 	// The ReclaimPolicy update and the PVC deletion happen very close to each other and we need to ensure that the
 	// ReclaimPolicy update is picked up before the PVC is deleted.
 	time.Sleep(1 * time.Second)
-	log.Info("loki2vali: Delete Loki PVC")
+	log.Info(fmt.Sprintf("loki2vali: Delete Loki PVC. Time until deadline: %v", time.Until(deadline)))
 	if err := kubernetesutils.DeleteObject(ctx, k8sClient, pvc); err != nil {
 		return err
 	}
@@ -252,35 +247,35 @@ func RenameLokiPvcToValiPvc(ctx context.Context, k8sClient client.Client, namesp
 	for {
 		if err := k8sClient.Get(ctx, client.ObjectKeyFromObject(pvc), lokiPvc); err != nil {
 			if apierrors.IsNotFound(err) {
-				log.Info("loki2vali: Loki PVC not found, deletion completed")
+				log.Info(fmt.Sprintf("loki2vali: Loki PVC not found, deletion completed. Time until deadline: %v", time.Until(deadline)))
 				break
 			} else {
 				return err
 			}
 		}
-		log.Info("loki2vali: Wait for Loki PVC deletion to complete...")
+		log.Info(fmt.Sprintf("loki2vali: Wait for Loki PVC deletion to complete. Time until deadline: %v", time.Until(deadline)))
 		time.Sleep(1 * time.Second)
 	}
 
 	// We assert that the PV is still there
 	if err := k8sClient.Get(ctx, client.ObjectKeyFromObject(pv), pv); err != nil {
 		if apierrors.IsNotFound(err) {
-			log.Info("Loki PV not found, it seems that it was deleted as a consequence of deleting the PVC, although the PV's ReclaimPolicy was set to Retain. A new PV will be created in the next iteration.")
+			log.Info(fmt.Sprintf("Loki PV not found, it seems that it was deleted as a consequence of deleting the PVC, although the PV's ReclaimPolicy was set to Retain. A new PV will be created in the next iteration. Time until deadline: %v", time.Until(deadline)))
 		}
 		return err
 	}
 	if pv.ObjectMeta.DeletionTimestamp != nil {
-		return fmt.Errorf("loki PV has been deleted. A new PV will be created in the next iteration")
+		return fmt.Errorf(fmt.Sprintf("loki PV has been deleted. A new PV will be created in the next iteration. Time until deadline: %v", time.Until(deadline)))
 	}
 
-	log.Info("loki2vali: Remove Loki PV's ClaimRef")
+	log.Info(fmt.Sprintf("loki2vali: Remove Loki PV's ClaimRef. Time until deadline: %v", time.Until(deadline)))
 	patch = client.MergeFrom(pv.DeepCopy())
 	pv.Spec.ClaimRef = nil
 	if err := k8sClient.Patch(ctx, pv, patch); err != nil {
 		return err
 	}
 
-	log.Info("loki2vali: Create Vali PVC")
+	log.Info(fmt.Sprintf("loki2vali: Create Vali PVC. Time until deadline: %v", time.Until(deadline)))
 
 	// Copy and adapt labels for the new PVC
 	labels := pvc.DeepCopy().Labels
@@ -316,11 +311,11 @@ func RenameLokiPvcToValiPvc(ctx context.Context, k8sClient client.Client, namesp
 			}
 			return fmt.Errorf("loki2vali: Vali PVC is in Lost status, deleted it to avoid deadlock. A new PVC will be created in the next iteration")
 		}
-		log.Info("loki2vali: Waiting for Vali PVC to be bound")
+		log.Info(fmt.Sprintf("loki2vali: Waiting for Vali PVC to be bound. Time until deadline: %v", time.Until(deadline)))
 		time.Sleep(1 * time.Second)
 	}
 
-	log.Info("loki2vali: Successfully replaced PVC loki-loki-0 with vali-vali-0")
+	log.Info(fmt.Sprintf("loki2vali: Successfully replaced PVC loki-loki-0 with vali-vali-0. Time until deadline: %v", time.Until(deadline)))
 
 	return nil
 }
