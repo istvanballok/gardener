@@ -21,6 +21,8 @@ if ! grep -q plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"localhost:
   cat <<EOF >> $FILENAME
 [plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:5001"]
   endpoint = ["http://$hostname:5001"]
+[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
+  endpoint = ["http://$hostname:5002"]
 [plugins."io.containerd.grpc.v1.cri".registry.mirrors."gcr.io"]
   endpoint = ["http://$hostname:5003"]
 [plugins."io.containerd.grpc.v1.cri".registry.mirrors."eu.gcr.io"]
