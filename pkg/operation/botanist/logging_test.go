@@ -123,6 +123,7 @@ var _ = Describe("Logging", func() {
 					},
 				},
 				ImageVector: imagevector.ImageVector{
+					{Name: "alpine"},
 					{Name: "vali"},
 					{Name: "vali-curator"},
 					{Name: "kube-rbac-proxy"},
