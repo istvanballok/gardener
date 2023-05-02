@@ -45,7 +45,7 @@ config:
     FullNetworkPoliciesInRuntimeCluster: true
   logging:
     enabled: true
-    loki:
+    vali:
       enabled: true
     shootNodeLogging:
       shootPurposes:

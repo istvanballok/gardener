@@ -24,7 +24,7 @@
       Name              tail
       Tag               kubernetes.*
       Path              /var/log/containers/*.log
-      Exclude_Path      *_garden_fluent-bit-*.log,*_garden_loki-*.log
+      Exclude_Path      *_garden_fluent-bit-*.log,*_garden_vali-*.log
       DB                /var/log/flb_kube.db
       DB.sync           full
       read_from_head    true
@@ -95,9 +95,9 @@
 {{ .Values.fluentBitConfigurationsOverwrites.output | indent 2 }}
 {{ else }}
   [Output]
-      Name gardenerloki
+      Name gardenervali
       Match kubernetes.*
-      Url http://logging.garden.svc:3100/loki/api/v1/push
+      Url http://logging.garden.svc:3100/vali/api/v1/push
       LogLevel info
       BatchWait 60s
       BatchSize 30720
@@ -111,7 +111,7 @@
       LabelMapPath /fluent-bit/etc/kubernetes_label_map.json
       DynamicHostPath {"kubernetes": {"namespace_name": "namespace"}}
       DynamicHostPrefix http://logging.
-      DynamicHostSuffix .svc:3100/loki/api/v1/push
+      DynamicHostSuffix .svc:3100/vali/api/v1/push
       DynamicHostRegex ^shoot-
       DynamicTenant user gardenuser user
       HostnameKeyValue nodename ${NODE_NAME}
@@ -135,9 +135,9 @@
       PreservedLabels origin,namespace_name,pod_name
 
   [Output]
-      Name gardenerloki
+      Name gardenervali
       Match journald.*
-      Url http://logging.garden.svc:3100/loki/api/v1/push
+      Url http://logging.garden.svc:3100/vali/api/v1/push
       LogLevel info
       BatchWait 60s
       BatchSize 30720
