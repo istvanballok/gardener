@@ -170,7 +170,7 @@ func DeleteGrafana(ctx context.Context, k8sClient kubernetes.Interface, namespac
 	deleteOptions := []client.DeleteAllOfOption{
 		client.InNamespace(namespace),
 		client.MatchingLabels{
-			"component": "grafana",
+			"component": "plutono",
 		},
 	}
 
@@ -195,7 +195,7 @@ func DeleteGrafana(ctx context.Context, k8sClient kubernetes.Interface, namespac
 			ctx,
 			&corev1.Service{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "grafana",
+					Name:      "plutono",
 					Namespace: namespace,
 				}},
 		),
