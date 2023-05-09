@@ -190,7 +190,7 @@ var _ = Describe("common", func() {
 		})
 	})
 
-	Describe("#DeleteLoki", func() {
+	Describe("#DeleteVali", func() {
 		var (
 			ctrl *gomock.Controller
 			c    *mockclient.MockClient
@@ -225,7 +225,7 @@ var _ = Describe("common", func() {
 				c.EXPECT().Delete(ctx, resource)
 			}
 
-			err := DeleteLoki(ctx, c, v1beta1constants.GardenNamespace)
+			err := DeleteVali(ctx, c, v1beta1constants.GardenNamespace)
 			Expect(err).ToNot(HaveOccurred())
 		})
 	})
