@@ -329,7 +329,7 @@ datasources:
 `
 
 	if p.values.IsGardenCluster {
-		datasource += `- name: cluster-prometheus
+		datasource += `- name: prometheus
   type: prometheus
   access: proxy
   url: http://` + p.namespace + `-prometheus:80
