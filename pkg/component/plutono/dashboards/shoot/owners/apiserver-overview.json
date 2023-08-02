@@ -3323,22 +3323,63 @@
       {
         "allValue": ".*",
         "current": {
-          "selected": false,
-          "text": "All",
-          "value": "$__all"
+          "selected": true,
+          "tags": [],
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
         },
         "datasource": "prometheus",
-        "definition": "label_values(apiserver_request_total,pod)",
+        "definition": "label_values(apiserver_request_total,job)",
         "description": null,
         "error": null,
         "hide": 0,
         "includeAll": true,
-        "label": "API Server",
+        "label": "Scrape Job",
+        "multi": true,
+        "name": "job",
+        "options": [],
+        "query": {
+          "query": "label_values(apiserver_request_total,job)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "tags": [],
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": "prometheus",
+        "definition": "label_values(apiserver_request_total{job=~\"$job\"},pod)",
+        "description": null,
+        "error": null,
+        "hide": 0,
+        "includeAll": true,
+        "label": "API Server Pod",
         "multi": true,
         "name": "pod",
         "options": [],
         "query": {
-          "query": "label_values(apiserver_request_total,pod)",
+          "query": "label_values(apiserver_request_total{job=~\"$job\"},pod)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 1,
