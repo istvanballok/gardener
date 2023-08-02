@@ -1711,9 +1711,10 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(max_over_time(apiserver_current_inflight_requests{job=~\"$job\",pod=~\"$pod\"}[1m])) by (request_kind)",
+          "exemplar": true,
+          "expr": "sum(max_over_time(apiserver_current_inflight_requests{job=~\"$job\",pod=~\"$pod\"}[1m])) by (request_kind, ${by:csv})",
           "interval": "",
-          "legendFormat": "{{request_kind}}",
+          "legendFormat": "{{request_kind}} {{job}} {{pod}}",
           "refId": "A"
         }
       ],
