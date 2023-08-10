@@ -250,15 +250,8 @@ var _ = Describe("health check", func() {
 			etcdEvents,
 		}
 
-		// TODO(rickardsjp, istvanballok): Remove in release v1.77
-		grafanaDeployment               = newDeployment(seedNamespace, v1beta1constants.DeploymentNameGrafana, v1beta1constants.GardenRoleMonitoring, true)
 		plutonoDeployment               = newDeployment(seedNamespace, v1beta1constants.DeploymentNamePlutono, v1beta1constants.GardenRoleMonitoring, true)
 		kubeStateMetricsShootDeployment = newDeployment(seedNamespace, v1beta1constants.DeploymentNameKubeStateMetrics, v1beta1constants.GardenRoleMonitoring, true)
-
-		requiredMonitoringControlPlaneDeploymentsLessThan171 = []*appsv1.Deployment{
-			grafanaDeployment,
-			kubeStateMetricsShootDeployment,
-		}
 
 		requiredMonitoringControlPlaneDeploymentsGreaterEqual171 = []*appsv1.Deployment{
 			plutonoDeployment,
@@ -273,12 +266,7 @@ var _ = Describe("health check", func() {
 			prometheusStatefulSet,
 		}
 
-		lokiStatefulSet = newStatefulSet(seedNamespace, v1beta1constants.StatefulSetNameLoki, v1beta1constants.GardenRoleLogging, true)
 		valiStatefulSet = newStatefulSet(seedNamespace, v1beta1constants.StatefulSetNameVali, v1beta1constants.GardenRoleLogging, true)
-
-		requiredLoggingControlPlaneStatefulSetsLessThan171 = []*appsv1.StatefulSet{
-			lokiStatefulSet,
-		}
 
 		requiredLoggingControlPlaneStatefulSetsGreaterEqual171 = []*appsv1.StatefulSet{
 			valiStatefulSet,
@@ -879,7 +867,6 @@ var _ = Describe("health check", func() {
 		)
 	})
 
-	gardenerVersion170 := semver.MustParse("1.70.0-mod1")
 	gardenerVersion171 := semver.MustParse("1.71.0")
 	DescribeTable("#CheckMonitoringControlPlane",
 		func(deployments []*appsv1.Deployment, statefulSets []*appsv1.StatefulSet, workerless, wantsShootMonitoring, wantsAlertmanager bool, gardenerVersion *semver.Version, conditionMatcher types.GomegaMatcher) {
@@ -901,24 +888,6 @@ var _ = Describe("health check", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(exitCondition).To(conditionMatcher)
 		},
-		Entry("all healthy (1.70)",
-			requiredMonitoringControlPlaneDeploymentsLessThan171,
-			requiredMonitoringControlPlaneStatefulSets,
-			false,
-			true,
-			true,
-			gardenerVersion170,
-			BeNil()),
-		Entry("all healthy (1.70, workerless)",
-			[]*appsv1.Deployment{
-				grafanaDeployment,
-			},
-			requiredMonitoringControlPlaneStatefulSets,
-			true,
-			true,
-			true,
-			gardenerVersion170,
-			BeNil()),
 		Entry("all healthy (1.71)",
 			requiredMonitoringControlPlaneDeploymentsGreaterEqual171,
 			requiredMonitoringControlPlaneStatefulSets,
@@ -1012,15 +981,6 @@ var _ = Describe("health check", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(exitCondition).To(conditionMatcher)
 		},
-		Entry("all healthy (1.70)",
-			requiredLoggingControlPlaneDeployments,
-			requiredLoggingControlPlaneStatefulSetsLessThan171,
-			false,
-			true,
-			true,
-			BeNil(),
-			gardenerVersion170,
-		),
 		Entry("all healthy (1.71)",
 			requiredLoggingControlPlaneDeployments,
 			requiredLoggingControlPlaneStatefulSetsGreaterEqual171,
