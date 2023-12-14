@@ -147,7 +147,7 @@ func (b *HealthChecker) checkRequiredStatefulSets(condition gardencorev1beta1.Co
 	return b.checkRequiredResourceNames(condition, requiredNames, actualNames, "StatefulSetMissing", "Missing required stateful sets")
 }
 
-func (b *HealthChecker) checkStatefulSets(condition gardencorev1beta1.Condition, objects []appsv1.StatefulSet) *gardencorev1beta1.Condition {
+func (b *HealthChecker) CheckStatefulSets(condition gardencorev1beta1.Condition, objects []appsv1.StatefulSet) *gardencorev1beta1.Condition {
 	for _, object := range objects {
 		if err := health.CheckStatefulSet(&object); err != nil {
 			c := v1beta1helper.FailedCondition(b.clock, b.lastOperation, b.conditionThresholds, condition, "StatefulSetUnhealthy", fmt.Sprintf("Stateful set %q is unhealthy: %v", object.Name, err.Error()))
@@ -359,7 +359,7 @@ func (b *HealthChecker) CheckMonitoringControlPlane(
 	if exitCondition := b.checkRequiredStatefulSets(condition, requiredMonitoringStatefulSets, statefulSetList.Items); exitCondition != nil {
 		return exitCondition, nil
 	}
-	if exitCondition := b.checkStatefulSets(condition, statefulSetList.Items); exitCondition != nil {
+	if exitCondition := b.CheckStatefulSets(condition, statefulSetList.Items); exitCondition != nil {
 		return exitCondition, nil
 	}
 
@@ -396,7 +396,7 @@ func (b *HealthChecker) CheckLoggingControlPlane(
 		if exitCondition := b.checkRequiredStatefulSets(condition, requiredLoggingStatefulSets, statefulSetList.Items); exitCondition != nil {
 			return exitCondition, nil
 		}
-		if exitCondition := b.checkStatefulSets(condition, statefulSetList.Items); exitCondition != nil {
+		if exitCondition := b.CheckStatefulSets(condition, statefulSetList.Items); exitCondition != nil {
 			return exitCondition, nil
 		}
 	}

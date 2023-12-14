@@ -18,6 +18,7 @@ import (
 	"context"
 	"time"
 
+	appsv1 "k8s.io/api/apps/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/clock"
@@ -155,6 +156,19 @@ func (h *health) checkSystemComponents(
 		if exitCondition := h.healthChecker.CheckManagedResource(condition, mr, nil); exitCondition != nil {
 			return exitCondition, nil
 		}
+	}
+
+	sts := &appsv1.StatefulSet{}
+	if err := h.seedClient.Get(ctx, kubernetesutils.Key("garden", "prometheus"), sts); err != nil {
+		if apierrors.IsNotFound(err) {
+			exitCondition := v1beta1helper.FailedCondition(h.clock, h.seed.Status.LastOperation, h.conditionThresholds, condition, "ResourceNotFound", err.Error())
+			return &exitCondition, nil
+		}
+		return nil, err
+	}
+	statefulsets := []appsv1.StatefulSet{*sts}
+	if exitCondition := h.healthChecker.CheckStatefulSets(condition, statefulsets); exitCondition != nil {
+		return exitCondition, nil
 	}
 
 	c := v1beta1helper.UpdatedConditionWithClock(h.clock, condition, gardencorev1beta1.ConditionTrue, "SystemComponentsRunning", "All system components are healthy.")
