@@ -16,12 +16,13 @@ package cache
 
 import (
 	_ "embed"
+	"encoding/json"
 
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
-	monitoringutils "github.com/gardener/gardener/pkg/component/monitoring/utils"
+	"github.com/gardener/gardener/third_party/gopkg.in/yaml.v2"
 )
 
 var (
@@ -39,14 +40,54 @@ var (
 )
 
 func init() {
-	metering = &monitoringv1.PrometheusRule{}
-	utilruntime.Must(runtime.DecodeInto(monitoringutils.Decoder, meteringYAML, metering))
+	metering = &monitoringv1.PrometheusRule{
+		TypeMeta: metav1.TypeMeta{Kind: monitoringv1.PrometheusRuleKind,
+			APIVersion: monitoringv1.SchemeGroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{Name: "metering"},
+		Spec:       *unmarshall(meteringYAML)}
 
-	meteringStateful = &monitoringv1.PrometheusRule{}
-	utilruntime.Must(runtime.DecodeInto(monitoringutils.Decoder, meteringStatefulYAML, meteringStateful))
+	meteringStateful = &monitoringv1.PrometheusRule{
+		TypeMeta: metav1.TypeMeta{Kind: monitoringv1.PrometheusRuleKind,
+			APIVersion: monitoringv1.SchemeGroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{Name: "metering-stateful"},
+		Spec:       *unmarshall(meteringStatefulYAML)}
 
-	recordingRules = &monitoringv1.PrometheusRule{}
-	utilruntime.Must(runtime.DecodeInto(monitoringutils.Decoder, recordingRulesYAML, recordingRules))
+	recordingRules = &monitoringv1.PrometheusRule{
+		TypeMeta: metav1.TypeMeta{Kind: monitoringv1.PrometheusRuleKind,
+			APIVersion: monitoringv1.SchemeGroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{Name: "recording-rules"},
+		Spec:       *unmarshall(recordingRulesYAML)}
+}
+
+func convertMapI2MapS(i interface{}) interface{} {
+	switch x := i.(type) {
+	case map[interface{}]interface{}:
+		m2 := map[string]interface{}{}
+		for k, v := range x {
+			m2[k.(string)] = convertMapI2MapS(v)
+		}
+		return m2
+	case []interface{}:
+		for i, v := range x {
+			x[i] = convertMapI2MapS(v)
+		}
+	}
+	return i
+}
+
+func unmarshall(in []byte) *monitoringv1.PrometheusRuleSpec {
+	var iMap map[interface{}]interface{}
+	utilruntime.Must(yaml.Unmarshal(in, &iMap))
+	sMap := convertMapI2MapS(iMap)
+	jsonData, err := json.Marshal(sMap)
+	utilruntime.Must(err)
+
+	out := &monitoringv1.PrometheusRuleSpec{}
+	utilruntime.Must(json.Unmarshal(jsonData, out))
+	return out
 }
 
 // CentralPrometheusRules returns the central PrometheusRule resources for the cache prometheus.
