@@ -112,7 +112,7 @@ type Values struct {
 	// DataMigration is a struct for migrating data from existing disks.
 	// TODO(rfranzke): Remove this after v1.97 has been released.
 	DataMigration monitoring.DataMigration
-	// RestrictToNamespace controls whether the Prometheus instance should only scrape this target in the same namespace.
+	// RestrictToNamespace controls whether the Prometheus instance should only scrape its targets in its own namespace.
 	RestrictToNamespace bool
 }
 
