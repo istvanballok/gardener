@@ -32,8 +32,8 @@ require (
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.74.0
 	github.com/prometheus/blackbox_exporter v0.24.0
-	github.com/prometheus/client_golang v1.19.0
-	github.com/prometheus/common v0.51.1
+	github.com/prometheus/client_golang v1.18.0
+	github.com/prometheus/common v0.47.0
 	github.com/robfig/cron v1.2.0
 	github.com/spf13/afero v1.11.0
 	github.com/spf13/cobra v1.8.1
@@ -70,7 +70,7 @@ require (
 	k8s.io/kube-aggregator v0.29.6
 	k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00
 	k8s.io/kube-proxy v0.29.6
-	k8s.io/kube-state-metrics/v2 v2.12.0
+	k8s.io/kube-state-metrics/v2 v2.11.0 # small inline changes are possible as well
 	k8s.io/kubelet v0.29.6
 	k8s.io/metrics v0.29.6
 	k8s.io/pod-security-admission v0.29.6
@@ -251,7 +251,7 @@ require (
 	k8s.io/gengo v0.0.0-20230829151522-9cce18d56c01 // indirect
 	k8s.io/klog v1.0.0 // indirect
 	k8s.io/kms v0.29.6 // indirect
-	k8s.io/sample-controller v0.29.3 // indirect
+	k8s.io/sample-controller v0.28.4 // indirect
 	oras.land/oras-go v1.2.4 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.28.0 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
