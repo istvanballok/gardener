@@ -85,6 +85,9 @@ spec:
              ${g}                   ${n}           with several tmux windows
           - '${g}prepare-operator-complete.sh${n}' A 'make kind-operator-up operator-up operator-seed-up' setup,
              ${g}                            ${n}  a complete local "development landscape"
+          - '${g}prepare-extension-setup.sh${n}'   An extension setup, see docs/deployment/getting_started_locally_with_extensions.md
+             ${g}                          ${n}    Note that the extension setup involves creating real cloud resources,
+             ${g}                          ${n}    please be careful to avoid leaking those.
 
           The "Gardener HA" tmux session is prepared by default.
           To switch to another tmux session, please run the respective script.
@@ -556,6 +559,39 @@ spec:
           EOF
           new_window "make generate" "make generate" <<"EOF"
             nice make generate check test test-integration
+          EOF
+          new_window "ad-hoc" "ad-hoc" Enter <<"EOF"
+            # Use this pane for ad-hoc commands
+          EOF
+          tmux select-window -t 0
+          tmux select-pane -t 1
+          SCRIPT_EOF
+
+          cat > /usr/local/bin/prepare-extension-setup.sh <<"SCRIPT_EOF"
+          tmux kill-session 2>/dev/null || true
+          mkdir -p ~/.kube
+          echo '{"current-context": "kind-gardener-extensions"}' > ~/.kube/config
+          source /usr/local/bin/tmux_functions.sh
+          tmux new -d -s extension -n gardener -x 2000 -y 2000
+          tmux select-pane -T top; rm -f ~/.config/procps/toprc
+          for k in top Enter z C c i t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
+          new_pane "Set up the KinD cluster (Garden and Seed)" <<"EOF"
+            sync_kubeconfig example/gardener-local/kind/extensions & sleep 1
+            nice make kind-extensions-up && kubectl wait --for=condition=ready pod -A --all --timeout=-1s
+          EOF
+          new_pane "Set up Gardener" <<"EOF"
+            export KUBECONFIG=$PWD/example/gardener-local/kind/extensions/kubeconfig
+            nice make gardener-extensions-up
+          EOF
+          new_window "shoot" "Create a shoot cluster" <<"EOF"
+            kubectl apply -f example/provider-local/shoot.yaml
+          EOF
+          new_pane "Access the shoot cluster" <<"EOF"
+            KUBECONFIG=<(generate-admin-kubeconf.sh) kubectl get pods -A
+          EOF
+          new_window "seed" "Access the seed cluster" <<"EOF"
+            export KUBECONFIG=$PWD/example/provider-extensions/seed/kubeconfig
+            # Use this pane for working with the seed cluster
           EOF
           new_window "ad-hoc" "ad-hoc" Enter <<"EOF"
             # Use this pane for ad-hoc commands
