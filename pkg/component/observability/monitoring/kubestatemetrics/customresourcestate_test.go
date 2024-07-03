@@ -35,7 +35,7 @@ func expectedCustomResourceStateConfig() string {
 
 	if actual != string(rawExpect) {
 		actualFilePath := os.TempDir() + "/custom-resource-state.actual.yaml"
-		err = os.WriteFile(actualFilePath, rawActual, 0755)
+		err = os.WriteFile(actualFilePath, rawActual, 0644)
 		Expect(err).ToNot(HaveOccurred())
 
 		AbortSuite("CustomResourceState configuration did not match the expectation:\n" +

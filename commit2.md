@@ -2,7 +2,7 @@
 
     This commit adds the necessary configuration changes to readd the VPA
     metrics using the new strategy CustomResourceState from the
-    kube-state-metrics. Such configuration is created programatically thanks
+    kube-state-metrics. Such configuration is created programmatically thanks
     to the the kube-state-metrics dependency downloaded in the previous
     commit. This commit also runs `go mod tidy` in order to make this
     dependency direct.
@@ -48,7 +48,7 @@
 
     A unit test is added to assert the generated configuration matches the
     one originally generated for testing. The test expectation is saved into
-    a yaml file and comitted it to git. The test saves the generated
+    a yaml file and committed to git. The test saves the generated
     configuration in a different file in the temporary folder (but does not
     commit it). The benefit of this approach is that it helps comparing the
     actual and expected configuration, no matter how large the files are: we
@@ -59,7 +59,7 @@
     same. This function is to be used to load the test expectation during
     the test setup. The assertion is performed inside this function to allow
     to give more human readable errors when the long config document actually
-    differs. When the assertion fails, a custom message shows. It tries to
+    differs. When the assertion fails, a custom message is shown. It tries to
     mimic the wording from usual ginkgo test runs but adds a hint in the end
     on how to use the diff command to see the diff. This of course will only
     work on UNIX systems. Developers can review this diff and react
@@ -68,3 +68,6 @@
 
     Finally, this commit also runs `go mod tidy` to make the new
     kube-state-metrics dependency direct.
+
+
+understand the changes in go.mod

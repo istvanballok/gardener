@@ -67,7 +67,7 @@ var _ = Describe("KubeStateMetrics", func() {
 		secretShootAccess            *corev1.Secret
 		vpa                          *vpaautoscalingv1.VerticalPodAutoscaler
 		pdbFor                       func(bool) *policyv1.PodDisruptionBudget
-		customResourceStateConfigMap *corev1.ConfigMap = &corev1.ConfigMap{
+		customResourceStateConfigMap *corev1.ConfigMap = &corev1.ConfigMap{ // should be initialized in the BeforeEach block but the scrapeConfigCache is also assigned in the var block
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "custom-resource-state-config",
 				Namespace: namespace,
@@ -293,7 +293,7 @@ var _ = Describe("KubeStateMetrics", func() {
 						"kube_statefulset_status_replicas," +
 						"kube_statefulset_status_replicas_current," +
 						"kube_statefulset_status_replicas_ready," +
-						"kube_statefulset_status_replicas_updated," +
+						"kube_statefulset_status_replicas_updated," + // does the allow list need to cover the CRS metrics?
 						"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu," +
 						"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_memory," +
 						"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_cpu," +
