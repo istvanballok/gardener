@@ -796,6 +796,7 @@ func (r *Reconciler) newKubeStateMetrics() (component.DeployWaiter, error) {
 		r.GardenNamespace,
 		r.SeedVersion,
 		v1beta1constants.PriorityClassNameSeedSystem600,
+		"-seed",
 	)
 }
 
