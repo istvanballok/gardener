@@ -1,4 +1,8 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
 
 # When "renovating" Plutono dashboards, it is useful to export them
 # and capture the changes in small git commits, otherwise it is hard
