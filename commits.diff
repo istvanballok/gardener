@@ -3,6 +3,7 @@ Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Wed Jul 3 13:39:56 2024 +0200
 
     Add license headers for new file
+    Maybe fixup c789dcdaa A helper script to export Plutono dashboards when renovating them
 
     ```
     make add-license-headers
@@ -3156,10 +3157,10 @@ Date:   Tue Jul 2 16:06:42 2024 +0200
 
     Introduce new "job" variable
 
-    CoreDNS and NodeLocalDNS dashboards are to be merged into one single
+    The CoreDNS and NodeLocalDNS dashboards are to be merged into one single
     dashboard. In order to achieve that, a new job variable is necessary to
     differentiate between the two. Also, the old pod variable needs to capture
-    all labels now .
+    all values now .
 
     Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
 
@@ -3344,6 +3345,8 @@ Date:   Fri Jun 28 16:48:12 2024 +0200
     The change can't be done yet because node-local-dns does not use
     core-dns 1.11 at the moment.
 
+    https://github.com/kubernetes/dns/blob/1.23.1/go.mod#L7
+
 diff --git a/imagevector/images.yaml b/imagevector/images.yaml
 index f4a1bf59d..caa1e7fd3 100644
 --- a/imagevector/images.yaml
@@ -3425,6 +3428,11 @@ Date:   Fri Jun 28 16:21:01 2024 +0200
     Sum by service_kind instead of using it for filtering. The filtering can
     still be done by selecting the series in the panel directly. This also
     allows removing the service_kind dashboard variable.
+
+    Note that Core DNS exposes this programming duration metric only for the
+    headless services with selector case
+    (https://github.com/coredns/coredns/pull/3171)
+    so the service_kind filtering and variable is really not needed.
 
     Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
 
@@ -4706,7 +4714,7 @@ Date:   Fri Jun 28 14:25:45 2024 +0200
 
     Using the offset is not idiomatic. For counter metrics, we should use the
     rate function. The other panel, which is now using the full row, is using
-    the rate so we do not need this panel.
+    the rate function so we do not need this panel.
 
     Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
 
@@ -4969,8 +4977,8 @@ Date:   Fri Jun 28 14:12:00 2024 +0200
     The next panel contains the same information so we decided to drop this
     panel without a replacement.
 
-    To avoid changes in the JSON document, we kept the layout the same. Only
-    the next panel fills the full row now.
+    To avoid changes in the JSON document, we kept the layout the same.
+    The next panel fills the full row now.
 
 diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
 index 055c3ba9a..4ca96c07b 100644
@@ -5320,7 +5328,7 @@ index 000000000..3761217ef
 +#   value: "false" # was "true
 +# ```
 +#
-+# 3.The admin password for Plutono can accessed via:
++# 3.The admin password for Plutono can be accessed via:
 +#
 +# ```bash
 +# k get secret -l name=plutono-admin -o json | jq '.items[].data.password | @base64d' -r
@@ -5334,8 +5342,8 @@ index 000000000..3761217ef
 +#
 +# 5. Make a copy of the provisioned dashboard you plan to edit, keep the
 +# suggested title with the " Copy" suffix, get its generated uid (Settings, JSON
-+# model). Make changes in the Plutono UI, save the dashboard, export it via this
-+# script and create meaningful git commits.
++# model or copy it from the URL). Make changes in the Plutono UI, save the dashboard,
++# export it via this script and create meaningful git commits.
 +#
 +# ```bash
 +# hack/export-dashboard.sh QSl_u1wIz core-dns pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
@@ -5347,7 +5355,7 @@ index 000000000..3761217ef
 +| jq --arg original_uid "$2" '
 +  .dashboard |
 +  .uid |= $original_uid |
-+  .title |= (. | sub(" Copy$"; "")) |
++  .title |= sub(" Copy$"; "") |
 +  del(.id, .iteration, .version)
 +' > "$3"
 
@@ -5460,8 +5468,8 @@ Date:   Fri Jun 21 15:29:31 2024 +0200
 
     {to="1.2.3.4"} = 90 + 190 = 280
     {to="6.7.8.9"}            = 47
-    Alternatively, if we would want to follow the documentation closely and
 
+    Alternatively, if we wanted to follow the documentation closely and
     do the sum first, then the sum by the `to` label at times `t` and
     `t - offset` would be the first step:
 
@@ -5516,6 +5524,7 @@ index d261d5977..07e93ae2a 100644
            "exemplar": true,
 -          "expr": "rate(coredns_forward_responses_total{pod=~\"$pod\"}[$__rate_interval])",
 +          "expr": "rate(coredns_proxy_request_duration_seconds_count{pod=~\"$pod\", proxy_name=\"forward\"}[$__rate_interval])",
+                    here the sum was and is missing, so we get a timeseries for each pod. It is fixed in f8d9cd5b27d2.
            "format": "time_series",
            "interval": "",
            "intervalFactor": 1,
