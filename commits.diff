@@ -1,0 +1,5560 @@
+commit bead794b4dcbef88f71f730b5349b029d030f9d8
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Wed Jul 3 13:39:56 2024 +0200
+
+    Add license headers for new file
+
+    ```
+    make add-license-headers
+    ```
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/hack/export-dashboard.sh b/hack/export-dashboard.sh
+index 2af30fe46..eb7385d39 100755
+--- a/hack/export-dashboard.sh
++++ b/hack/export-dashboard.sh
+@@ -1,4 +1,8 @@
+ #!/bin/sh
++# SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
++#
++# SPDX-License-Identifier: Apache-2.0
++
+
+ # When "renovating" Plutono dashboards, it is useful to export them
+ # and capture the changes in small git commits, otherwise it is hard
+
+commit cbaa6dcf0f65adfbece3a257f92983c415756bce
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Wed Jul 3 13:22:14 2024 +0200
+
+    Unify height for all panels
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
+index 2da06c0e2..c1d8afb58 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
+@@ -51,7 +51,7 @@
+       "fillGradient": 0,
+       "grid": {},
+       "gridPos": {
+-        "h": 7,
++        "h": 8,
+         "w": 24,
+         "x": 0,
+         "y": 1
+@@ -162,7 +162,7 @@
+       "fillGradient": 0,
+       "grid": {},
+       "gridPos": {
+-        "h": 7,
++        "h": 8,
+         "w": 24,
+         "x": 0,
+         "y": 8
+@@ -272,7 +272,7 @@
+       "fillGradient": 0,
+       "grid": {},
+       "gridPos": {
+-        "h": 7,
++        "h": 8,
+         "w": 24,
+         "x": 0,
+         "y": 15
+@@ -378,7 +378,7 @@
+       "fill": 1,
+       "fillGradient": 0,
+       "gridPos": {
+-        "h": 7,
++        "h": 8,
+         "w": 24,
+         "x": 0,
+         "y": 22
+@@ -486,7 +486,7 @@
+       "fillGradient": 0,
+       "grid": {},
+       "gridPos": {
+-        "h": 7,
++        "h": 8,
+         "w": 24,
+         "x": 0,
+         "y": 29
+@@ -597,7 +597,7 @@
+         "overrides": []
+       },
+       "gridPos": {
+-        "h": 7,
++        "h": 8,
+         "w": 24,
+         "x": 0,
+         "y": 36
+@@ -683,7 +683,7 @@
+       "fillGradient": 0,
+       "grid": {},
+       "gridPos": {
+-        "h": 6,
++        "h": 8,
+         "w": 24,
+         "x": 0,
+         "y": 44
+@@ -797,7 +797,7 @@
+       "fill": 1,
+       "fillGradient": 0,
+       "gridPos": {
+-        "h": 7,
++        "h": 8,
+         "w": 24,
+         "x": 0,
+         "y": 50
+@@ -916,7 +916,7 @@
+       "fill": 1,
+       "fillGradient": 0,
+       "gridPos": {
+-        "h": 7,
++        "h": 8,
+         "w": 24,
+         "x": 0,
+         "y": 58
+@@ -1021,7 +1021,7 @@
+       "fill": 1,
+       "fillGradient": 0,
+       "gridPos": {
+-        "h": 7,
++        "h": 8,
+         "w": 24,
+         "x": 0,
+         "y": 65
+@@ -1138,7 +1138,7 @@
+       "fill": 1,
+       "fillGradient": 0,
+       "gridPos": {
+-        "h": 6,
++        "h": 8,
+         "w": 24,
+         "x": 0,
+         "y": 73
+@@ -1237,7 +1237,7 @@
+       "fill": 1,
+       "fillGradient": 0,
+       "gridPos": {
+-        "h": 7,
++        "h": 8,
+         "w": 24,
+         "x": 0,
+         "y": 79
+@@ -1419,7 +1419,7 @@
+       "fill": 1,
+       "fillGradient": 0,
+       "gridPos": {
+-        "h": 7,
++        "h": 8,
+         "w": 24,
+         "x": 0,
+         "y": 95
+
+commit c9a93ef40a76c731f3559ccfd420b50cb9696735
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Wed Jul 3 13:20:01 2024 +0200
+
+    Set fill area to 1 to all panels
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
+index 4efb4a569..2da06c0e2 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
+@@ -47,7 +47,7 @@
+         },
+         "overrides": []
+       },
+-      "fill": 0,
++      "fill": 1,
+       "fillGradient": 0,
+       "grid": {},
+       "gridPos": {
+@@ -158,7 +158,7 @@
+         },
+         "overrides": []
+       },
+-      "fill": 0,
++      "fill": 1,
+       "fillGradient": 0,
+       "grid": {},
+       "gridPos": {
+@@ -268,7 +268,7 @@
+         },
+         "overrides": []
+       },
+-      "fill": 0,
++      "fill": 1,
+       "fillGradient": 0,
+       "grid": {},
+       "gridPos": {
+@@ -375,7 +375,7 @@
+         },
+         "overrides": []
+       },
+-      "fill": 0,
++      "fill": 1,
+       "fillGradient": 0,
+       "gridPos": {
+         "h": 7,
+@@ -482,8 +482,8 @@
+         },
+         "overrides": []
+       },
+-      "fill": 0,
+-      "fillGradient": 3,
++      "fill": 1,
++      "fillGradient": 0,
+       "grid": {},
+       "gridPos": {
+         "h": 7,
+@@ -679,7 +679,7 @@
+         },
+         "overrides": []
+       },
+-      "fill": 0,
++      "fill": 1,
+       "fillGradient": 0,
+       "grid": {},
+       "gridPos": {
+@@ -794,7 +794,7 @@
+         },
+         "overrides": []
+       },
+-      "fill": 0,
++      "fill": 1,
+       "fillGradient": 0,
+       "gridPos": {
+         "h": 7,
+@@ -913,7 +913,7 @@
+         },
+         "overrides": []
+       },
+-      "fill": 0,
++      "fill": 1,
+       "fillGradient": 0,
+       "gridPos": {
+         "h": 7,
+@@ -1018,7 +1018,7 @@
+         },
+         "overrides": []
+       },
+-      "fill": 0,
++      "fill": 1,
+       "fillGradient": 0,
+       "gridPos": {
+         "h": 7,
+@@ -1135,7 +1135,7 @@
+         "defaults": {},
+         "overrides": []
+       },
+-      "fill": 0,
++      "fill": 1,
+       "fillGradient": 0,
+       "gridPos": {
+         "h": 6,
+@@ -1234,7 +1234,7 @@
+         "defaults": {},
+         "overrides": []
+       },
+-      "fill": 0,
++      "fill": 1,
+       "fillGradient": 0,
+       "gridPos": {
+         "h": 7,
+@@ -1416,7 +1416,7 @@
+         "defaults": {},
+         "overrides": []
+       },
+-      "fill": 0,
++      "fill": 1,
+       "fillGradient": 0,
+       "gridPos": {
+         "h": 7,
+
+commit 6b83115d6cbdebaf3bf36e022dfeeb7c819aa888
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Wed Jul 3 11:58:42 2024 +0200
+
+    Show the last 3h by default
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
+index 9bd871f78..4efb4a569 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
+@@ -1588,7 +1588,7 @@
+     ]
+   },
+   "time": {
+-    "from": "now-30m",
++    "from": "now-3h",
+     "to": "now"
+   },
+   "timepicker": {
+
+commit 4c0502fe3740c0ab4773a6a2d07d69b58407c77b
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Wed Jul 3 11:58:25 2024 +0200
+
+    Show both CoreDNS and Node Local DNS metrics by default
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
+index dfe570d97..9bd871f78 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
+@@ -1518,11 +1518,12 @@
+         "allValue": ".*",
+         "current": {
+           "selected": true,
++          "tags": [],
+           "text": [
+-            "node-local-dns"
++            "All"
+           ],
+           "value": [
+-            "node-local-dns"
++            "$__all"
+           ]
+         },
+         "datasource": "prometheus",
+
+commit 0c6595b432a8ac8b0488dfa7c1da7ec42ffc108d
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Wed Jul 3 11:56:31 2024 +0200
+
+    Renovate "Node Cache Errors" panel
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
+index 35e088172..dfe570d97 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
+@@ -1402,7 +1402,7 @@
+       },
+       "id": 38,
+       "panels": [],
+-      "title": "NodeLocalDNS Node Cache Error",
++      "title": "Node Local DNS Node Cache Errors",
+       "type": "row"
+     },
+     {
+@@ -1411,7 +1411,7 @@
+       "dashLength": 10,
+       "dashes": false,
+       "datasource": null,
+-      "description": "Number of errors occurred during node cache operation",
++      "description": "Number of errors occurred during node cache operation.\n\nThis metric is specific for the Node Local DNS, which is a wrapper around CoreDNS: https://github.com/kubernetes/dns/blob/master/cmd/node-cache/app/metrics.go",
+       "fieldConfig": {
+         "defaults": {},
+         "overrides": []
+@@ -1457,7 +1457,7 @@
+           "exemplar": true,
+           "expr": "sum(rate(coredns_nodecache_setup_errors_total{job=~\"$job-errors\", pod=~\"$pod\"}[$__rate_interval])) by (errortype)",
+           "interval": "",
+-          "legendFormat": "Type: {{errortype}}",
++          "legendFormat": "{{errortype}}",
+           "refId": "A"
+         }
+       ],
+@@ -1465,7 +1465,7 @@
+       "timeFrom": null,
+       "timeRegions": [],
+       "timeShift": null,
+-      "title": "Node Cache Errors",
++      "title": "Node Cache Errors by Error Type",
+       "tooltip": {
+         "shared": true,
+         "sort": 0,
+
+commit 621a8fc0474923acb137ac7b035d842a08c47536
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Wed Jul 3 11:51:50 2024 +0200
+
+    Extend description for the "DNS Programming" panels
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
+index 21d5abc27..35e088172 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
+@@ -1130,7 +1130,7 @@
+       "dashLength": 10,
+       "dashes": false,
+       "datasource": null,
+-      "description": "",
++      "description": "Note that this only captures the headless services with selector. ClusterIP and headless services without selector are not captured.\n\nhttps://github.com/coredns/coredns/pull/3171",
+       "fieldConfig": {
+         "defaults": {},
+         "overrides": []
+@@ -1229,7 +1229,7 @@
+       "dashLength": 10,
+       "dashes": false,
+       "datasource": null,
+-      "description": "",
++      "description": "Note that this only captures the headless services with selector. ClusterIP and headless services without selector are not captured.\n\nhttps://github.com/coredns/coredns/pull/3171",
+       "fieldConfig": {
+         "defaults": {},
+         "overrides": []
+@@ -1336,6 +1336,7 @@
+       },
+       "dataFormat": "tsbuckets",
+       "datasource": null,
++      "description": "Note that this only captures the headless services with selector. ClusterIP and headless services without selector are not captured.\n\nhttps://github.com/coredns/coredns/pull/3171",
+       "fieldConfig": {
+         "defaults": {},
+         "overrides": []
+
+commit 44f2cc0509b433a8f8d2726abbe9f3e6670edd7c
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Wed Jul 3 11:36:51 2024 +0200
+
+    Change "DNS Requests Latency" panel to use the full row
+
+    This aligns with the rest of the panels. This commit also improves this
+    panel's legend.
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
+index 466c68c77..21d5abc27 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
+@@ -487,7 +487,7 @@
+       "grid": {},
+       "gridPos": {
+         "h": 7,
+-        "w": 12,
++        "w": 24,
+         "x": 0,
+         "y": 29
+       },
+@@ -529,7 +529,7 @@
+           "format": "time_series",
+           "interval": "",
+           "intervalFactor": 1,
+-          "legendFormat": "{{zone}} 99%",
++          "legendFormat": "99% {{zone}}",
+           "refId": "A",
+           "step": 60
+         }
+@@ -538,7 +538,7 @@
+       "timeFrom": null,
+       "timeRegions": [],
+       "timeShift": null,
+-      "title": "DNS Requests Latency",
++      "title": "DNS Requests Latency by Zone",
+       "tooltip": {
+         "shared": true,
+         "sort": 0,
+@@ -598,9 +598,9 @@
+       },
+       "gridPos": {
+         "h": 7,
+-        "w": 12,
+-        "x": 12,
+-        "y": 29
++        "w": 24,
++        "x": 0,
++        "y": 36
+       },
+       "heatmap": {},
+       "hideZeroBuckets": true,
+@@ -657,7 +657,7 @@
+         "h": 1,
+         "w": 24,
+         "x": 0,
+-        "y": 36
++        "y": 43
+       },
+       "id": 18,
+       "panels": [],
+@@ -686,7 +686,7 @@
+         "h": 6,
+         "w": 24,
+         "x": 0,
+-        "y": 37
++        "y": 44
+       },
+       "hiddenSeries": false,
+       "id": 6,
+@@ -800,7 +800,7 @@
+         "h": 7,
+         "w": 24,
+         "x": 0,
+-        "y": 43
++        "y": 50
+       },
+       "hiddenSeries": false,
+       "id": 2,
+@@ -893,7 +893,7 @@
+         "h": 1,
+         "w": 24,
+         "x": 0,
+-        "y": 50
++        "y": 57
+       },
+       "id": 14,
+       "panels": [],
+@@ -919,7 +919,7 @@
+         "h": 7,
+         "w": 24,
+         "x": 0,
+-        "y": 51
++        "y": 58
+       },
+       "hiddenSeries": false,
+       "id": 23,
+@@ -1024,7 +1024,7 @@
+         "h": 7,
+         "w": 24,
+         "x": 0,
+-        "y": 58
++        "y": 65
+       },
+       "hiddenSeries": false,
+       "id": 12,
+@@ -1116,7 +1116,7 @@
+         "h": 1,
+         "w": 24,
+         "x": 0,
+-        "y": 65
++        "y": 72
+       },
+       "id": 35,
+       "panels": [],
+@@ -1141,7 +1141,7 @@
+         "h": 6,
+         "w": 24,
+         "x": 0,
+-        "y": 66
++        "y": 73
+       },
+       "hiddenSeries": false,
+       "id": 32,
+@@ -1240,7 +1240,7 @@
+         "h": 7,
+         "w": 24,
+         "x": 0,
+-        "y": 72
++        "y": 79
+       },
+       "hiddenSeries": false,
+       "id": 33,
+@@ -1344,7 +1344,7 @@
+         "h": 8,
+         "w": 24,
+         "x": 0,
+-        "y": 79
++        "y": 86
+       },
+       "heatmap": {},
+       "hideZeroBuckets": true,
+@@ -1397,7 +1397,7 @@
+         "h": 1,
+         "w": 24,
+         "x": 0,
+-        "y": 87
++        "y": 94
+       },
+       "id": 38,
+       "panels": [],
+@@ -1421,7 +1421,7 @@
+         "h": 7,
+         "w": 24,
+         "x": 0,
+-        "y": 88
++        "y": 95
+       },
+       "hiddenSeries": false,
+       "id": 40,
+
+commit e9a3cd40cc379d091878951271ba4fb73a4dc9f7
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Wed Jul 3 11:30:56 2024 +0200
+
+    Split "DNS Requests" panel
+
+    The original panel contained three queries grouping DNS requests by zone,
+    protocol and type. This commit splits this into three different panels for
+    better visualization.
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
+index 1ff898101..466c68c77 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
+@@ -94,26 +94,228 @@
+           "format": "time_series",
+           "interval": "",
+           "intervalFactor": 1,
+-          "legendFormat": "By Record: {{exported_type}}",
++          "legendFormat": "{{exported_type}}",
+           "refId": "A",
+           "step": 60
++        }
++      ],
++      "thresholds": [],
++      "timeFrom": null,
++      "timeRegions": [],
++      "timeShift": null,
++      "title": "DNS Requests by Record",
++      "tooltip": {
++        "shared": true,
++        "sort": 0,
++        "value_type": "cumulative"
++      },
++      "type": "graph",
++      "xaxis": {
++        "buckets": null,
++        "mode": "time",
++        "name": null,
++        "show": true,
++        "values": []
++      },
++      "yaxes": [
++        {
++          "$$hashKey": "object:149",
++          "decimals": null,
++          "format": "reqps",
++          "label": "",
++          "logBase": 1,
++          "max": null,
++          "min": 0,
++          "show": true
++        },
++        {
++          "$$hashKey": "object:150",
++          "format": "pps",
++          "logBase": 1,
++          "max": null,
++          "min": 0,
++          "show": false
++        }
++      ],
++      "yaxis": {
++        "align": false,
++        "alignLevel": null
++      }
++    },
++    {
++      "aliasColors": {},
++      "bars": false,
++      "dashLength": 10,
++      "dashes": false,
++      "datasource": "prometheus",
++      "decimals": null,
++      "description": "Rate of DNS Requests received by DNS pods.\n\nNote: The `dot` zone is the local zone managed by the DNS instance.",
++      "editable": true,
++      "error": false,
++      "fieldConfig": {
++        "defaults": {
++          "links": []
+         },
++        "overrides": []
++      },
++      "fill": 0,
++      "fillGradient": 0,
++      "grid": {},
++      "gridPos": {
++        "h": 7,
++        "w": 24,
++        "x": 0,
++        "y": 8
++      },
++      "hiddenSeries": false,
++      "id": 42,
++      "legend": {
++        "alignAsTable": true,
++        "avg": true,
++        "current": true,
++        "max": true,
++        "min": false,
++        "rightSide": true,
++        "show": true,
++        "sort": "current",
++        "sortDesc": true,
++        "total": false,
++        "values": true
++      },
++      "lines": true,
++      "linewidth": 1,
++      "links": [],
++      "nullPointMode": "null",
++      "options": {
++        "alertThreshold": true
++      },
++      "percentage": false,
++      "pluginVersion": "7.5.31",
++      "pointradius": 5,
++      "points": false,
++      "renderer": "flot",
++      "seriesOverrides": [],
++      "spaceLength": 10,
++      "stack": false,
++      "steppedLine": false,
++      "targets": [
+         {
+           "exemplar": false,
+           "expr": "sum(rate(coredns_dns_requests_total{job=~\"$job\", pod=~\"$pod\"}[$__rate_interval])) by (proto)",
+           "format": "time_series",
+           "interval": "",
+           "intervalFactor": 1,
+-          "legendFormat": "By Protocol: {{proto}}",
++          "legendFormat": "{{proto}}",
+           "refId": "B"
++        }
++      ],
++      "thresholds": [],
++      "timeFrom": null,
++      "timeRegions": [],
++      "timeShift": null,
++      "title": "DNS Requests by Protocol",
++      "tooltip": {
++        "shared": true,
++        "sort": 0,
++        "value_type": "cumulative"
++      },
++      "type": "graph",
++      "xaxis": {
++        "buckets": null,
++        "mode": "time",
++        "name": null,
++        "show": true,
++        "values": []
++      },
++      "yaxes": [
++        {
++          "$$hashKey": "object:149",
++          "decimals": null,
++          "format": "reqps",
++          "label": "",
++          "logBase": 1,
++          "max": null,
++          "min": 0,
++          "show": true
++        },
++        {
++          "$$hashKey": "object:150",
++          "format": "pps",
++          "logBase": 1,
++          "max": null,
++          "min": 0,
++          "show": false
++        }
++      ],
++      "yaxis": {
++        "align": false,
++        "alignLevel": null
++      }
++    },
++    {
++      "aliasColors": {},
++      "bars": false,
++      "dashLength": 10,
++      "dashes": false,
++      "datasource": "prometheus",
++      "decimals": null,
++      "description": "Rate of DNS Requests received by DNS pods.\n\nNote: The `dot` zone is the local zone managed by the DNS instance.",
++      "editable": true,
++      "error": false,
++      "fieldConfig": {
++        "defaults": {
++          "links": []
+         },
++        "overrides": []
++      },
++      "fill": 0,
++      "fillGradient": 0,
++      "grid": {},
++      "gridPos": {
++        "h": 7,
++        "w": 24,
++        "x": 0,
++        "y": 15
++      },
++      "hiddenSeries": false,
++      "id": 41,
++      "legend": {
++        "alignAsTable": true,
++        "avg": true,
++        "current": true,
++        "max": true,
++        "min": false,
++        "rightSide": true,
++        "show": true,
++        "sort": "current",
++        "sortDesc": true,
++        "total": false,
++        "values": true
++      },
++      "lines": true,
++      "linewidth": 1,
++      "links": [],
++      "nullPointMode": "null",
++      "options": {
++        "alertThreshold": true
++      },
++      "percentage": false,
++      "pluginVersion": "7.5.31",
++      "pointradius": 5,
++      "points": false,
++      "renderer": "flot",
++      "seriesOverrides": [],
++      "spaceLength": 10,
++      "stack": false,
++      "steppedLine": false,
++      "targets": [
+         {
+           "exemplar": false,
+           "expr": "sum(rate(coredns_dns_requests_total{job=~\"$job\", pod=~\"$pod\"}[$__rate_interval])) by (zone)",
+           "format": "time_series",
+           "interval": "",
+           "intervalFactor": 1,
+-          "legendFormat": "By Zone: {{zone}}",
++          "legendFormat": "{{zone}}",
+           "refId": "C"
+         }
+       ],
+@@ -121,7 +323,7 @@
+       "timeFrom": null,
+       "timeRegions": [],
+       "timeShift": null,
+-      "title": "DNS Requests",
++      "title": "DNS Requests by Zone",
+       "tooltip": {
+         "shared": true,
+         "sort": 0,
+@@ -179,7 +381,7 @@
+         "h": 7,
+         "w": 24,
+         "x": 0,
+-        "y": 8
++        "y": 22
+       },
+       "hiddenSeries": false,
+       "id": 16,
+@@ -287,7 +489,7 @@
+         "h": 7,
+         "w": 12,
+         "x": 0,
+-        "y": 15
++        "y": 29
+       },
+       "hiddenSeries": false,
+       "id": 26,
+@@ -398,7 +600,7 @@
+         "h": 7,
+         "w": 12,
+         "x": 12,
+-        "y": 15
++        "y": 29
+       },
+       "heatmap": {},
+       "hideZeroBuckets": true,
+@@ -455,7 +657,7 @@
+         "h": 1,
+         "w": 24,
+         "x": 0,
+-        "y": 22
++        "y": 36
+       },
+       "id": 18,
+       "panels": [],
+@@ -484,7 +686,7 @@
+         "h": 6,
+         "w": 24,
+         "x": 0,
+-        "y": 23
++        "y": 37
+       },
+       "hiddenSeries": false,
+       "id": 6,
+@@ -598,7 +800,7 @@
+         "h": 7,
+         "w": 24,
+         "x": 0,
+-        "y": 29
++        "y": 43
+       },
+       "hiddenSeries": false,
+       "id": 2,
+@@ -691,7 +893,7 @@
+         "h": 1,
+         "w": 24,
+         "x": 0,
+-        "y": 36
++        "y": 50
+       },
+       "id": 14,
+       "panels": [],
+@@ -717,7 +919,7 @@
+         "h": 7,
+         "w": 24,
+         "x": 0,
+-        "y": 37
++        "y": 51
+       },
+       "hiddenSeries": false,
+       "id": 23,
+@@ -822,7 +1024,7 @@
+         "h": 7,
+         "w": 24,
+         "x": 0,
+-        "y": 44
++        "y": 58
+       },
+       "hiddenSeries": false,
+       "id": 12,
+@@ -914,7 +1116,7 @@
+         "h": 1,
+         "w": 24,
+         "x": 0,
+-        "y": 51
++        "y": 65
+       },
+       "id": 35,
+       "panels": [],
+@@ -939,7 +1141,7 @@
+         "h": 6,
+         "w": 24,
+         "x": 0,
+-        "y": 52
++        "y": 66
+       },
+       "hiddenSeries": false,
+       "id": 32,
+@@ -1038,7 +1240,7 @@
+         "h": 7,
+         "w": 24,
+         "x": 0,
+-        "y": 58
++        "y": 72
+       },
+       "hiddenSeries": false,
+       "id": 33,
+@@ -1142,7 +1344,7 @@
+         "h": 8,
+         "w": 24,
+         "x": 0,
+-        "y": 65
++        "y": 79
+       },
+       "heatmap": {},
+       "hideZeroBuckets": true,
+@@ -1195,7 +1397,7 @@
+         "h": 1,
+         "w": 24,
+         "x": 0,
+-        "y": 73
++        "y": 87
+       },
+       "id": 38,
+       "panels": [],
+@@ -1219,7 +1421,7 @@
+         "h": 7,
+         "w": 24,
+         "x": 0,
+-        "y": 74
++        "y": 88
+       },
+       "hiddenSeries": false,
+       "id": 40,
+
+commit f07db351180eee5ac608c506193aa3721861a5c9
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Tue Jul 2 18:17:11 2024 +0200
+
+    Rename CoreDNS dashboard to DNS
+
+    Also rename some references to it.
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/hack/export-dashboard.sh b/hack/export-dashboard.sh
+index 3761217ef..2af30fe46 100755
+--- a/hack/export-dashboard.sh
++++ b/hack/export-dashboard.sh
+@@ -46,7 +46,7 @@
+ # script and create meaningful git commits.
+ #
+ # ```bash
+-# hack/export-dashboard.sh QSl_u1wIz core-dns pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
++# hack/export-dashboard.sh QSl_u1wIz dns pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
+ # ```
+
+ cd "$(dirname "$(realpath "$0")")/.." || exit 1
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
+similarity index 99%
+rename from pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+rename to pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
+index 7b130fd83..1ff898101 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
+@@ -38,7 +38,7 @@
+       "dashes": false,
+       "datasource": "prometheus",
+       "decimals": null,
+-      "description": "Rate of DNS Requests received by CoreDNS.\n\nNote: The `dot` zone is the local zone managed by the CoreDNS instance.",
++      "description": "Rate of DNS Requests received by DNS pods.\n\nNote: The `dot` zone is the local zone managed by the DNS instance.",
+       "editable": true,
+       "error": false,
+       "fieldConfig": {
+@@ -1411,6 +1411,6 @@
+     ]
+   },
+   "timezone": "utc",
+-  "title": "CoreDNS",
+-  "uid": "core-dns"
++  "title": "DNS",
++  "uid": "dns"
+ }
+
+commit 4e164e49a1d84055fa725d147aae08fd82932310
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Wed Jul 3 13:42:22 2024 +0200
+
+    Remove Node Local DNS dashboard
+
+    This dashboard has now been migrated to the CoreDNS dashboard. This
+    commits also removes code references to the old NodeLocalDNS dashboard.
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns/node-local-dns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns/node-local-dns-dashboard.json
+deleted file mode 100644
+index aa5ad1ce1..000000000
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns/node-local-dns-dashboard.json
++++ /dev/null
+@@ -1,1617 +0,0 @@
+-{
+-  "annotations": {
+-    "list": [
+-      {
+-        "builtIn": 1,
+-        "datasource": "-- Plutono --",
+-        "enable": true,
+-        "hide": true,
+-        "iconColor": "rgba(0, 211, 255, 1)",
+-        "name": "Annotations & Alerts",
+-        "type": "dashboard"
+-      }
+-    ]
+-  },
+-  "editable": true,
+-  "gnetId": null,
+-  "graphTooltip": 1,
+-  "iteration": 1622451379957,
+-  "links": [],
+-  "panels": [
+-    {
+-      "aliasColors": {},
+-      "bars": false,
+-      "dashLength": 10,
+-      "dashes": false,
+-      "datasource": "prometheus",
+-      "description": "Average rate of DNS requests (in packets per second) split by DNS record types, used protocol and DNS zone.\n\nNote: The `dot` zone is the local zone managed by the NodeLocalDNS instance.",
+-      "editable": true,
+-      "error": false,
+-      "fieldConfig": {
+-        "defaults": {
+-          "links": []
+-        },
+-        "overrides": []
+-      },
+-      "fill": 1,
+-      "fillGradient": 0,
+-      "grid": {},
+-      "gridPos": {
+-        "h": 7,
+-        "w": 12,
+-        "x": 0,
+-        "y": 0
+-      },
+-      "hiddenSeries": false,
+-      "id": 8,
+-      "legend": {
+-        "alignAsTable": true,
+-        "avg": true,
+-        "current": true,
+-        "max": true,
+-        "min": false,
+-        "rightSide": true,
+-        "show": true,
+-        "sort": "current",
+-        "sortDesc": true,
+-        "total": false,
+-        "values": true
+-      },
+-      "lines": true,
+-      "linewidth": 2,
+-      "links": [],
+-      "nullPointMode": "connected",
+-      "options": {
+-        "alertThreshold": true
+-      },
+-      "percentage": false,
+-      "pluginVersion": "7.5.4",
+-      "pointradius": 5,
+-      "points": false,
+-      "renderer": "flot",
+-      "seriesOverrides": [],
+-      "spaceLength": 10,
+-      "stack": false,
+-      "steppedLine": false,
+-      "targets": [
+-        {
+-          "expr": "sum(rate(coredns_dns_request_duration_seconds_count{pod=~\"$pod\"}[$__rate_interval])) by (type)",
+-          "format": "time_series",
+-          "interval": "",
+-          "intervalFactor": 2,
+-          "legendFormat": "By Record: {{type}}",
+-          "refId": "A",
+-          "step": 60
+-        },
+-        {
+-          "expr": "sum(rate(coredns_dns_request_duration_seconds_count{pod=~\"$pod\"}[$__rate_interval])) by (proto)",
+-          "format": "time_series",
+-          "interval": "",
+-          "intervalFactor": 1,
+-          "legendFormat": "By Protocol: {{proto}}",
+-          "refId": "B"
+-        },
+-        {
+-          "expr": "sum(rate(coredns_dns_request_duration_seconds_count{pod=~\"$pod\"}[$__rate_interval])) by (zone)",
+-          "format": "time_series",
+-          "interval": "",
+-          "intervalFactor": 1,
+-          "legendFormat": "By Zone: {{zone}}",
+-          "refId": "C"
+-        }
+-      ],
+-      "thresholds": [],
+-      "timeFrom": null,
+-      "timeRegions": [],
+-      "timeShift": null,
+-      "title": "DNS Requests (Packets per Second)",
+-      "tooltip": {
+-        "shared": true,
+-        "sort": 0,
+-        "value_type": "cumulative"
+-      },
+-      "type": "graph",
+-      "xaxis": {
+-        "buckets": null,
+-        "mode": "time",
+-        "name": null,
+-        "show": true,
+-        "values": []
+-      },
+-      "yaxes": [
+-        {
+-          "$$hashKey": "object:99",
+-          "format": "pps",
+-          "logBase": 1,
+-          "max": null,
+-          "min": 0,
+-          "show": true
+-        },
+-        {
+-          "$$hashKey": "object:100",
+-          "format": "pps",
+-          "logBase": 1,
+-          "max": null,
+-          "min": 0,
+-          "show": false
+-        }
+-      ],
+-      "yaxis": {
+-        "align": false,
+-        "alignLevel": null
+-      }
+-    },
+-    {
+-      "aliasColors": {},
+-      "bars": false,
+-      "dashLength": 10,
+-      "dashes": false,
+-      "datasource": "prometheus",
+-      "decimals": 0,
+-      "description": "Rate of DNS Requests received by NodeLocalDNS.\n\nNote: The `dot` zone is the local zone managed by the NodeLocalDNS instance.",
+-      "editable": true,
+-      "error": false,
+-      "fieldConfig": {
+-        "defaults": {
+-          "links": []
+-        },
+-        "overrides": []
+-      },
+-      "fill": 1,
+-      "fillGradient": 3,
+-      "grid": {},
+-      "gridPos": {
+-        "h": 7,
+-        "w": 12,
+-        "x": 12,
+-        "y": 0
+-      },
+-      "hiddenSeries": false,
+-      "id": 20,
+-      "legend": {
+-        "alignAsTable": true,
+-        "avg": true,
+-        "current": true,
+-        "max": true,
+-        "min": false,
+-        "rightSide": true,
+-        "show": true,
+-        "sort": "current",
+-        "sortDesc": true,
+-        "total": false,
+-        "values": true
+-      },
+-      "lines": true,
+-      "linewidth": 2,
+-      "links": [],
+-      "nullPointMode": "connected",
+-      "options": {
+-        "alertThreshold": true
+-      },
+-      "percentage": false,
+-      "pluginVersion": "7.5.4",
+-      "pointradius": 5,
+-      "points": false,
+-      "renderer": "flot",
+-      "seriesOverrides": [],
+-      "spaceLength": 10,
+-      "stack": false,
+-      "steppedLine": true,
+-      "targets": [
+-        {
+-          "exemplar": true,
+-          "expr": "sum(rate(coredns_dns_requests_total{pod=~\"$pod\"}[$__rate_interval])) by (type)",
+-          "format": "time_series",
+-          "interval": "",
+-          "intervalFactor": 2,
+-          "legendFormat": "By Record: {{type}}",
+-          "refId": "A",
+-          "step": 60
+-        },
+-        {
+-          "expr": "sum(rate(coredns_dns_requests_total{pod=~\"$pod\"}[$__rate_interval])) by (proto)",
+-          "format": "time_series",
+-          "interval": "",
+-          "intervalFactor": 1,
+-          "legendFormat": "By Protocol: {{proto}}",
+-          "refId": "B"
+-        },
+-        {
+-          "expr": "sum(rate(coredns_dns_requests_total{pod=~\"$pod\"}[$__rate_interval])) by (zone)",
+-          "format": "time_series",
+-          "interval": "",
+-          "intervalFactor": 1,
+-          "legendFormat": "By Zone: {{zone}}",
+-          "refId": "C"
+-        }
+-      ],
+-      "thresholds": [],
+-      "timeFrom": null,
+-      "timeRegions": [],
+-      "timeShift": null,
+-      "title": "DNS Requests (Packets)",
+-      "tooltip": {
+-        "shared": true,
+-        "sort": 0,
+-        "value_type": "cumulative"
+-      },
+-      "type": "graph",
+-      "xaxis": {
+-        "buckets": null,
+-        "mode": "time",
+-        "name": null,
+-        "show": true,
+-        "values": []
+-      },
+-      "yaxes": [
+-        {
+-          "$$hashKey": "object:149",
+-          "decimals": 0,
+-          "format": "packets",
+-          "label": "",
+-          "logBase": 1,
+-          "max": null,
+-          "min": 0,
+-          "show": true
+-        },
+-        {
+-          "$$hashKey": "object:150",
+-          "format": "pps",
+-          "logBase": 1,
+-          "max": null,
+-          "min": 0,
+-          "show": false
+-        }
+-      ],
+-      "yaxis": {
+-        "align": false,
+-        "alignLevel": null
+-      }
+-    },
+-    {
+-      "aliasColors": {},
+-      "bars": false,
+-      "dashLength": 10,
+-      "dashes": false,
+-      "datasource": null,
+-      "description": "The average per second rate of lookup requests split by their status codes (rcode).",
+-      "fieldConfig": {
+-        "defaults": {
+-          "links": []
+-        },
+-        "overrides": []
+-      },
+-      "fill": 1,
+-      "fillGradient": 0,
+-      "gridPos": {
+-        "h": 7,
+-        "w": 12,
+-        "x": 0,
+-        "y": 7
+-      },
+-      "hiddenSeries": false,
+-      "id": 16,
+-      "legend": {
+-        "avg": false,
+-        "current": false,
+-        "max": false,
+-        "min": false,
+-        "show": true,
+-        "total": false,
+-        "values": false
+-      },
+-      "lines": true,
+-      "linewidth": 1,
+-      "links": [],
+-      "nullPointMode": "null",
+-      "options": {
+-        "alertThreshold": true
+-      },
+-      "percentage": false,
+-      "pluginVersion": "7.5.4",
+-      "pointradius": 2,
+-      "points": false,
+-      "renderer": "flot",
+-      "seriesOverrides": [],
+-      "spaceLength": 10,
+-      "stack": false,
+-      "steppedLine": false,
+-      "targets": [
+-        {
+-          "exemplar": true,
+-          "expr": "rate(coredns_dns_responses_total{pod=~\"$pod\"}[$__rate_interval])",
+-          "format": "time_series",
+-          "interval": "",
+-          "intervalFactor": 1,
+-          "legendFormat": "{{rcode}}",
+-          "refId": "A"
+-        }
+-      ],
+-      "thresholds": [],
+-      "timeFrom": null,
+-      "timeRegions": [],
+-      "timeShift": null,
+-      "title": "DNS Lookup Responses (Per Second)",
+-      "tooltip": {
+-        "shared": true,
+-        "sort": 0,
+-        "value_type": "individual"
+-      },
+-      "type": "graph",
+-      "xaxis": {
+-        "buckets": null,
+-        "mode": "time",
+-        "name": null,
+-        "show": true,
+-        "values": []
+-      },
+-      "yaxes": [
+-        {
+-          "$$hashKey": "object:1544",
+-          "format": "short",
+-          "label": null,
+-          "logBase": 1,
+-          "max": null,
+-          "min": null,
+-          "show": true
+-        },
+-        {
+-          "$$hashKey": "object:1545",
+-          "format": "short",
+-          "label": null,
+-          "logBase": 1,
+-          "max": null,
+-          "min": null,
+-          "show": true
+-        }
+-      ],
+-      "yaxis": {
+-        "align": false,
+-        "alignLevel": null
+-      }
+-    },
+-    {
+-      "aliasColors": {},
+-      "bars": false,
+-      "dashLength": 10,
+-      "dashes": false,
+-      "datasource": null,
+-      "decimals": 0,
+-      "description": "Lookup requests split by their status codes (rcode).",
+-      "fieldConfig": {
+-        "defaults": {
+-          "links": []
+-        },
+-        "overrides": []
+-      },
+-      "fill": 1,
+-      "fillGradient": 0,
+-      "gridPos": {
+-        "h": 7,
+-        "w": 12,
+-        "x": 12,
+-        "y": 7
+-      },
+-      "hiddenSeries": false,
+-      "id": 21,
+-      "legend": {
+-        "avg": false,
+-        "current": false,
+-        "max": false,
+-        "min": false,
+-        "show": true,
+-        "total": false,
+-        "values": false
+-      },
+-      "lines": true,
+-      "linewidth": 1,
+-      "links": [],
+-      "nullPointMode": "null",
+-      "options": {
+-        "alertThreshold": true
+-      },
+-      "percentage": false,
+-      "pluginVersion": "7.5.4",
+-      "pointradius": 2,
+-      "points": false,
+-      "renderer": "flot",
+-      "seriesOverrides": [],
+-      "spaceLength": 10,
+-      "stack": false,
+-      "steppedLine": true,
+-      "targets": [
+-        {
+-          "exemplar": true,
+-          "expr": "sum(coredns_dns_responses_total{pod=~\"$pod\"} - coredns_dns_responses_total{pod=~\"$pod\"} offset $__interval) by (rcode)",
+-          "format": "time_series",
+-          "interval": "",
+-          "intervalFactor": 1,
+-          "legendFormat": "{{rcode}}",
+-          "refId": "A"
+-        }
+-      ],
+-      "thresholds": [],
+-      "timeFrom": null,
+-      "timeRegions": [],
+-      "timeShift": null,
+-      "title": "DNS Lookup Responses",
+-      "tooltip": {
+-        "shared": true,
+-        "sort": 0,
+-        "value_type": "individual"
+-      },
+-      "type": "graph",
+-      "xaxis": {
+-        "buckets": null,
+-        "mode": "time",
+-        "name": null,
+-        "show": true,
+-        "values": []
+-      },
+-      "yaxes": [
+-        {
+-          "$$hashKey": "object:253",
+-          "decimals": 0,
+-          "format": "short",
+-          "label": "",
+-          "logBase": 1,
+-          "max": null,
+-          "min": null,
+-          "show": true
+-        },
+-        {
+-          "$$hashKey": "object:254",
+-          "format": "short",
+-          "label": null,
+-          "logBase": 1,
+-          "max": null,
+-          "min": null,
+-          "show": true
+-        }
+-      ],
+-      "yaxis": {
+-        "align": false,
+-        "alignLevel": null
+-      }
+-    },
+-    {
+-      "aliasColors": {},
+-      "bars": false,
+-      "dashLength": 10,
+-      "dashes": false,
+-      "datasource": "prometheus",
+-      "decimals": 0,
+-      "description": "DNS Requests Latency in seconds",
+-      "editable": true,
+-      "error": false,
+-      "fieldConfig": {
+-        "defaults": {
+-          "links": []
+-        },
+-        "overrides": []
+-      },
+-      "fill": 1,
+-      "fillGradient": 3,
+-      "grid": {},
+-      "gridPos": {
+-        "h": 7,
+-        "w": 12,
+-        "x": 0,
+-        "y": 14
+-      },
+-      "hiddenSeries": false,
+-      "id": 26,
+-      "legend": {
+-        "alignAsTable": true,
+-        "avg": true,
+-        "current": true,
+-        "max": true,
+-        "min": false,
+-        "rightSide": true,
+-        "show": true,
+-        "sort": "max",
+-        "sortDesc": true,
+-        "total": false,
+-        "values": true
+-      },
+-      "lines": true,
+-      "linewidth": 2,
+-      "links": [],
+-      "nullPointMode": "connected",
+-      "options": {
+-        "alertThreshold": true
+-      },
+-      "percentage": false,
+-      "pluginVersion": "7.5.4",
+-      "pointradius": 5,
+-      "points": false,
+-      "renderer": "flot",
+-      "seriesOverrides": [],
+-      "spaceLength": 10,
+-      "stack": false,
+-      "steppedLine": true,
+-      "targets": [
+-        {
+-          "exemplar": true,
+-          "expr": "histogram_quantile(0.99,sum(rate(coredns_dns_request_duration_seconds_bucket{pod=~\"$pod\"}[$__rate_interval])) by (le,type))",
+-          "format": "time_series",
+-          "interval": "",
+-          "intervalFactor": 2,
+-          "legendFormat": "{{type}}",
+-          "refId": "A",
+-          "step": 60
+-        }
+-      ],
+-      "thresholds": [],
+-      "timeFrom": null,
+-      "timeRegions": [],
+-      "timeShift": null,
+-      "title": "DNS Requests Latency (In Seconds)",
+-      "tooltip": {
+-        "shared": true,
+-        "sort": 0,
+-        "value_type": "cumulative"
+-      },
+-      "type": "graph",
+-      "xaxis": {
+-        "buckets": null,
+-        "mode": "time",
+-        "name": null,
+-        "show": true,
+-        "values": []
+-      },
+-      "yaxes": [
+-        {
+-          "$$hashKey": "object:149",
+-          "decimals": 0,
+-          "format": "s",
+-          "label": "",
+-          "logBase": 1,
+-          "max": null,
+-          "min": 0,
+-          "show": true
+-        },
+-        {
+-          "$$hashKey": "object:150",
+-          "format": "pps",
+-          "logBase": 1,
+-          "max": null,
+-          "min": 0,
+-          "show": false
+-        }
+-      ],
+-      "yaxis": {
+-        "align": false,
+-        "alignLevel": null
+-      }
+-    },
+-    {
+-      "cards": {
+-        "cardPadding": null,
+-        "cardRound": null
+-      },
+-      "color": {
+-        "cardColor": "#b4ff00",
+-        "colorScale": "sqrt",
+-        "colorScheme": "interpolateOranges",
+-        "exponent": 0.5,
+-        "mode": "spectrum"
+-      },
+-      "dataFormat": "tsbuckets",
+-      "datasource": "prometheus",
+-      "description": "DNS Requests Latency in seconds",
+-      "fieldConfig": {
+-        "defaults": {},
+-        "overrides": []
+-      },
+-      "gridPos": {
+-        "h": 7,
+-        "w": 12,
+-        "x": 12,
+-        "y": 14
+-      },
+-      "heatmap": {},
+-      "hideZeroBuckets": true,
+-      "highlightCards": true,
+-      "id": 27,
+-      "legend": {
+-        "show": true
+-      },
+-      "links": [],
+-      "pluginVersion": "7.5.4",
+-      "reverseYBuckets": false,
+-      "targets": [
+-        {
+-          "exemplar": true,
+-          "expr": "sum by (le) (rate(coredns_dns_request_duration_seconds_bucket{pod=~\"$pod\"}[$__rate_interval]))",
+-          "format": "heatmap",
+-          "interval": "",
+-          "intervalFactor": 1,
+-          "legendFormat": "{{le}}",
+-          "refId": "A",
+-          "step": 60
+-        }
+-      ],
+-      "timeFrom": null,
+-      "timeShift": null,
+-      "title": "DNS Requests Latency Heatmap",
+-      "tooltip": {
+-        "show": true,
+-        "showHistogram": true
+-      },
+-      "type": "heatmap",
+-      "xAxis": {
+-        "show": true
+-      },
+-      "xBucketNumber": null,
+-      "xBucketSize": null,
+-      "yAxis": {
+-        "decimals": 2,
+-        "format": "s",
+-        "logBase": 1,
+-        "max": null,
+-        "min": null,
+-        "show": true,
+-        "splitFactor": null
+-      },
+-      "yBucketBound": "upper",
+-      "yBucketNumber": null,
+-      "yBucketSize": null
+-    },
+-    {
+-      "collapsed": false,
+-      "datasource": null,
+-      "gridPos": {
+-        "h": 1,
+-        "w": 24,
+-        "x": 0,
+-        "y": 21
+-      },
+-      "id": 18,
+-      "panels": [],
+-      "title": "Cache",
+-      "type": "row"
+-    },
+-    {
+-      "aliasColors": {},
+-      "bars": false,
+-      "dashLength": 10,
+-      "dashes": false,
+-      "datasource": "prometheus",
+-      "description": "The `cache hits` describes how many DNS requests were answered due to a cached entry.\n\nThe `cache misses` describes how much DNS requests need to be looked up, because the requests entry does not exist in the local cache.\n\nThe rates are per second averages and displayed in packets per second.",
+-      "editable": true,
+-      "error": false,
+-      "fieldConfig": {
+-        "defaults": {
+-          "links": []
+-        },
+-        "overrides": []
+-      },
+-      "fill": 1,
+-      "fillGradient": 0,
+-      "grid": {},
+-      "gridPos": {
+-        "h": 7,
+-        "w": 12,
+-        "x": 0,
+-        "y": 22
+-      },
+-      "hiddenSeries": false,
+-      "id": 6,
+-      "legend": {
+-        "avg": false,
+-        "current": false,
+-        "max": false,
+-        "min": false,
+-        "show": true,
+-        "total": false,
+-        "values": false
+-      },
+-      "lines": true,
+-      "linewidth": 2,
+-      "links": [],
+-      "nullPointMode": "connected",
+-      "options": {
+-        "alertThreshold": true
+-      },
+-      "percentage": false,
+-      "pluginVersion": "7.5.4",
+-      "pointradius": 5,
+-      "points": false,
+-      "renderer": "flot",
+-      "seriesOverrides": [],
+-      "spaceLength": 10,
+-      "stack": false,
+-      "steppedLine": false,
+-      "targets": [
+-        {
+-          "exemplar": true,
+-          "expr": "rate(coredns_cache_hits_total{pod=~\"$pod\"}[$__rate_interval])",
+-          "format": "time_series",
+-          "interval": "",
+-          "intervalFactor": 2,
+-          "legendFormat": "cache hits",
+-          "refId": "A",
+-          "step": 40
+-        },
+-        {
+-          "expr": "rate(coredns_cache_misses_total{pod=~\"$pod\"}[$__rate_interval])",
+-          "format": "time_series",
+-          "intervalFactor": 2,
+-          "legendFormat": "cache misses",
+-          "refId": "B",
+-          "step": 40
+-        }
+-      ],
+-      "thresholds": [],
+-      "timeFrom": null,
+-      "timeRegions": [],
+-      "timeShift": null,
+-      "title": "Cache Hits and Misses (Per Second)",
+-      "tooltip": {
+-        "shared": true,
+-        "sort": 0,
+-        "value_type": "cumulative"
+-      },
+-      "type": "graph",
+-      "xaxis": {
+-        "buckets": null,
+-        "mode": "time",
+-        "name": null,
+-        "show": true,
+-        "values": []
+-      },
+-      "yaxes": [
+-        {
+-          "$$hashKey": "object:211",
+-          "format": "none",
+-          "logBase": 1,
+-          "max": null,
+-          "min": 0,
+-          "show": true
+-        },
+-        {
+-          "$$hashKey": "object:212",
+-          "format": "pps",
+-          "logBase": 1,
+-          "max": null,
+-          "min": 0,
+-          "show": false
+-        }
+-      ],
+-      "yaxis": {
+-        "align": false,
+-        "alignLevel": null
+-      }
+-    },
+-    {
+-      "aliasColors": {},
+-      "bars": false,
+-      "dashLength": 10,
+-      "dashes": false,
+-      "datasource": "prometheus",
+-      "decimals": 0,
+-      "description": "The `cache hits` describes how many DNS requests were answered due to a cached entry.\n\nThe `cache misses` describes how much DNS requests need to be looked up, because the requests entry does not exist in the local cache.\n\n",
+-      "editable": true,
+-      "error": false,
+-      "fieldConfig": {
+-        "defaults": {
+-          "links": []
+-        },
+-        "overrides": []
+-      },
+-      "fill": 1,
+-      "fillGradient": 0,
+-      "grid": {},
+-      "gridPos": {
+-        "h": 7,
+-        "w": 12,
+-        "x": 12,
+-        "y": 22
+-      },
+-      "hiddenSeries": false,
+-      "id": 22,
+-      "legend": {
+-        "avg": false,
+-        "current": false,
+-        "max": false,
+-        "min": false,
+-        "show": true,
+-        "total": false,
+-        "values": false
+-      },
+-      "lines": true,
+-      "linewidth": 2,
+-      "links": [],
+-      "nullPointMode": "connected",
+-      "options": {
+-        "alertThreshold": true
+-      },
+-      "percentage": false,
+-      "pluginVersion": "7.5.4",
+-      "pointradius": 5,
+-      "points": false,
+-      "renderer": "flot",
+-      "seriesOverrides": [],
+-      "spaceLength": 10,
+-      "stack": false,
+-      "steppedLine": true,
+-      "targets": [
+-        {
+-          "exemplar": true,
+-          "expr": "sum(coredns_cache_hits_total{pod=~\"$pod\"} - coredns_cache_hits_total{pod=~\"$pod\"} offset $__interval)",
+-          "format": "time_series",
+-          "interval": "",
+-          "intervalFactor": 2,
+-          "legendFormat": "cache hits",
+-          "refId": "A",
+-          "step": 40
+-        },
+-        {
+-          "expr": "sum(coredns_cache_misses_total{pod=~\"$pod\"} - coredns_cache_misses_total{pod=~\"$pod\"} offset $__interval)",
+-          "format": "time_series",
+-          "interval": "",
+-          "intervalFactor": 2,
+-          "legendFormat": "cache misses",
+-          "refId": "B",
+-          "step": 40
+-        }
+-      ],
+-      "thresholds": [],
+-      "timeFrom": null,
+-      "timeRegions": [],
+-      "timeShift": null,
+-      "title": "Cache Hits and Misses",
+-      "tooltip": {
+-        "shared": true,
+-        "sort": 0,
+-        "value_type": "cumulative"
+-      },
+-      "type": "graph",
+-      "xaxis": {
+-        "buckets": null,
+-        "mode": "time",
+-        "name": null,
+-        "show": true,
+-        "values": []
+-      },
+-      "yaxes": [
+-        {
+-          "$$hashKey": "object:504",
+-          "decimals": 0,
+-          "format": "none",
+-          "logBase": 1,
+-          "max": null,
+-          "min": 0,
+-          "show": true
+-        },
+-        {
+-          "$$hashKey": "object:505",
+-          "format": "pps",
+-          "logBase": 1,
+-          "max": null,
+-          "min": 0,
+-          "show": false
+-        }
+-      ],
+-      "yaxis": {
+-        "align": false,
+-        "alignLevel": null
+-      }
+-    },
+-    {
+-      "aliasColors": {},
+-      "bars": false,
+-      "dashLength": 10,
+-      "dashes": false,
+-      "datasource": null,
+-      "decimals": 0,
+-      "description": "Count of cached entries in the cache of the DNS.",
+-      "fieldConfig": {
+-        "defaults": {
+-          "links": []
+-        },
+-        "overrides": []
+-      },
+-      "fill": 1,
+-      "fillGradient": 0,
+-      "gridPos": {
+-        "h": 7,
+-        "w": 24,
+-        "x": 0,
+-        "y": 29
+-      },
+-      "hiddenSeries": false,
+-      "id": 2,
+-      "legend": {
+-        "avg": false,
+-        "current": false,
+-        "max": false,
+-        "min": false,
+-        "show": false,
+-        "total": false,
+-        "values": false
+-      },
+-      "lines": true,
+-      "linewidth": 1,
+-      "links": [],
+-      "nullPointMode": "null",
+-      "options": {
+-        "alertThreshold": true
+-      },
+-      "percentage": false,
+-      "pluginVersion": "7.5.4",
+-      "pointradius": 2,
+-      "points": false,
+-      "renderer": "flot",
+-      "seriesOverrides": [],
+-      "spaceLength": 10,
+-      "stack": false,
+-      "steppedLine": false,
+-      "targets": [
+-        {
+-          "exemplar": true,
+-          "expr": "sum(coredns_cache_entries{pod=~\"$pod\"}) by (type)",
+-          "format": "time_series",
+-          "interval": "",
+-          "intervalFactor": 1,
+-          "legendFormat": "cache size: {{ type }}",
+-          "refId": "A"
+-        }
+-      ],
+-      "thresholds": [],
+-      "timeFrom": null,
+-      "timeRegions": [],
+-      "timeShift": null,
+-      "title": "Cache Size",
+-      "tooltip": {
+-        "shared": true,
+-        "sort": 0,
+-        "value_type": "individual"
+-      },
+-      "type": "graph",
+-      "xaxis": {
+-        "buckets": null,
+-        "mode": "time",
+-        "name": null,
+-        "show": true,
+-        "values": []
+-      },
+-      "yaxes": [
+-        {
+-          "$$hashKey": "object:619",
+-          "decimals": 0,
+-          "format": "short",
+-          "label": null,
+-          "logBase": 1,
+-          "max": null,
+-          "min": null,
+-          "show": true
+-        },
+-        {
+-          "$$hashKey": "object:620",
+-          "format": "short",
+-          "label": null,
+-          "logBase": 1,
+-          "max": null,
+-          "min": null,
+-          "show": false
+-        }
+-      ],
+-      "yaxis": {
+-        "align": false,
+-        "alignLevel": null
+-      }
+-    },
+-    {
+-      "collapsed": false,
+-      "datasource": null,
+-      "gridPos": {
+-        "h": 1,
+-        "w": 24,
+-        "x": 0,
+-        "y": 36
+-      },
+-      "id": 14,
+-      "panels": [],
+-      "title": "Upstream DNS",
+-      "type": "row"
+-    },
+-    {
+-      "aliasColors": {},
+-      "bars": false,
+-      "dashLength": 10,
+-      "dashes": false,
+-      "datasource": null,
+-      "description": "Request per interval  to upstream DNS.",
+-      "fieldConfig": {
+-        "defaults": {
+-          "links": []
+-        },
+-        "overrides": []
+-      },
+-      "fill": 1,
+-      "fillGradient": 0,
+-      "gridPos": {
+-        "h": 7,
+-        "w": 12,
+-        "x": 0,
+-        "y": 37
+-      },
+-      "hiddenSeries": false,
+-      "id": 10,
+-      "legend": {
+-        "alignAsTable": false,
+-        "avg": false,
+-        "current": false,
+-        "max": false,
+-        "min": false,
+-        "rightSide": false,
+-        "show": true,
+-        "total": false,
+-        "values": false
+-      },
+-      "lines": true,
+-      "linewidth": 1,
+-      "links": [],
+-      "maxDataPoints": null,
+-      "nullPointMode": "null",
+-      "options": {
+-        "alertThreshold": true
+-      },
+-      "percentage": false,
+-      "pluginVersion": "7.5.4",
+-      "pointradius": 2,
+-      "points": false,
+-      "renderer": "flot",
+-      "seriesOverrides": [],
+-      "spaceLength": 10,
+-      "stack": false,
+-      "steppedLine": false,
+-      "targets": [
+-        {
+-          "exemplar": true,
+-          "expr": "sum(coredns_forward_requests_total{pod=~\"$pod\"} - coredns_forward_requests_total{pod=~\"$pod\"} offset $__interval) by (to)",
+-          "format": "time_series",
+-          "interval": "",
+-          "intervalFactor": 1,
+-          "legendFormat": "{{to}}",
+-          "refId": "A"
+-        }
+-      ],
+-      "thresholds": [],
+-      "timeFrom": null,
+-      "timeRegions": [],
+-      "timeShift": null,
+-      "title": "Upstream DNS Requests Per Interval",
+-      "tooltip": {
+-        "shared": true,
+-        "sort": 0,
+-        "value_type": "individual"
+-      },
+-      "type": "graph",
+-      "xaxis": {
+-        "buckets": null,
+-        "mode": "time",
+-        "name": null,
+-        "show": true,
+-        "values": []
+-      },
+-      "yaxes": [
+-        {
+-          "$$hashKey": "object:177",
+-          "format": "none",
+-          "label": null,
+-          "logBase": 1,
+-          "max": null,
+-          "min": null,
+-          "show": true
+-        },
+-        {
+-          "$$hashKey": "object:178",
+-          "format": "short",
+-          "label": null,
+-          "logBase": 1,
+-          "max": null,
+-          "min": null,
+-          "show": true
+-        }
+-      ],
+-      "yaxis": {
+-        "align": false,
+-        "alignLevel": null
+-      }
+-    },
+-    {
+-      "aliasColors": {},
+-      "bars": false,
+-      "dashLength": 10,
+-      "dashes": false,
+-      "datasource": null,
+-      "description": "Average request (packets per second) rate made to upstream DNS.",
+-      "fieldConfig": {
+-        "defaults": {
+-          "links": []
+-        },
+-        "overrides": []
+-      },
+-      "fill": 1,
+-      "fillGradient": 0,
+-      "gridPos": {
+-        "h": 7,
+-        "w": 12,
+-        "x": 12,
+-        "y": 37
+-      },
+-      "hiddenSeries": false,
+-      "id": 23,
+-      "legend": {
+-        "alignAsTable": false,
+-        "avg": false,
+-        "current": false,
+-        "max": false,
+-        "min": false,
+-        "rightSide": false,
+-        "show": true,
+-        "total": false,
+-        "values": false
+-      },
+-      "lines": true,
+-      "linewidth": 1,
+-      "links": [],
+-      "nullPointMode": "null",
+-      "options": {
+-        "alertThreshold": true
+-      },
+-      "percentage": false,
+-      "pluginVersion": "7.5.4",
+-      "pointradius": 2,
+-      "points": false,
+-      "renderer": "flot",
+-      "seriesOverrides": [],
+-      "spaceLength": 10,
+-      "stack": false,
+-      "steppedLine": false,
+-      "targets": [
+-        {
+-          "exemplar": true,
+-          "expr": "sum(rate(coredns_forward_requests_total{pod=~\"$pod\"}[$__rate_interval])) by (to)",
+-          "format": "time_series",
+-          "interval": "",
+-          "intervalFactor": 1,
+-          "legendFormat": "{{to}}",
+-          "refId": "A"
+-        }
+-      ],
+-      "thresholds": [],
+-      "timeFrom": null,
+-      "timeRegions": [],
+-      "timeShift": null,
+-      "title": "Upstream DNS Requests",
+-      "tooltip": {
+-        "shared": true,
+-        "sort": 0,
+-        "value_type": "individual"
+-      },
+-      "type": "graph",
+-      "xaxis": {
+-        "buckets": null,
+-        "mode": "time",
+-        "name": null,
+-        "show": true,
+-        "values": []
+-      },
+-      "yaxes": [
+-        {
+-          "$$hashKey": "object:479",
+-          "format": "pps",
+-          "label": null,
+-          "logBase": 1,
+-          "max": null,
+-          "min": null,
+-          "show": true
+-        },
+-        {
+-          "$$hashKey": "object:480",
+-          "format": "short",
+-          "label": null,
+-          "logBase": 1,
+-          "max": null,
+-          "min": null,
+-          "show": true
+-        }
+-      ],
+-      "yaxis": {
+-        "align": false,
+-        "alignLevel": null
+-      }
+-    },
+-    {
+-      "aliasColors": {},
+-      "bars": false,
+-      "dashLength": 10,
+-      "dashes": false,
+-      "datasource": null,
+-      "description": "DNS forward responses per interval from upstream DNS split by status code (rcode).",
+-      "fieldConfig": {
+-        "defaults": {
+-          "links": []
+-        },
+-        "overrides": []
+-      },
+-      "fill": 1,
+-      "fillGradient": 0,
+-      "gridPos": {
+-        "h": 7,
+-        "w": 12,
+-        "x": 0,
+-        "y": 44
+-      },
+-      "hiddenSeries": false,
+-      "id": 25,
+-      "legend": {
+-        "avg": false,
+-        "current": false,
+-        "max": false,
+-        "min": false,
+-        "show": true,
+-        "total": false,
+-        "values": false
+-      },
+-      "lines": true,
+-      "linewidth": 1,
+-      "links": [],
+-      "nullPointMode": "null",
+-      "options": {
+-        "alertThreshold": true
+-      },
+-      "percentage": false,
+-      "pluginVersion": "7.5.4",
+-      "pointradius": 2,
+-      "points": false,
+-      "renderer": "flot",
+-      "seriesOverrides": [],
+-      "spaceLength": 10,
+-      "stack": false,
+-      "steppedLine": false,
+-      "targets": [
+-        {
+-          "exemplar": true,
+-          "expr": "sum(coredns_forward_responses_total{pod=~\"$pod\"} - coredns_forward_responses_total{pod=~\"$pod\"} offset $__interval) by (to,rcode)",
+-          "hide": false,
+-          "interval": "",
+-          "legendFormat": "{{rcode}}  ({{to}})",
+-          "refId": "B"
+-        }
+-      ],
+-      "thresholds": [],
+-      "timeFrom": null,
+-      "timeRegions": [],
+-      "timeShift": null,
+-      "title": "Upstream DNS Forward Responses Per Interval",
+-      "tooltip": {
+-        "shared": true,
+-        "sort": 0,
+-        "value_type": "individual"
+-      },
+-      "type": "graph",
+-      "xaxis": {
+-        "buckets": null,
+-        "mode": "time",
+-        "name": null,
+-        "show": true,
+-        "values": []
+-      },
+-      "yaxes": [
+-        {
+-          "$$hashKey": "object:51",
+-          "format": "short",
+-          "label": null,
+-          "logBase": 1,
+-          "max": null,
+-          "min": null,
+-          "show": true
+-        },
+-        {
+-          "$$hashKey": "object:52",
+-          "format": "short",
+-          "label": null,
+-          "logBase": 1,
+-          "max": null,
+-          "min": null,
+-          "show": true
+-        }
+-      ],
+-      "yaxis": {
+-        "align": false,
+-        "alignLevel": null
+-      }
+-    },
+-    {
+-      "aliasColors": {},
+-      "bars": false,
+-      "dashLength": 10,
+-      "dashes": false,
+-      "datasource": null,
+-      "description": "Average per second rate of responses from upstream DNS split by status code (rcode).",
+-      "fieldConfig": {
+-        "defaults": {
+-          "links": []
+-        },
+-        "overrides": []
+-      },
+-      "fill": 1,
+-      "fillGradient": 0,
+-      "gridPos": {
+-        "h": 7,
+-        "w": 12,
+-        "x": 12,
+-        "y": 44
+-      },
+-      "hiddenSeries": false,
+-      "id": 12,
+-      "legend": {
+-        "avg": false,
+-        "current": false,
+-        "max": false,
+-        "min": false,
+-        "show": true,
+-        "total": false,
+-        "values": false
+-      },
+-      "lines": true,
+-      "linewidth": 1,
+-      "links": [],
+-      "nullPointMode": "null",
+-      "options": {
+-        "alertThreshold": true
+-      },
+-      "percentage": false,
+-      "pluginVersion": "7.5.4",
+-      "pointradius": 2,
+-      "points": false,
+-      "renderer": "flot",
+-      "seriesOverrides": [],
+-      "spaceLength": 10,
+-      "stack": false,
+-      "steppedLine": false,
+-      "targets": [
+-        {
+-          "exemplar": true,
+-          "expr": "rate(coredns_forward_responses_total{pod=~\"$pod\"}[$__rate_interval])",
+-          "format": "time_series",
+-          "interval": "",
+-          "intervalFactor": 1,
+-          "legendFormat": "{{rcode}} ({{to}})",
+-          "refId": "A"
+-        }
+-      ],
+-      "thresholds": [],
+-      "timeFrom": null,
+-      "timeRegions": [],
+-      "timeShift": null,
+-      "title": "Upstream DNS Responses",
+-      "tooltip": {
+-        "shared": true,
+-        "sort": 0,
+-        "value_type": "individual"
+-      },
+-      "type": "graph",
+-      "xaxis": {
+-        "buckets": null,
+-        "mode": "time",
+-        "name": null,
+-        "show": true,
+-        "values": []
+-      },
+-      "yaxes": [
+-        {
+-          "$$hashKey": "object:51",
+-          "format": "short",
+-          "label": null,
+-          "logBase": 1,
+-          "max": null,
+-          "min": null,
+-          "show": true
+-        },
+-        {
+-          "$$hashKey": "object:52",
+-          "format": "short",
+-          "label": null,
+-          "logBase": 1,
+-          "max": null,
+-          "min": null,
+-          "show": true
+-        }
+-      ],
+-      "yaxis": {
+-        "align": false,
+-        "alignLevel": null
+-      }
+-    },
+-    {
+-      "aliasColors": {},
+-      "bars": false,
+-      "dashLength": 10,
+-      "dashes": false,
+-      "datasource": "prometheus",
+-      "description": "Number of errors occurred during node cache operation",
+-      "editable": true,
+-      "error": false,
+-      "fieldConfig": {
+-        "defaults": {
+-          "links": []
+-        },
+-        "overrides": []
+-      },
+-      "fill": 1,
+-      "fillGradient": 0,
+-      "grid": {},
+-      "gridPos": {
+-        "h": 7,
+-        "w": 12,
+-        "x": 0,
+-        "y": 51
+-      },
+-      "hiddenSeries": false,
+-      "id": 28,
+-      "legend": {
+-        "alignAsTable": true,
+-        "avg": true,
+-        "current": true,
+-        "max": true,
+-        "min": false,
+-        "rightSide": true,
+-        "show": true,
+-        "sort": "current",
+-        "sortDesc": true,
+-        "total": false,
+-        "values": true
+-      },
+-      "lines": true,
+-      "linewidth": 2,
+-      "links": [],
+-      "nullPointMode": "connected",
+-      "options": {
+-        "alertThreshold": true
+-      },
+-      "percentage": false,
+-      "pluginVersion": "7.5.4",
+-      "pointradius": 5,
+-      "points": false,
+-      "renderer": "flot",
+-      "seriesOverrides": [],
+-      "spaceLength": 10,
+-      "stack": false,
+-      "steppedLine": false,
+-      "targets": [
+-        {
+-          "exemplar": true,
+-          "expr": "sum(rate(coredns_nodecache_setup_errors_total{pod=~\"$pod\"}[$__rate_interval])) by (errortype)",
+-          "format": "time_series",
+-          "interval": "",
+-          "intervalFactor": 2,
+-          "legendFormat": "Type: {{errortype}}",
+-          "refId": "A",
+-          "step": 60
+-        }
+-      ],
+-      "thresholds": [],
+-      "timeFrom": null,
+-      "timeRegions": [],
+-      "timeShift": null,
+-      "title": "Node Cache Errors",
+-      "tooltip": {
+-        "shared": true,
+-        "sort": 0,
+-        "value_type": "cumulative"
+-      },
+-      "type": "graph",
+-      "xaxis": {
+-        "buckets": null,
+-        "mode": "time",
+-        "name": null,
+-        "show": true,
+-        "values": []
+-      },
+-      "yaxes": [
+-        {
+-          "$$hashKey": "object:99",
+-          "format": "pps",
+-          "logBase": 1,
+-          "max": null,
+-          "min": 0,
+-          "show": true
+-        },
+-        {
+-          "$$hashKey": "object:100",
+-          "format": "pps",
+-          "logBase": 1,
+-          "max": null,
+-          "min": 0,
+-          "show": false
+-        }
+-      ],
+-      "yaxis": {
+-        "align": false,
+-        "alignLevel": null
+-      }
+-    }
+-  ],
+-  "schemaVersion": 27,
+-  "style": "dark",
+-  "tags": [
+-    "network",
+-    "shoot"
+-  ],
+-  "templating": {
+-    "list": [
+-      {
+-        "allValue": null,
+-        "current": {
+-          "selected": true,
+-          "text": [
+-            "All"
+-          ],
+-          "value": [
+-            "$__all"
+-          ]
+-        },
+-        "datasource": "prometheus",
+-        "definition": "label_values(coredns_build_info, pod)",
+-        "description": null,
+-        "error": null,
+-        "hide": 0,
+-        "includeAll": true,
+-        "label": "NodeLocalDNS Pod",
+-        "multi": true,
+-        "name": "pod",
+-        "options": [],
+-        "query": {
+-          "query": "label_values(coredns_build_info, pod)",
+-          "refId": "prometheus-pod-Variable-Query"
+-        },
+-        "refresh": 2,
+-        "regex": "node-local-dns.*",
+-        "skipUrlSync": false,
+-        "sort": 0,
+-        "tagValuesQuery": "",
+-        "tags": [],
+-        "tagsQuery": "",
+-        "type": "query",
+-        "useTags": false
+-      }
+-    ]
+-  },
+-  "time": {
+-    "from": "now-30m",
+-    "to": "now"
+-  },
+-  "timepicker": {
+-    "refresh_intervals": [
+-      "10s",
+-      "30s",
+-      "1m",
+-      "5m",
+-      "15m",
+-      "30m",
+-      "1h"
+-    ],
+-    "time_options": [
+-      "5m",
+-      "15m",
+-      "1h",
+-      "3h",
+-      "6h",
+-      "12h",
+-      "24h",
+-      "2d",
+-      "7d",
+-      "14d"
+-    ]
+-  },
+-  "timezone": "utc",
+-  "title": "NodeLocalDNS",
+-  "uid": "node-local-dns",
+-  "version": 1
+-}
+diff --git a/pkg/component/observability/plutono/plutono.go b/pkg/component/observability/plutono/plutono.go
+index 661f4be07..ec97e9af9 100644
+--- a/pkg/component/observability/plutono/plutono.go
++++ b/pkg/component/observability/plutono/plutono.go
+@@ -110,8 +110,6 @@ type Values struct {
+ 	IsWorkerless bool
+ 	// IsGardenCluster specifies whether the cluster is garden cluster.
+ 	IsGardenCluster bool
+-	// NodeLocalDNSEnabled specifies whether the node-local-dns is enabled for cluster.
+-	NodeLocalDNSEnabled bool
+ 	// PriorityClassName is the name of the priority class.
+ 	PriorityClassName string
+ 	// Replicas is the number of pod replicas for the plutono.
+@@ -416,9 +414,6 @@ func (p *plutono) getDashboardConfigMap(ctx context.Context, suffix string) (*co
+ 			ignorePaths.Insert("worker")
+ 		} else {
+ 			ignorePaths.Insert("workerless")
+-			if !p.values.NodeLocalDNSEnabled {
+-				ignorePaths.Insert("dns")
+-			}
+ 			if !p.values.IncludeIstioDashboards {
+ 				ignorePaths.Insert("istio")
+ 			}
+diff --git a/pkg/component/observability/plutono/plutono_test.go b/pkg/component/observability/plutono/plutono_test.go
+index f038b0f79..41037fa6a 100644
+--- a/pkg/component/observability/plutono/plutono_test.go
++++ b/pkg/component/observability/plutono/plutono_test.go
+@@ -688,10 +688,9 @@ status:
+ 				testDashboardConfigMap(dashboardsConfigMap, 35, values)
+ 			})
+
+-			Context("w/ include istio, node-local-dns, mcm, ha-vpn, vpa", func() {
++			Context("w/ include istio, mcm, ha-vpn, vpa", func() {
+ 				BeforeEach(func() {
+ 					values.IncludeIstioDashboards = true
+-					values.NodeLocalDNSEnabled = true
+ 					values.VPNHighAvailabilityEnabled = true
+ 					values.VPAEnabled = true
+ 				})
+@@ -714,7 +713,7 @@ status:
+
+ 					dashboardsConfigMap := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "plutono-dashboards", Namespace: namespace}}
+ 					Expect(c.Get(ctx, client.ObjectKeyFromObject(dashboardsConfigMap), dashboardsConfigMap)).To(Succeed())
+-					testDashboardConfigMap(dashboardsConfigMap, 38, values)
++					testDashboardConfigMap(dashboardsConfigMap, 37, values)
+ 				})
+ 			})
+
+diff --git a/pkg/component/shared/plutono.go b/pkg/component/shared/plutono.go
+index d7793cedd..89fd70877 100644
+--- a/pkg/component/shared/plutono.go
++++ b/pkg/component/shared/plutono.go
+@@ -22,7 +22,7 @@ func NewPlutono(
+ 	replicas int32,
+ 	authSecretName, ingressHost, priorityClassName string,
+ 	includeIstioDashboards, isWorkerless bool,
+-	isGardenCluster, nodeLocalDNSEnabled, vpnHighAvailabilityEnabled, vpaEnabled bool,
++	isGardenCluster, vpnHighAvailabilityEnabled, vpaEnabled bool,
+ 	wildcardCertName *string,
+ ) (
+ 	plutono.Interface,
+@@ -51,7 +51,6 @@ func NewPlutono(
+ 			IncludeIstioDashboards:     includeIstioDashboards,
+ 			IsGardenCluster:            isGardenCluster,
+ 			IsWorkerless:               isWorkerless,
+-			NodeLocalDNSEnabled:        nodeLocalDNSEnabled,
+ 			PriorityClassName:          priorityClassName,
+ 			Replicas:                   replicas,
+ 			VPNHighAvailabilityEnabled: vpnHighAvailabilityEnabled,
+diff --git a/pkg/gardenlet/controller/seed/seed/components.go b/pkg/gardenlet/controller/seed/seed/components.go
+index 98d24ee0f..c43a1266a 100644
+--- a/pkg/gardenlet/controller/seed/seed/components.go
++++ b/pkg/gardenlet/controller/seed/seed/components.go
+@@ -589,7 +589,6 @@ func (r *Reconciler) newPlutono(seed *seedpkg.Seed, secretsManager secretsmanage
+ 		false,
+ 		false,
+ 		false,
+-		false,
+ 		wildcardCertName,
+ 	)
+ }
+diff --git a/pkg/gardenlet/operation/botanist/plutono.go b/pkg/gardenlet/operation/botanist/plutono.go
+index d70865c9e..e4c2a669f 100644
+--- a/pkg/gardenlet/operation/botanist/plutono.go
++++ b/pkg/gardenlet/operation/botanist/plutono.go
+@@ -29,7 +29,6 @@ func (b *Botanist) DefaultPlutono() (plutono.Interface, error) {
+ 		b.ShootUsesDNS(),
+ 		b.Shoot.IsWorkerless,
+ 		false,
+-		b.Shoot.NodeLocalDNSEnabled,
+ 		b.Shoot.VPNHighAvailabilityEnabled,
+ 		b.Shoot.WantsVerticalPodAutoscaler,
+ 		nil,
+diff --git a/pkg/operator/controller/garden/garden/components.go b/pkg/operator/controller/garden/garden/components.go
+index dc959dc50..9b6082ef6 100644
+--- a/pkg/operator/controller/garden/garden/components.go
++++ b/pkg/operator/controller/garden/garden/components.go
+@@ -902,7 +902,6 @@ func (r *Reconciler) newPlutono(secretsManager secretsmanager.Interface, ingress
+ 		true,
+ 		false,
+ 		false,
+-		false,
+ 		wildcardCertSecretName,
+ 	)
+ }
+
+commit bd7b286a2b9f5d46a0928f881ac3e3bc94be60bf
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Tue Jul 2 16:39:05 2024 +0200
+
+    Migrate "Node Cache Errors" panel
+
+    Move this panel from the NodeLocalDNS dashboard to the new DNS common
+    dashboard.
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+index 85a63f07a..7b130fd83 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+@@ -1189,7 +1189,7 @@
+       "yBucketSize": null
+     },
+     {
+-      "collapsed": true,
++      "collapsed": false,
+       "datasource": null,
+       "gridPos": {
+         "h": 1,
+@@ -1201,6 +1201,105 @@
+       "panels": [],
+       "title": "NodeLocalDNS Node Cache Error",
+       "type": "row"
++    },
++    {
++      "aliasColors": {},
++      "bars": false,
++      "dashLength": 10,
++      "dashes": false,
++      "datasource": null,
++      "description": "Number of errors occurred during node cache operation",
++      "fieldConfig": {
++        "defaults": {},
++        "overrides": []
++      },
++      "fill": 0,
++      "fillGradient": 0,
++      "gridPos": {
++        "h": 7,
++        "w": 24,
++        "x": 0,
++        "y": 74
++      },
++      "hiddenSeries": false,
++      "id": 40,
++      "legend": {
++        "alignAsTable": true,
++        "avg": true,
++        "current": true,
++        "max": true,
++        "min": false,
++        "rightSide": true,
++        "show": true,
++        "total": false,
++        "values": true
++      },
++      "lines": true,
++      "linewidth": 1,
++      "nullPointMode": "null",
++      "options": {
++        "alertThreshold": true
++      },
++      "percentage": false,
++      "pluginVersion": "7.5.31",
++      "pointradius": 2,
++      "points": false,
++      "renderer": "flot",
++      "seriesOverrides": [],
++      "spaceLength": 10,
++      "stack": false,
++      "steppedLine": false,
++      "targets": [
++        {
++          "exemplar": true,
++          "expr": "sum(rate(coredns_nodecache_setup_errors_total{job=~\"$job-errors\", pod=~\"$pod\"}[$__rate_interval])) by (errortype)",
++          "interval": "",
++          "legendFormat": "Type: {{errortype}}",
++          "refId": "A"
++        }
++      ],
++      "thresholds": [],
++      "timeFrom": null,
++      "timeRegions": [],
++      "timeShift": null,
++      "title": "Node Cache Errors",
++      "tooltip": {
++        "shared": true,
++        "sort": 0,
++        "value_type": "individual"
++      },
++      "type": "graph",
++      "xaxis": {
++        "buckets": null,
++        "mode": "time",
++        "name": null,
++        "show": true,
++        "values": []
++      },
++      "yaxes": [
++        {
++          "$$hashKey": "object:2772",
++          "format": "short",
++          "label": null,
++          "logBase": 1,
++          "max": null,
++          "min": null,
++          "show": true
++        },
++        {
++          "$$hashKey": "object:2773",
++          "format": "short",
++          "label": null,
++          "logBase": 1,
++          "max": null,
++          "min": null,
++          "show": true
++        }
++      ],
++      "yaxis": {
++        "align": false,
++        "alignLevel": null
++      }
+     }
+   ],
+   "refresh": false,
+
+commit 5561b31270cd634c176722592a95c72bfdf0db08
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Tue Jul 2 16:32:34 2024 +0200
+
+    Introduce new "NodeLocalDNS Node Cache Error" row
+
+    Node cache errors only make sense for the NodeLocalDNS pods. This commit
+    introduces a row to separate the node cache error panels that come in the
+    following commits from other CoreDNS panels.
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+index 7466cf66e..85a63f07a 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+@@ -1187,6 +1187,20 @@
+       "yBucketBound": "auto",
+       "yBucketNumber": null,
+       "yBucketSize": null
++    },
++    {
++      "collapsed": true,
++      "datasource": null,
++      "gridPos": {
++        "h": 1,
++        "w": 24,
++        "x": 0,
++        "y": 73
++      },
++      "id": 38,
++      "panels": [],
++      "title": "NodeLocalDNS Node Cache Error",
++      "type": "row"
+     }
+   ],
+   "refresh": false,
+
+commit 88f8f05fddce1a45f6325edf5fa41445e7f438a6
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Tue Jul 2 16:30:27 2024 +0200
+
+    Adjust "CoreDNS DNS Programming Latency" row title
+
+    The DNS programming latency makes only sense for the CoreDNS
+    pods and it is expected to show no data for the Node Local DNS.
+
+    This only captures the headless services with selector.
+    ClusterIP and headless services without selector are not
+    captured.
+
+    https://github.com/coredns/coredns/pull/3171
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+index 8ba173277..7466cf66e 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+@@ -919,7 +919,7 @@
+       "id": 35,
+       "panels": [],
+       "repeat": "service_kind",
+-      "title": "DNS Programming Latency",
++      "title": "CoreDNS DNS Programming Latency",
+       "type": "row"
+     },
+     {
+
+commit 5136a4c0ef850ca73fb1120a1f25b4f245892fd4
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Tue Jul 2 16:25:35 2024 +0200
+
+    Adapt "Upstream DNS Responses" panel
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+index cc094e81f..8ba173277 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+@@ -856,7 +856,7 @@
+       "targets": [
+         {
+           "exemplar": false,
+-          "expr": "sum(rate(coredns_proxy_request_duration_seconds_count{job=~\"$job\", pod=~\"$pod\", proxy_name=\"forward\"}[$__rate_interval])) by (to, rcode)",
++          "expr": "sum(rate(coredns_proxy_request_duration_seconds_count{job=~\"$job\", pod=~\"$pod\", proxy_name=\"forward\"}[$__rate_interval]) or rate(coredns_forward_responses_total{job=~\"$pod\", pod=~\"$pod\"}[$__rate_interval])) by (to, rcode)",
+           "format": "time_series",
+           "interval": "",
+           "intervalFactor": 1,
+
+commit 5c7c039f197aa49f29ab1b3d3295057eb5b2e93a
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Tue Jul 2 16:24:21 2024 +0200
+
+    Adapt "Upstream DNS Requests" panel
+
+    Node Local DNS is a thin wrapper of CoreDNS. However, it uses CoreDNS
+    1.10 for now, while the regular CoreDNS deployed in the shoot clusters
+    is 1.11 at the moment. DNS upstream-related metrics from CoreDNS 1.10
+    were deprecated in 1.11 in favor of newer ones. In consequence, the
+    DNS Upstream panel need to be adapted to consider both metrics.
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+index 6fe35925b..cc094e81f 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+@@ -751,7 +751,7 @@
+       "targets": [
+         {
+           "exemplar": false,
+-          "expr": "sum(rate(coredns_proxy_request_duration_seconds_count{job=~\"$job\", pod=~\"$pod\", proxy_name=\"forward\"}[$__rate_interval])) by (to)",
++          "expr": "sum(rate(coredns_proxy_request_duration_seconds_count{job=~\"$job\", pod=~\"$pod\", proxy_name=\"forward\"}[$__rate_interval]) or rate(coredns_forward_requests_total{job=~\"$job\", pod=~\"$pod\"}[$__rate_interval])) by (to)",
+           "format": "time_series",
+           "hide": false,
+           "interval": "",
+
+commit 6b550745cb786412188c7a8490d771479642e526
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Tue Jul 2 16:12:08 2024 +0200
+
+    Add job filter on all queries
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+index e13a72b4e..6fe35925b 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+@@ -90,7 +90,7 @@
+       "targets": [
+         {
+           "exemplar": false,
+-          "expr": "sum(rate(coredns_dns_requests_total{pod=~\"$pod\"}[$__rate_interval])) by (exported_type)",
++          "expr": "sum(rate(coredns_dns_requests_total{job=~\"$job\", pod=~\"$pod\"}[$__rate_interval])) by (exported_type)",
+           "format": "time_series",
+           "interval": "",
+           "intervalFactor": 1,
+@@ -100,7 +100,7 @@
+         },
+         {
+           "exemplar": false,
+-          "expr": "sum(rate(coredns_dns_requests_total{pod=~\"$pod\"}[$__rate_interval])) by (proto)",
++          "expr": "sum(rate(coredns_dns_requests_total{job=~\"$job\", pod=~\"$pod\"}[$__rate_interval])) by (proto)",
+           "format": "time_series",
+           "interval": "",
+           "intervalFactor": 1,
+@@ -109,7 +109,7 @@
+         },
+         {
+           "exemplar": false,
+-          "expr": "sum(rate(coredns_dns_requests_total{pod=~\"$pod\"}[$__rate_interval])) by (zone)",
++          "expr": "sum(rate(coredns_dns_requests_total{job=~\"$job\", pod=~\"$pod\"}[$__rate_interval])) by (zone)",
+           "format": "time_series",
+           "interval": "",
+           "intervalFactor": 1,
+@@ -213,7 +213,7 @@
+       "targets": [
+         {
+           "exemplar": false,
+-          "expr": "sum(rate(coredns_dns_responses_total{pod=~\"$pod\"}[$__rate_interval])) by (rcode)",
++          "expr": "sum(rate(coredns_dns_responses_total{job=~\"$job\", pod=~\"$pod\"}[$__rate_interval])) by (rcode)",
+           "format": "time_series",
+           "interval": "",
+           "intervalFactor": 1,
+@@ -323,7 +323,7 @@
+       "targets": [
+         {
+           "exemplar": false,
+-          "expr": "histogram_quantile(0.99,sum(rate(coredns_dns_request_duration_seconds_bucket{pod=~\"$pod\"}[$__rate_interval])) by (le, zone))",
++          "expr": "histogram_quantile(0.99,sum(rate(coredns_dns_request_duration_seconds_bucket{job=~\"$job\", pod=~\"$pod\"}[$__rate_interval])) by (le, zone))",
+           "format": "time_series",
+           "interval": "",
+           "intervalFactor": 1,
+@@ -413,7 +413,7 @@
+       "targets": [
+         {
+           "exemplar": false,
+-          "expr": "sum by (le) (rate(coredns_dns_request_duration_seconds_bucket{pod=~\"$pod\"}[$__rate_interval]))",
++          "expr": "sum by (le) (rate(coredns_dns_request_duration_seconds_bucket{job=~\"$job\", pod=~\"$pod\"}[$__rate_interval]))",
+           "format": "heatmap",
+           "interval": "",
+           "intervalFactor": 2,
+@@ -518,7 +518,7 @@
+       "targets": [
+         {
+           "exemplar": false,
+-          "expr": "sum(rate(coredns_cache_hits_total{pod=~\"$pod\"}[$__rate_interval])) by(exported_type)",
++          "expr": "sum(rate(coredns_cache_hits_total{job=~\"$job\", pod=~\"$pod\"}[$__rate_interval])) by(exported_type)",
+           "format": "time_series",
+           "interval": "",
+           "intervalFactor": 1,
+@@ -528,7 +528,7 @@
+         },
+         {
+           "exemplar": false,
+-          "expr": "sum(rate(coredns_cache_misses_total{pod=~\"$pod\"}[$__rate_interval]))",
++          "expr": "sum(rate(coredns_cache_misses_total{job=~\"$job\", pod=~\"$pod\"}[$__rate_interval]))",
+           "format": "time_series",
+           "interval": "",
+           "intervalFactor": 1,
+@@ -632,7 +632,7 @@
+       "targets": [
+         {
+           "exemplar": false,
+-          "expr": "sum(coredns_cache_entries{pod=~\"$pod\"}) by (exported_type, zones)",
++          "expr": "sum(coredns_cache_entries{job=~\"$job\", pod=~\"$pod\"}) by (exported_type, zones)",
+           "format": "time_series",
+           "interval": "",
+           "intervalFactor": 1,
+@@ -751,7 +751,7 @@
+       "targets": [
+         {
+           "exemplar": false,
+-          "expr": "sum(rate(coredns_proxy_request_duration_seconds_count{pod=~\"$pod\", proxy_name=\"forward\"}[$__rate_interval])) by (to)",
++          "expr": "sum(rate(coredns_proxy_request_duration_seconds_count{job=~\"$job\", pod=~\"$pod\", proxy_name=\"forward\"}[$__rate_interval])) by (to)",
+           "format": "time_series",
+           "hide": false,
+           "interval": "",
+@@ -856,7 +856,7 @@
+       "targets": [
+         {
+           "exemplar": false,
+-          "expr": "sum(rate(coredns_proxy_request_duration_seconds_count{pod=~\"$pod\", proxy_name=\"forward\"}[$__rate_interval])) by (to, rcode)",
++          "expr": "sum(rate(coredns_proxy_request_duration_seconds_count{job=~\"$job\", pod=~\"$pod\", proxy_name=\"forward\"}[$__rate_interval])) by (to, rcode)",
+           "format": "time_series",
+           "interval": "",
+           "intervalFactor": 1,
+@@ -972,7 +972,7 @@
+       "targets": [
+         {
+           "exemplar": false,
+-          "expr": "sum(rate(coredns_kubernetes_dns_programming_duration_seconds_count{pod=~\"$pod\"}[$__rate_interval])) by (service_kind)",
++          "expr": "sum(rate(coredns_kubernetes_dns_programming_duration_seconds_count{job=~\"$job\", pod=~\"$pod\"}[$__rate_interval])) by (service_kind)",
+           "interval": "",
+           "legendFormat": "{{service_kind}}",
+           "refId": "A"
+@@ -1071,7 +1071,7 @@
+       "targets": [
+         {
+           "exemplar": true,
+-          "expr": "sum(rate(coredns_kubernetes_dns_programming_duration_seconds_sum{pod=~\"$pod\"}[$__rate_interval])) by(service_kind)",
++          "expr": "sum(rate(coredns_kubernetes_dns_programming_duration_seconds_sum{job=~\"$job\", pod=~\"$pod\"}[$__rate_interval])) by(service_kind)",
+           "interval": "",
+           "legendFormat": "{{pod}}",
+           "refId": "A"
+@@ -1156,7 +1156,7 @@
+       "targets": [
+         {
+           "exemplar": false,
+-          "expr": "sum by (le) (rate(coredns_kubernetes_dns_programming_duration_seconds_bucket{pod=~\"$pod\"}[$__rate_interval]))",
++          "expr": "sum by (le) (rate(coredns_kubernetes_dns_programming_duration_seconds_bucket{job=~\"$job\", pod=~\"$pod\"}[$__rate_interval]))",
+           "format": "heatmap",
+           "interval": "",
+           "intervalFactor": 2,
+
+commit 30078098f0f77934bb7000d201fd981d0c441320
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Tue Jul 2 16:06:42 2024 +0200
+
+    Introduce new "job" variable
+
+    CoreDNS and NodeLocalDNS dashboards are to be merged into one single
+    dashboard. In order to achieve that, a new job variable is necessary to
+    differentiate between the two. Also, the old pod variable needs to capture
+    all labels now .
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+index 59328acd4..e13a72b4e 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+@@ -1199,7 +1199,42 @@
+   "templating": {
+     "list": [
+       {
+-        "allValue": null,
++        "allValue": ".*",
++        "current": {
++          "selected": true,
++          "text": [
++            "node-local-dns"
++          ],
++          "value": [
++            "node-local-dns"
++          ]
++        },
++        "datasource": "prometheus",
++        "definition": "label_values(coredns_build_info, job)",
++        "description": null,
++        "error": null,
++        "hide": 0,
++        "includeAll": true,
++        "label": "Job",
++        "multi": true,
++        "name": "job",
++        "options": [],
++        "query": {
++          "query": "label_values(coredns_build_info, job)",
++          "refId": "StandardVariableQuery"
++        },
++        "refresh": 2,
++        "regex": "",
++        "skipUrlSync": false,
++        "sort": 0,
++        "tagValuesQuery": "",
++        "tags": [],
++        "tagsQuery": "",
++        "type": "query",
++        "useTags": false
++      },
++      {
++        "allValue": ".*",
+         "current": {
+           "selected": true,
+           "text": [
+@@ -1210,21 +1245,21 @@
+           ]
+         },
+         "datasource": "prometheus",
+-        "definition": "label_values(coredns_build_info, pod)",
++        "definition": "label_values(coredns_build_info{job=~\"$job\"}, pod)",
+         "description": null,
+         "error": null,
+         "hide": 0,
+         "includeAll": true,
+-        "label": "CoreDNS Pod",
++        "label": "Pod",
+         "multi": true,
+         "name": "pod",
+         "options": [],
+         "query": {
+-          "query": "label_values(coredns_build_info, pod)",
+-          "refId": "prometheus-pod-Variable-Query"
++          "query": "label_values(coredns_build_info{job=~\"$job\"}, pod)",
++          "refId": "StandardVariableQuery"
+         },
+         "refresh": 2,
+-        "regex": "coredns.*",
++        "regex": "",
+         "skipUrlSync": false,
+         "sort": 0,
+         "tagValuesQuery": "",
+
+commit cf34a1e46c9b9979a0172f9a24ee240c37905ad9
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Tue Jul 2 14:57:07 2024 +0200
+
+    Remove usage of the "service_kind" variable
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+index a8554d5b5..59328acd4 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+@@ -919,14 +919,7 @@
+       "id": 35,
+       "panels": [],
+       "repeat": "service_kind",
+-      "scopedVars": {
+-        "service_kind": {
+-          "selected": true,
+-          "text": "headless_with_selector",
+-          "value": "headless_with_selector"
+-        }
+-      },
+-      "title": "DNS Programming Latency ($service_kind)",
++      "title": "DNS Programming Latency",
+       "type": "row"
+     },
+     {
+@@ -972,13 +965,6 @@
+       "pointradius": 2,
+       "points": false,
+       "renderer": "flot",
+-      "scopedVars": {
+-        "service_kind": {
+-          "selected": true,
+-          "text": "headless_with_selector",
+-          "value": "headless_with_selector"
+-        }
+-      },
+       "seriesOverrides": [],
+       "spaceLength": 10,
+       "stack": false,
+@@ -1078,13 +1064,6 @@
+       "pointradius": 2,
+       "points": false,
+       "renderer": "flot",
+-      "scopedVars": {
+-        "service_kind": {
+-          "selected": true,
+-          "text": "headless_with_selector",
+-          "value": "headless_with_selector"
+-        }
+-      },
+       "seriesOverrides": [],
+       "spaceLength": 10,
+       "stack": false,
+@@ -1174,13 +1153,6 @@
+       },
+       "pluginVersion": "7.5.10",
+       "reverseYBuckets": false,
+-      "scopedVars": {
+-        "service_kind": {
+-          "selected": true,
+-          "text": "headless_with_selector",
+-          "value": "headless_with_selector"
+-        }
+-      },
+       "targets": [
+         {
+           "exemplar": false,
+
+commit 1b365f1e501ca2cc39749bdd62cb3aacf83ca91f
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Tue Jul 2 14:53:41 2024 +0200
+
+    Fix "DNS Programming Events" panel
+
+    In previous commits, we missed to delete the service_kind variable from the
+    query.
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+index e0cf2f4b4..a8554d5b5 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+@@ -986,7 +986,7 @@
+       "targets": [
+         {
+           "exemplar": false,
+-          "expr": "sum(rate(coredns_kubernetes_dns_programming_duration_seconds_count{pod=~\"$pod\", service_kind=~\"$service_kind\"}[$__rate_interval])) by (service_kind)",
++          "expr": "sum(rate(coredns_kubernetes_dns_programming_duration_seconds_count{pod=~\"$pod\"}[$__rate_interval])) by (service_kind)",
+           "interval": "",
+           "legendFormat": "{{service_kind}}",
+           "refId": "A"
+
+commit 069b68fb3fa8779eac50071a35e0af1cc5526c09
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Fri Jun 28 16:48:12 2024 +0200
+
+    Add TODO to adapt the NodeLocalDNS dashboards in the future
+
+    The change can't be done yet because node-local-dns does not use
+    core-dns 1.11 at the moment.
+
+diff --git a/imagevector/images.yaml b/imagevector/images.yaml
+index f4a1bf59d..caa1e7fd3 100644
+--- a/imagevector/images.yaml
++++ b/imagevector/images.yaml
+@@ -395,6 +395,7 @@ images:
+     value:
+     - type: 'githubTeam'
+       teamname: 'gardener/gardener-core-networking-maintainers'
++# TODO(vicwicker): A node-local-dns version that uses coredns 1.11 or higher requires adapting the node-local-dns Plutono dashboards.
+ - name: node-local-dns
+   sourceRepository: github.com/kubernetes/kubernetes/blob/master/cluster/addons/dns/nodelocaldns
+   repository: registry.k8s.io/dns/k8s-dns-node-cache
+
+commit 7677184d7347fa84b18fc4582e45e23292311120
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Fri Jun 28 16:26:59 2024 +0200
+
+    Renovate the "DNS Programming Heatmap" panel
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+index 005dd1799..e0cf2f4b4 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+@@ -1147,11 +1147,11 @@
+         "cardRound": null
+       },
+       "color": {
+-        "cardColor": "#b4ff00",
++        "cardColor": "#37872D",
+         "colorScale": "sqrt",
+         "colorScheme": "interpolateOranges",
+         "exponent": 0.5,
+-        "mode": "spectrum"
++        "mode": "opacity"
+       },
+       "dataFormat": "tsbuckets",
+       "datasource": null,
+@@ -1161,8 +1161,8 @@
+       },
+       "gridPos": {
+         "h": 8,
+-        "w": 12,
+-        "x": 12,
++        "w": 24,
++        "x": 0,
+         "y": 65
+       },
+       "heatmap": {},
+@@ -1184,9 +1184,10 @@
+       "targets": [
+         {
+           "exemplar": false,
+-          "expr": "sum by (le) (rate(coredns_kubernetes_dns_programming_duration_seconds_bucket{pod=~\"$pod\", service_kind=~\"$service_kind\"}[$__rate_interval]))",
++          "expr": "sum by (le) (rate(coredns_kubernetes_dns_programming_duration_seconds_bucket{pod=~\"$pod\"}[$__rate_interval]))",
+           "format": "heatmap",
+           "interval": "",
++          "intervalFactor": 2,
+           "legendFormat": "{{le}}",
+           "refId": "A"
+         }
+@@ -1211,7 +1212,7 @@
+         "show": true,
+         "splitFactor": null
+       },
+-      "yBucketBound": "upper",
++      "yBucketBound": "auto",
+       "yBucketNumber": null,
+       "yBucketSize": null
+     }
+
+commit f0b44de1a4e636e3bcdbd57df3af9167f4c409c3
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Fri Jun 28 16:21:01 2024 +0200
+
+    Renovate the "DNS Programming Cores" panel
+
+    Sum by service_kind instead of using it for filtering. The filtering can
+    still be done by selecting the series in the panel directly. This also
+    allows removing the service_kind dashboard variable.
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+index 6f6ba2e97..005dd1799 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+@@ -1049,21 +1049,23 @@
+       "fill": 0,
+       "fillGradient": 0,
+       "gridPos": {
+-        "h": 8,
+-        "w": 6,
+-        "x": 6,
++        "h": 7,
++        "w": 24,
++        "x": 0,
+         "y": 58
+       },
+       "hiddenSeries": false,
+       "id": 33,
+       "legend": {
+-        "avg": false,
+-        "current": false,
+-        "max": false,
++        "alignAsTable": true,
++        "avg": true,
++        "current": true,
++        "max": true,
+         "min": false,
++        "rightSide": true,
+         "show": true,
+         "total": false,
+-        "values": false
++        "values": true
+       },
+       "lines": true,
+       "linewidth": 1,
+@@ -1090,7 +1092,7 @@
+       "targets": [
+         {
+           "exemplar": true,
+-          "expr": "increase(coredns_kubernetes_dns_programming_duration_seconds_sum{pod=~\"$pod\", service_kind=~\"$service_kind\"}[$__rate_interval])",
++          "expr": "sum(rate(coredns_kubernetes_dns_programming_duration_seconds_sum{pod=~\"$pod\"}[$__rate_interval])) by(service_kind)",
+           "interval": "",
+           "legendFormat": "{{pod}}",
+           "refId": "A"
+@@ -1100,7 +1102,7 @@
+       "timeFrom": null,
+       "timeRegions": [],
+       "timeShift": null,
+-      "title": "Increase in DNS Programming Seconds",
++      "title": "DNS Programming Cores",
+       "tooltip": {
+         "shared": true,
+         "sort": 0,
+@@ -1117,7 +1119,7 @@
+       "yaxes": [
+         {
+           "$$hashKey": "object:557",
+-          "format": "s",
++          "format": "cores",
+           "label": null,
+           "logBase": 1,
+           "max": null,
+@@ -1161,7 +1163,7 @@
+         "h": 8,
+         "w": 12,
+         "x": 12,
+-        "y": 58
++        "y": 65
+       },
+       "heatmap": {},
+       "hideZeroBuckets": true,
+@@ -1257,43 +1259,6 @@
+         "tagsQuery": "",
+         "type": "query",
+         "useTags": false
+-      },
+-      {
+-        "allValue": null,
+-        "current": {
+-          "selected": false,
+-          "text": "headless_with_selector",
+-          "value": "headless_with_selector"
+-        },
+-        "datasource": null,
+-        "definition": "label_values(coredns_kubernetes_dns_programming_duration_seconds_count,service_kind)",
+-        "description": null,
+-        "error": null,
+-        "hide": 2,
+-        "includeAll": false,
+-        "label": null,
+-        "multi": false,
+-        "name": "service_kind",
+-        "options": [
+-          {
+-            "selected": true,
+-            "text": "headless_with_selector",
+-            "value": "headless_with_selector"
+-          }
+-        ],
+-        "query": {
+-          "query": "label_values(coredns_kubernetes_dns_programming_duration_seconds_count,service_kind)",
+-          "refId": "StandardVariableQuery"
+-        },
+-        "refresh": 0,
+-        "regex": "",
+-        "skipUrlSync": false,
+-        "sort": 0,
+-        "tagValuesQuery": "",
+-        "tags": [],
+-        "tagsQuery": "",
+-        "type": "query",
+-        "useTags": false
+       }
+     ]
+   },
+
+commit 407120292ce73c7ef935b58fca6e585622b240bf
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Fri Jun 28 16:10:50 2024 +0200
+
+    Renovate the "DNS Programming Events" panel
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+index 57e70e443..6f6ba2e97 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+@@ -943,21 +943,23 @@
+       "fill": 0,
+       "fillGradient": 0,
+       "gridPos": {
+-        "h": 8,
+-        "w": 6,
++        "h": 6,
++        "w": 24,
+         "x": 0,
+         "y": 52
+       },
+       "hiddenSeries": false,
+       "id": 32,
+       "legend": {
+-        "avg": false,
+-        "current": false,
+-        "max": false,
++        "alignAsTable": true,
++        "avg": true,
++        "current": true,
++        "max": true,
+         "min": false,
++        "rightSide": true,
+         "show": true,
+         "total": false,
+-        "values": false
++        "values": true
+       },
+       "lines": true,
+       "linewidth": 1,
+@@ -983,10 +985,10 @@
+       "steppedLine": false,
+       "targets": [
+         {
+-          "exemplar": true,
+-          "expr": "rate(coredns_kubernetes_dns_programming_duration_seconds_count{pod=~\"$pod\", service_kind=~\"$service_kind\"}[$__rate_interval])",
++          "exemplar": false,
++          "expr": "sum(rate(coredns_kubernetes_dns_programming_duration_seconds_count{pod=~\"$pod\", service_kind=~\"$service_kind\"}[$__rate_interval])) by (service_kind)",
+           "interval": "",
+-          "legendFormat": "{{pod}}",
++          "legendFormat": "{{service_kind}}",
+           "refId": "A"
+         }
+       ],
+@@ -994,7 +996,7 @@
+       "timeFrom": null,
+       "timeRegions": [],
+       "timeShift": null,
+-      "title": "Rate of DNS Programming Events",
++      "title": "DNS Programming Events",
+       "tooltip": {
+         "shared": true,
+         "sort": 0,
+@@ -1011,11 +1013,11 @@
+       "yaxes": [
+         {
+           "$$hashKey": "object:557",
+-          "format": "hertz",
++          "format": "ops",
+           "label": null,
+           "logBase": 1,
+           "max": null,
+-          "min": null,
++          "min": "0",
+           "show": true
+         },
+         {
+@@ -1050,7 +1052,7 @@
+         "h": 8,
+         "w": 6,
+         "x": 6,
+-        "y": 52
++        "y": 58
+       },
+       "hiddenSeries": false,
+       "id": 33,
+@@ -1159,7 +1161,7 @@
+         "h": 8,
+         "w": 12,
+         "x": 12,
+-        "y": 52
++        "y": 58
+       },
+       "heatmap": {},
+       "hideZeroBuckets": true,
+
+commit f8d9cd5b27d23714f640817766c71422f12d919d
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Fri Jun 28 15:59:06 2024 +0200
+
+    Renovate the "Upstream DNS Responses" panel
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+index f70bd2339..57e70e443 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+@@ -809,14 +809,14 @@
+       "dashLength": 10,
+       "dashes": false,
+       "datasource": null,
+-      "description": "Average per second rate of responses from upstream DNS split by status code (rcode).",
++      "description": "Average per second rate of responses from upstream DNS split by response code.",
+       "fieldConfig": {
+         "defaults": {
+           "links": []
+         },
+         "overrides": []
+       },
+-      "fill": 1,
++      "fill": 0,
+       "fillGradient": 0,
+       "gridPos": {
+         "h": 7,
+@@ -827,13 +827,15 @@
+       "hiddenSeries": false,
+       "id": 12,
+       "legend": {
+-        "avg": false,
+-        "current": false,
+-        "max": false,
++        "alignAsTable": true,
++        "avg": true,
++        "current": true,
++        "max": true,
+         "min": false,
++        "rightSide": true,
+         "show": true,
+         "total": false,
+-        "values": false
++        "values": true
+       },
+       "lines": true,
+       "linewidth": 1,
+@@ -853,8 +855,8 @@
+       "steppedLine": false,
+       "targets": [
+         {
+-          "exemplar": true,
+-          "expr": "rate(coredns_proxy_request_duration_seconds_count{pod=~\"$pod\", proxy_name=\"forward\"}[$__rate_interval])",
++          "exemplar": false,
++          "expr": "sum(rate(coredns_proxy_request_duration_seconds_count{pod=~\"$pod\", proxy_name=\"forward\"}[$__rate_interval])) by (to, rcode)",
+           "format": "time_series",
+           "interval": "",
+           "intervalFactor": 1,
+@@ -883,11 +885,11 @@
+       "yaxes": [
+         {
+           "$$hashKey": "object:51",
+-          "format": "short",
++          "format": "reqps",
+           "label": null,
+           "logBase": 1,
+           "max": null,
+-          "min": null,
++          "min": "0",
+           "show": true
+         },
+         {
+
+commit 65aea92012e1e2024cdb92d0ec1ec2f7bb94ffdd
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Fri Jun 28 15:56:07 2024 +0200
+
+    Remove the "Upstream DNS Forward Responses Per Interval" panel using offset
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+index bed80b472..f70bd2339 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+@@ -803,107 +803,6 @@
+         "alignLevel": null
+       }
+     },
+-    {
+-      "aliasColors": {},
+-      "bars": false,
+-      "dashLength": 10,
+-      "dashes": false,
+-      "datasource": null,
+-      "description": "DNS forward responses per interval from upstream DNS split by status code (rcode).",
+-      "fieldConfig": {
+-        "defaults": {
+-          "links": []
+-        },
+-        "overrides": []
+-      },
+-      "fill": 1,
+-      "fillGradient": 0,
+-      "gridPos": {
+-        "h": 7,
+-        "w": 12,
+-        "x": 0,
+-        "y": 44
+-      },
+-      "hiddenSeries": false,
+-      "id": 25,
+-      "legend": {
+-        "avg": false,
+-        "current": false,
+-        "max": false,
+-        "min": false,
+-        "show": true,
+-        "total": false,
+-        "values": false
+-      },
+-      "lines": true,
+-      "linewidth": 1,
+-      "links": [],
+-      "nullPointMode": "null",
+-      "options": {
+-        "alertThreshold": true
+-      },
+-      "percentage": false,
+-      "pluginVersion": "7.5.31",
+-      "pointradius": 2,
+-      "points": false,
+-      "renderer": "flot",
+-      "seriesOverrides": [],
+-      "spaceLength": 10,
+-      "stack": false,
+-      "steppedLine": false,
+-      "targets": [
+-        {
+-          "exemplar": true,
+-          "expr": "sum(coredns_proxy_request_duration_seconds_count{pod=~\"$pod\", proxy_name=\"forward\"} - coredns_proxy_request_duration_seconds_count{pod=~\"$pod\", proxy_name=\"forward\"} offset $__interval) by (to,rcode)",
+-          "hide": false,
+-          "interval": "",
+-          "legendFormat": "{{rcode}}  ({{to}})",
+-          "refId": "B"
+-        }
+-      ],
+-      "thresholds": [],
+-      "timeFrom": null,
+-      "timeRegions": [],
+-      "timeShift": null,
+-      "title": "Upstream DNS Forward Responses Per Interval",
+-      "tooltip": {
+-        "shared": true,
+-        "sort": 0,
+-        "value_type": "individual"
+-      },
+-      "type": "graph",
+-      "xaxis": {
+-        "buckets": null,
+-        "mode": "time",
+-        "name": null,
+-        "show": true,
+-        "values": []
+-      },
+-      "yaxes": [
+-        {
+-          "$$hashKey": "object:51",
+-          "format": "short",
+-          "label": null,
+-          "logBase": 1,
+-          "max": null,
+-          "min": null,
+-          "show": true
+-        },
+-        {
+-          "$$hashKey": "object:52",
+-          "format": "short",
+-          "label": null,
+-          "logBase": 1,
+-          "max": null,
+-          "min": null,
+-          "show": true
+-        }
+-      ],
+-      "yaxis": {
+-        "align": false,
+-        "alignLevel": null
+-      }
+-    },
+     {
+       "aliasColors": {},
+       "bars": false,
+@@ -921,8 +820,8 @@
+       "fillGradient": 0,
+       "gridPos": {
+         "h": 7,
+-        "w": 12,
+-        "x": 12,
++        "w": 24,
++        "x": 0,
+         "y": 44
+       },
+       "hiddenSeries": false,
+
+commit c5d782289e23b648a34841fc53b8a3e84915a9cb
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Fri Jun 28 15:54:42 2024 +0200
+
+    Renovate the "Upstream DNS Requests" panel
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+index fea9a2ecb..bed80b472 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+@@ -704,14 +704,14 @@
+       "dashLength": 10,
+       "dashes": false,
+       "datasource": null,
+-      "description": "Average request (packets per second) rate made to upstream DNS.",
++      "description": "Average request per second made to upstream DNS.",
+       "fieldConfig": {
+         "defaults": {
+           "links": []
+         },
+         "overrides": []
+       },
+-      "fill": 1,
++      "fill": 0,
+       "fillGradient": 0,
+       "gridPos": {
+         "h": 7,
+@@ -722,15 +722,15 @@
+       "hiddenSeries": false,
+       "id": 23,
+       "legend": {
+-        "alignAsTable": false,
+-        "avg": false,
+-        "current": false,
+-        "max": false,
++        "alignAsTable": true,
++        "avg": true,
++        "current": true,
++        "max": true,
+         "min": false,
+-        "rightSide": false,
++        "rightSide": true,
+         "show": true,
+         "total": false,
+-        "values": false
++        "values": true
+       },
+       "lines": true,
+       "linewidth": 1,
+@@ -750,9 +750,10 @@
+       "steppedLine": false,
+       "targets": [
+         {
+-          "exemplar": true,
++          "exemplar": false,
+           "expr": "sum(rate(coredns_proxy_request_duration_seconds_count{pod=~\"$pod\", proxy_name=\"forward\"}[$__rate_interval])) by (to)",
+           "format": "time_series",
++          "hide": false,
+           "interval": "",
+           "intervalFactor": 1,
+           "legendFormat": "{{to}}",
+@@ -780,11 +781,11 @@
+       "yaxes": [
+         {
+           "$$hashKey": "object:479",
+-          "format": "pps",
++          "format": "reqps",
+           "label": null,
+           "logBase": 1,
+           "max": null,
+-          "min": null,
++          "min": "0",
+           "show": true
+         },
+         {
+
+commit c80bfa7b9986f758e9befa9593804ad5d5c7c9ce
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Fri Jun 28 15:39:20 2024 +0200
+
+    Remove the "Upstream DNS Requests Per Interval" panel using offset
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+index 8957c566d..fea9a2ecb 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+@@ -698,111 +698,6 @@
+       "title": "Upstream DNS",
+       "type": "row"
+     },
+-    {
+-      "aliasColors": {},
+-      "bars": false,
+-      "dashLength": 10,
+-      "dashes": false,
+-      "datasource": null,
+-      "description": "Request per interval  to upstream DNS.",
+-      "fieldConfig": {
+-        "defaults": {
+-          "links": []
+-        },
+-        "overrides": []
+-      },
+-      "fill": 1,
+-      "fillGradient": 0,
+-      "gridPos": {
+-        "h": 7,
+-        "w": 12,
+-        "x": 0,
+-        "y": 37
+-      },
+-      "hiddenSeries": false,
+-      "id": 10,
+-      "legend": {
+-        "alignAsTable": false,
+-        "avg": false,
+-        "current": false,
+-        "max": false,
+-        "min": false,
+-        "rightSide": false,
+-        "show": true,
+-        "total": false,
+-        "values": false
+-      },
+-      "lines": true,
+-      "linewidth": 1,
+-      "links": [],
+-      "maxDataPoints": null,
+-      "nullPointMode": "null",
+-      "options": {
+-        "alertThreshold": true
+-      },
+-      "percentage": false,
+-      "pluginVersion": "7.5.31",
+-      "pointradius": 2,
+-      "points": false,
+-      "renderer": "flot",
+-      "seriesOverrides": [],
+-      "spaceLength": 10,
+-      "stack": false,
+-      "steppedLine": false,
+-      "targets": [
+-        {
+-          "exemplar": true,
+-          "expr": "sum(coredns_proxy_request_duration_seconds_count{pod=~\"$pod\", proxy_name=\"forward\"} - coredns_proxy_request_duration_seconds_count{pod=~\"$pod\", proxy_name=\"forward\"} offset $__interval) by (to)",
+-          "format": "time_series",
+-          "interval": "",
+-          "intervalFactor": 1,
+-          "legendFormat": "{{to}}",
+-          "refId": "A"
+-        }
+-      ],
+-      "thresholds": [],
+-      "timeFrom": null,
+-      "timeRegions": [],
+-      "timeShift": null,
+-      "title": "Upstream DNS Requests Per Interval",
+-      "tooltip": {
+-        "shared": true,
+-        "sort": 0,
+-        "value_type": "individual"
+-      },
+-      "type": "graph",
+-      "xaxis": {
+-        "buckets": null,
+-        "mode": "time",
+-        "name": null,
+-        "show": true,
+-        "values": []
+-      },
+-      "yaxes": [
+-        {
+-          "$$hashKey": "object:177",
+-          "format": "none",
+-          "label": null,
+-          "logBase": 1,
+-          "max": null,
+-          "min": null,
+-          "show": true
+-        },
+-        {
+-          "$$hashKey": "object:178",
+-          "format": "short",
+-          "label": null,
+-          "logBase": 1,
+-          "max": null,
+-          "min": null,
+-          "show": true
+-        }
+-      ],
+-      "yaxis": {
+-        "align": false,
+-        "alignLevel": null
+-      }
+-    },
+     {
+       "aliasColors": {},
+       "bars": false,
+@@ -820,8 +715,8 @@
+       "fillGradient": 0,
+       "gridPos": {
+         "h": 7,
+-        "w": 12,
+-        "x": 12,
++        "w": 24,
++        "x": 0,
+         "y": 37
+       },
+       "hiddenSeries": false,
+
+commit 763b20b8312b8e3ad58c086f544fb48ae3e9aba5
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Fri Jun 28 15:28:24 2024 +0200
+
+    Renovate the "Cache Size" panel
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+index 5807b9a20..8957c566d 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+@@ -584,7 +584,7 @@
+       "dashLength": 10,
+       "dashes": false,
+       "datasource": null,
+-      "decimals": 0,
++      "decimals": null,
+       "description": "Count of cached entries in the cache of the DNS.",
+       "fieldConfig": {
+         "defaults": {
+@@ -592,7 +592,7 @@
+         },
+         "overrides": []
+       },
+-      "fill": 1,
++      "fill": 0,
+       "fillGradient": 0,
+       "gridPos": {
+         "h": 7,
+@@ -603,13 +603,15 @@
+       "hiddenSeries": false,
+       "id": 2,
+       "legend": {
+-        "avg": false,
+-        "current": false,
+-        "max": false,
++        "alignAsTable": true,
++        "avg": true,
++        "current": true,
++        "max": true,
+         "min": false,
+-        "show": false,
++        "rightSide": true,
++        "show": true,
+         "total": false,
+-        "values": false
++        "values": true
+       },
+       "lines": true,
+       "linewidth": 1,
+@@ -629,12 +631,12 @@
+       "steppedLine": false,
+       "targets": [
+         {
+-          "exemplar": true,
+-          "expr": "sum(coredns_cache_entries{pod=~\"$pod\"}) by (type)",
++          "exemplar": false,
++          "expr": "sum(coredns_cache_entries{pod=~\"$pod\"}) by (exported_type, zones)",
+           "format": "time_series",
+           "interval": "",
+           "intervalFactor": 1,
+-          "legendFormat": "cache size: {{ type }}",
++          "legendFormat": "{{exported_type}} {{zones}}",
+           "refId": "A"
+         }
+       ],
+@@ -659,12 +661,12 @@
+       "yaxes": [
+         {
+           "$$hashKey": "object:619",
+-          "decimals": 0,
++          "decimals": null,
+           "format": "short",
+           "label": null,
+           "logBase": 1,
+           "max": null,
+-          "min": null,
++          "min": "0",
+           "show": true
+         },
+         {
+
+commit 1e96640b976eaa8e0c5088dc21bdfdf452f782b3
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Fri Jun 28 15:21:18 2024 +0200
+
+    Remove the "Cache Hits and Misses" panel
+
+    As described in previous commits, using the offset is not idiomatic on
+    counter metrics. The previous panel shows the same information.
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+index 6ccd3f9a2..5807b9a20 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+@@ -481,8 +481,8 @@
+       "fillGradient": 0,
+       "grid": {},
+       "gridPos": {
+-        "h": 7,
+-        "w": 12,
++        "h": 6,
++        "w": 24,
+         "x": 0,
+         "y": 23
+       },
+@@ -578,121 +578,6 @@
+         "alignLevel": null
+       }
+     },
+-    {
+-      "aliasColors": {},
+-      "bars": false,
+-      "dashLength": 10,
+-      "dashes": false,
+-      "datasource": "prometheus",
+-      "decimals": 0,
+-      "description": "The `cache hits` describes how many DNS requests were answered due to a cached entry.\n\nThe `cache misses` describes how much DNS requests need to be looked up, because the requests entry does not exist in the local cache.\n\n",
+-      "editable": true,
+-      "error": false,
+-      "fieldConfig": {
+-        "defaults": {
+-          "links": []
+-        },
+-        "overrides": []
+-      },
+-      "fill": 1,
+-      "fillGradient": 0,
+-      "grid": {},
+-      "gridPos": {
+-        "h": 7,
+-        "w": 12,
+-        "x": 12,
+-        "y": 23
+-      },
+-      "hiddenSeries": false,
+-      "id": 22,
+-      "legend": {
+-        "avg": false,
+-        "current": false,
+-        "max": false,
+-        "min": false,
+-        "show": true,
+-        "total": false,
+-        "values": false
+-      },
+-      "lines": true,
+-      "linewidth": 2,
+-      "links": [],
+-      "nullPointMode": "connected",
+-      "options": {
+-        "alertThreshold": true
+-      },
+-      "percentage": false,
+-      "pluginVersion": "7.5.31",
+-      "pointradius": 5,
+-      "points": false,
+-      "renderer": "flot",
+-      "seriesOverrides": [],
+-      "spaceLength": 10,
+-      "stack": false,
+-      "steppedLine": true,
+-      "targets": [
+-        {
+-          "exemplar": true,
+-          "expr": "sum(coredns_cache_hits_total{pod=~\"$pod\"} - coredns_cache_hits_total{pod=~\"$pod\"} offset $__interval)",
+-          "format": "time_series",
+-          "interval": "",
+-          "intervalFactor": 2,
+-          "legendFormat": "cache hits",
+-          "refId": "A",
+-          "step": 40
+-        },
+-        {
+-          "expr": "sum(coredns_cache_misses_total{pod=~\"$pod\"} - coredns_cache_misses_total{pod=~\"$pod\"} offset $__interval)",
+-          "format": "time_series",
+-          "interval": "",
+-          "intervalFactor": 2,
+-          "legendFormat": "cache misses",
+-          "refId": "B",
+-          "step": 40
+-        }
+-      ],
+-      "thresholds": [],
+-      "timeFrom": null,
+-      "timeRegions": [],
+-      "timeShift": null,
+-      "title": "Cache Hits and Misses",
+-      "tooltip": {
+-        "shared": true,
+-        "sort": 0,
+-        "value_type": "cumulative"
+-      },
+-      "type": "graph",
+-      "xaxis": {
+-        "buckets": null,
+-        "mode": "time",
+-        "name": null,
+-        "show": true,
+-        "values": []
+-      },
+-      "yaxes": [
+-        {
+-          "$$hashKey": "object:504",
+-          "decimals": 0,
+-          "format": "none",
+-          "logBase": 1,
+-          "max": null,
+-          "min": 0,
+-          "show": true
+-        },
+-        {
+-          "$$hashKey": "object:505",
+-          "format": "pps",
+-          "logBase": 1,
+-          "max": null,
+-          "min": 0,
+-          "show": false
+-        }
+-      ],
+-      "yaxis": {
+-        "align": false,
+-        "alignLevel": null
+-      }
+-    },
+     {
+       "aliasColors": {},
+       "bars": false,
+@@ -713,7 +598,7 @@
+         "h": 7,
+         "w": 24,
+         "x": 0,
+-        "y": 30
++        "y": 29
+       },
+       "hiddenSeries": false,
+       "id": 2,
+@@ -804,7 +689,7 @@
+         "h": 1,
+         "w": 24,
+         "x": 0,
+-        "y": 37
++        "y": 36
+       },
+       "id": 14,
+       "panels": [],
+@@ -830,7 +715,7 @@
+         "h": 7,
+         "w": 12,
+         "x": 0,
+-        "y": 38
++        "y": 37
+       },
+       "hiddenSeries": false,
+       "id": 10,
+@@ -935,7 +820,7 @@
+         "h": 7,
+         "w": 12,
+         "x": 12,
+-        "y": 38
++        "y": 37
+       },
+       "hiddenSeries": false,
+       "id": 23,
+@@ -1039,7 +924,7 @@
+         "h": 7,
+         "w": 12,
+         "x": 0,
+-        "y": 45
++        "y": 44
+       },
+       "hiddenSeries": false,
+       "id": 25,
+@@ -1140,7 +1025,7 @@
+         "h": 7,
+         "w": 12,
+         "x": 12,
+-        "y": 45
++        "y": 44
+       },
+       "hiddenSeries": false,
+       "id": 12,
+@@ -1230,7 +1115,7 @@
+         "h": 1,
+         "w": 24,
+         "x": 0,
+-        "y": 52
++        "y": 51
+       },
+       "id": 35,
+       "panels": [],
+@@ -1262,7 +1147,7 @@
+         "h": 8,
+         "w": 6,
+         "x": 0,
+-        "y": 53
++        "y": 52
+       },
+       "hiddenSeries": false,
+       "id": 32,
+@@ -1366,7 +1251,7 @@
+         "h": 8,
+         "w": 6,
+         "x": 6,
+-        "y": 53
++        "y": 52
+       },
+       "hiddenSeries": false,
+       "id": 33,
+@@ -1475,7 +1360,7 @@
+         "h": 8,
+         "w": 12,
+         "x": 12,
+-        "y": 53
++        "y": 52
+       },
+       "heatmap": {},
+       "hideZeroBuckets": true,
+
+commit 654f4dbbadd959c88c2ca1c8e5f5ad0816eb0955
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Fri Jun 28 15:18:38 2024 +0200
+
+    Renovate the "Cache Hits and Misses" panel
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+index e10a08819..6ccd3f9a2 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+@@ -468,7 +468,7 @@
+       "dashLength": 10,
+       "dashes": false,
+       "datasource": "prometheus",
+-      "description": "The `cache hits` describes how many DNS requests were answered due to a cached entry.\n\nThe `cache misses` describes how much DNS requests need to be looked up, because the requests entry does not exist in the local cache.\n\nThe rates are per second averages and displayed in packets per second.",
++      "description": "The `cache hits` describes how many DNS requests were answered due to a cached entry.\n\nThe `cache misses` describes how many DNS requests need to be looked up, because the requests entry does not exist in the local cache.",
+       "editable": true,
+       "error": false,
+       "fieldConfig": {
+@@ -477,7 +477,7 @@
+         },
+         "overrides": []
+       },
+-      "fill": 1,
++      "fill": 0,
+       "fillGradient": 0,
+       "grid": {},
+       "gridPos": {
+@@ -489,18 +489,20 @@
+       "hiddenSeries": false,
+       "id": 6,
+       "legend": {
+-        "avg": false,
+-        "current": false,
+-        "max": false,
++        "alignAsTable": true,
++        "avg": true,
++        "current": true,
++        "max": true,
+         "min": false,
++        "rightSide": true,
+         "show": true,
+         "total": false,
+-        "values": false
++        "values": true
+       },
+       "lines": true,
+-      "linewidth": 2,
++      "linewidth": 1,
+       "links": [],
+-      "nullPointMode": "connected",
++      "nullPointMode": "null",
+       "options": {
+         "alertThreshold": true
+       },
+@@ -515,19 +517,21 @@
+       "steppedLine": false,
+       "targets": [
+         {
+-          "exemplar": true,
+-          "expr": "rate(coredns_cache_hits_total{pod=~\"$pod\"}[$__rate_interval])",
++          "exemplar": false,
++          "expr": "sum(rate(coredns_cache_hits_total{pod=~\"$pod\"}[$__rate_interval])) by(exported_type)",
+           "format": "time_series",
+           "interval": "",
+-          "intervalFactor": 2,
+-          "legendFormat": "cache hits",
++          "intervalFactor": 1,
++          "legendFormat": "cache hits {{exported_type}}",
+           "refId": "A",
+           "step": 40
+         },
+         {
+-          "expr": "rate(coredns_cache_misses_total{pod=~\"$pod\"}[$__rate_interval])",
++          "exemplar": false,
++          "expr": "sum(rate(coredns_cache_misses_total{pod=~\"$pod\"}[$__rate_interval]))",
+           "format": "time_series",
+-          "intervalFactor": 2,
++          "interval": "",
++          "intervalFactor": 1,
+           "legendFormat": "cache misses",
+           "refId": "B",
+           "step": 40
+@@ -537,7 +541,7 @@
+       "timeFrom": null,
+       "timeRegions": [],
+       "timeShift": null,
+-      "title": "Cache Hits and Misses (Per Second)",
++      "title": "Cache Hits and Misses",
+       "tooltip": {
+         "shared": true,
+         "sort": 0,
+@@ -554,7 +558,7 @@
+       "yaxes": [
+         {
+           "$$hashKey": "object:211",
+-          "format": "none",
++          "format": "reqps",
+           "logBase": 1,
+           "max": null,
+           "min": 0,
+
+commit 632646c3d2d9c6e2c2a59f117466d67448143409
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Fri Jun 28 15:08:12 2024 +0200
+
+    Renovate the "DNS Requests Latency Heatmap" panel
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+index 88b7c8c05..e10a08819 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+@@ -381,11 +381,11 @@
+         "cardRound": null
+       },
+       "color": {
+-        "cardColor": "#b4ff00",
++        "cardColor": "#37872D",
+         "colorScale": "sqrt",
+         "colorScheme": "interpolateOranges",
+         "exponent": 0.5,
+-        "mode": "spectrum"
++        "mode": "opacity"
+       },
+       "dataFormat": "tsbuckets",
+       "datasource": "prometheus",
+@@ -412,11 +412,11 @@
+       "reverseYBuckets": false,
+       "targets": [
+         {
+-          "exemplar": true,
++          "exemplar": false,
+           "expr": "sum by (le) (rate(coredns_dns_request_duration_seconds_bucket{pod=~\"$pod\"}[$__rate_interval]))",
+           "format": "heatmap",
+           "interval": "",
+-          "intervalFactor": 1,
++          "intervalFactor": 2,
+           "legendFormat": "{{le}}",
+           "refId": "A",
+           "step": 60
+@@ -444,7 +444,7 @@
+         "show": true,
+         "splitFactor": null
+       },
+-      "yBucketBound": "upper",
++      "yBucketBound": "auto",
+       "yBucketNumber": null,
+       "yBucketSize": null
+     },
+
+commit be912ea86da81aeb48061f033758609d53038293
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Fri Jun 28 14:59:50 2024 +0200
+
+    Renovate the "DNS Requests Latency" panel
+
+    The "coredns_dns_request_duration_seconds_bucket" does not have a type
+    label so we use the zone instead.
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+index 928cc3b59..88b7c8c05 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+@@ -270,7 +270,7 @@
+       "dashLength": 10,
+       "dashes": false,
+       "datasource": "prometheus",
+-      "decimals": 0,
++      "decimals": null,
+       "description": "DNS Requests Latency in seconds",
+       "editable": true,
+       "error": false,
+@@ -280,7 +280,7 @@
+         },
+         "overrides": []
+       },
+-      "fill": 1,
++      "fill": 0,
+       "fillGradient": 3,
+       "grid": {},
+       "gridPos": {
+@@ -305,9 +305,9 @@
+         "values": true
+       },
+       "lines": true,
+-      "linewidth": 2,
++      "linewidth": 1,
+       "links": [],
+-      "nullPointMode": "connected",
++      "nullPointMode": "null",
+       "options": {
+         "alertThreshold": true
+       },
+@@ -319,15 +319,15 @@
+       "seriesOverrides": [],
+       "spaceLength": 10,
+       "stack": false,
+-      "steppedLine": true,
++      "steppedLine": false,
+       "targets": [
+         {
+-          "exemplar": true,
+-          "expr": "histogram_quantile(0.99,sum(rate(coredns_dns_request_duration_seconds_bucket{pod=~\"$pod\"}[$__rate_interval])) by (le,type))",
++          "exemplar": false,
++          "expr": "histogram_quantile(0.99,sum(rate(coredns_dns_request_duration_seconds_bucket{pod=~\"$pod\"}[$__rate_interval])) by (le, zone))",
+           "format": "time_series",
+           "interval": "",
+-          "intervalFactor": 2,
+-          "legendFormat": "{{type}}",
++          "intervalFactor": 1,
++          "legendFormat": "{{zone}} 99%",
+           "refId": "A",
+           "step": 60
+         }
+@@ -336,7 +336,7 @@
+       "timeFrom": null,
+       "timeRegions": [],
+       "timeShift": null,
+-      "title": "DNS Requests Latency (In Seconds)",
++      "title": "DNS Requests Latency",
+       "tooltip": {
+         "shared": true,
+         "sort": 0,
+@@ -353,7 +353,7 @@
+       "yaxes": [
+         {
+           "$$hashKey": "object:149",
+-          "decimals": 0,
++          "decimals": null,
+           "format": "s",
+           "label": "",
+           "logBase": 1,
+
+commit f7ebfd94db78574df1a36a2ed665a5305a9d3c05
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Fri Jun 28 14:34:04 2024 +0200
+
+    Renovate the "DNS Responses" panel
+
+    Sum responses by rcode to avoid showing time series for individual CoreDNS
+    pods.
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+index b44dc1b53..928cc3b59 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+@@ -173,7 +173,7 @@
+         },
+         "overrides": []
+       },
+-      "fill": 1,
++      "fill": 0,
+       "fillGradient": 0,
+       "gridPos": {
+         "h": 7,
+@@ -184,13 +184,15 @@
+       "hiddenSeries": false,
+       "id": 16,
+       "legend": {
+-        "avg": false,
+-        "current": false,
+-        "max": false,
++        "alignAsTable": true,
++        "avg": true,
++        "current": true,
++        "max": true,
+         "min": false,
++        "rightSide": true,
+         "show": true,
+         "total": false,
+-        "values": false
++        "values": true
+       },
+       "lines": true,
+       "linewidth": 1,
+@@ -210,8 +212,8 @@
+       "steppedLine": false,
+       "targets": [
+         {
+-          "exemplar": true,
+-          "expr": "rate(coredns_dns_responses_total{pod=~\"$pod\"}[$__rate_interval])",
++          "exemplar": false,
++          "expr": "sum(rate(coredns_dns_responses_total{pod=~\"$pod\"}[$__rate_interval])) by (rcode)",
+           "format": "time_series",
+           "interval": "",
+           "intervalFactor": 1,
+@@ -223,7 +225,7 @@
+       "timeFrom": null,
+       "timeRegions": [],
+       "timeShift": null,
+-      "title": "DNS Lookup Responses  (Per Second)",
++      "title": "DNS Responses",
+       "tooltip": {
+         "shared": true,
+         "sort": 0,
+@@ -240,7 +242,7 @@
+       "yaxes": [
+         {
+           "$$hashKey": "object:1544",
+-          "format": "short",
++          "format": "reqps",
+           "label": null,
+           "logBase": 1,
+           "max": null,
+
+commit 4b6145fd7d059ecd68b2b35c2da393c36851a0e5
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Fri Jun 28 14:25:45 2024 +0200
+
+    Remove the "DNS Lookup Responses" panel
+
+    Using the offset is not idiomatic. For counter metrics, we should use the
+    rate function. The other panel, which is now using the full row, is using
+    the rate so we do not need this panel.
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+index 635fd0517..b44dc1b53 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+@@ -177,7 +177,7 @@
+       "fillGradient": 0,
+       "gridPos": {
+         "h": 7,
+-        "w": 12,
++        "w": 24,
+         "x": 0,
+         "y": 8
+       },
+@@ -262,110 +262,6 @@
+         "alignLevel": null
+       }
+     },
+-    {
+-      "aliasColors": {},
+-      "bars": false,
+-      "dashLength": 10,
+-      "dashes": false,
+-      "datasource": null,
+-      "decimals": 0,
+-      "description": "Lookup requests split by their status codes (rcode).",
+-      "fieldConfig": {
+-        "defaults": {
+-          "links": []
+-        },
+-        "overrides": []
+-      },
+-      "fill": 1,
+-      "fillGradient": 0,
+-      "gridPos": {
+-        "h": 7,
+-        "w": 12,
+-        "x": 12,
+-        "y": 8
+-      },
+-      "hiddenSeries": false,
+-      "id": 21,
+-      "legend": {
+-        "avg": false,
+-        "current": false,
+-        "max": false,
+-        "min": false,
+-        "show": true,
+-        "total": false,
+-        "values": false
+-      },
+-      "lines": true,
+-      "linewidth": 1,
+-      "links": [],
+-      "nullPointMode": "null",
+-      "options": {
+-        "alertThreshold": true
+-      },
+-      "percentage": false,
+-      "pluginVersion": "7.5.31",
+-      "pointradius": 2,
+-      "points": false,
+-      "renderer": "flot",
+-      "seriesOverrides": [],
+-      "spaceLength": 10,
+-      "stack": false,
+-      "steppedLine": true,
+-      "targets": [
+-        {
+-          "exemplar": true,
+-          "expr": "sum(coredns_dns_responses_total{pod=~\"$pod\"} - coredns_dns_responses_total{pod=~\"$pod\"} offset $__interval) by (rcode)",
+-          "format": "time_series",
+-          "interval": "",
+-          "intervalFactor": 1,
+-          "legendFormat": "{{rcode}}",
+-          "refId": "A"
+-        }
+-      ],
+-      "thresholds": [],
+-      "timeFrom": null,
+-      "timeRegions": [],
+-      "timeShift": null,
+-      "title": "DNS Lookup Responses",
+-      "tooltip": {
+-        "shared": true,
+-        "sort": 0,
+-        "value_type": "individual"
+-      },
+-      "type": "graph",
+-      "xaxis": {
+-        "buckets": null,
+-        "mode": "time",
+-        "name": null,
+-        "show": true,
+-        "values": []
+-      },
+-      "yaxes": [
+-        {
+-          "$$hashKey": "object:253",
+-          "decimals": 0,
+-          "format": "short",
+-          "label": "",
+-          "logBase": 1,
+-          "max": null,
+-          "min": null,
+-          "show": true
+-        },
+-        {
+-          "$$hashKey": "object:254",
+-          "format": "short",
+-          "label": null,
+-          "logBase": 1,
+-          "max": null,
+-          "min": null,
+-          "show": true
+-        }
+-      ],
+-      "yaxis": {
+-        "align": false,
+-        "alignLevel": null
+-      }
+-    },
+     {
+       "aliasColors": {},
+       "bars": false,
+
+commit b24cb562897d1b9c0fdde7f05384bd14a0a30ccc
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Fri Jun 28 14:20:45 2024 +0200
+
+    Renovate the "DNS Requests" panel
+
+    The type label is renamed by Prometheus to exported_type.
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+index 4ca96c07b..635fd0517 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+@@ -37,7 +37,7 @@
+       "dashLength": 10,
+       "dashes": false,
+       "datasource": "prometheus",
+-      "decimals": 0,
++      "decimals": null,
+       "description": "Rate of DNS Requests received by CoreDNS.\n\nNote: The `dot` zone is the local zone managed by the CoreDNS instance.",
+       "editable": true,
+       "error": false,
+@@ -47,8 +47,8 @@
+         },
+         "overrides": []
+       },
+-      "fill": 1,
+-      "fillGradient": 3,
++      "fill": 0,
++      "fillGradient": 0,
+       "grid": {},
+       "gridPos": {
+         "h": 7,
+@@ -72,9 +72,9 @@
+         "values": true
+       },
+       "lines": true,
+-      "linewidth": 2,
++      "linewidth": 1,
+       "links": [],
+-      "nullPointMode": "connected",
++      "nullPointMode": "null",
+       "options": {
+         "alertThreshold": true
+       },
+@@ -86,19 +86,20 @@
+       "seriesOverrides": [],
+       "spaceLength": 10,
+       "stack": false,
+-      "steppedLine": true,
++      "steppedLine": false,
+       "targets": [
+         {
+-          "exemplar": true,
+-          "expr": "sum(rate(coredns_dns_requests_total{pod=~\"$pod\"}[$__rate_interval])) by (type)",
++          "exemplar": false,
++          "expr": "sum(rate(coredns_dns_requests_total{pod=~\"$pod\"}[$__rate_interval])) by (exported_type)",
+           "format": "time_series",
+           "interval": "",
+-          "intervalFactor": 2,
+-          "legendFormat": "By Record: {{type}}",
++          "intervalFactor": 1,
++          "legendFormat": "By Record: {{exported_type}}",
+           "refId": "A",
+           "step": 60
+         },
+         {
++          "exemplar": false,
+           "expr": "sum(rate(coredns_dns_requests_total{pod=~\"$pod\"}[$__rate_interval])) by (proto)",
+           "format": "time_series",
+           "interval": "",
+@@ -107,6 +108,7 @@
+           "refId": "B"
+         },
+         {
++          "exemplar": false,
+           "expr": "sum(rate(coredns_dns_requests_total{pod=~\"$pod\"}[$__rate_interval])) by (zone)",
+           "format": "time_series",
+           "interval": "",
+@@ -119,7 +121,7 @@
+       "timeFrom": null,
+       "timeRegions": [],
+       "timeShift": null,
+-      "title": "DNS Requests (Packets)",
++      "title": "DNS Requests",
+       "tooltip": {
+         "shared": true,
+         "sort": 0,
+@@ -136,8 +138,8 @@
+       "yaxes": [
+         {
+           "$$hashKey": "object:149",
+-          "decimals": 0,
+-          "format": "packets",
++          "decimals": null,
++          "format": "reqps",
+           "label": "",
+           "logBase": 1,
+           "max": null,
+
+commit 0a9087e83a2aa045b66443578f7e6e47d0efd927
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Fri Jun 28 14:12:00 2024 +0200
+
+    Remove the "DNS Requests (Packets per Second)" panel
+
+    This panel used the coredns_dns_request_duration_seconds metric and
+    assumed that it has type, proto, zone labels but as the example shows
+    below it does not have those labels:
+
+    coredns_dns_request_duration_seconds_bucket{server="dns://:8053",view="",zone=".",le="0.00025"} 1037
+    coredns_dns_request_duration_seconds_bucket{server="dns://:8053",view="",zone=".",le="0.0005"} 1106
+    coredns_dns_request_duration_seconds_bucket{server="dns://:8053",view="",zone=".",le="0.001"} 1116
+    coredns_dns_request_duration_seconds_bucket{server="dns://:8053",view="",zone=".",le="0.002"} 1119
+    coredns_dns_request_duration_seconds_bucket{server="dns://:8053",view="",zone=".",le="0.004"} 1120
+    coredns_dns_request_duration_seconds_bucket{server="dns://:8053",view="",zone=".",le="0.008"} 1124
+    coredns_dns_request_duration_seconds_bucket{server="dns://:8053",view="",zone=".",le="0.016"} 1125
+    coredns_dns_request_duration_seconds_bucket{server="dns://:8053",view="",zone=".",le="0.032"} 1125
+    coredns_dns_request_duration_seconds_bucket{server="dns://:8053",view="",zone=".",le="0.064"} 1125
+    coredns_dns_request_duration_seconds_bucket{server="dns://:8053",view="",zone=".",le="0.128"} 1125
+    coredns_dns_request_duration_seconds_bucket{server="dns://:8053",view="",zone=".",le="0.256"} 1125
+    coredns_dns_request_duration_seconds_bucket{server="dns://:8053",view="",zone=".",le="0.512"} 1125
+    coredns_dns_request_duration_seconds_bucket{server="dns://:8053",view="",zone=".",le="1.024"} 1125
+    coredns_dns_request_duration_seconds_bucket{server="dns://:8053",view="",zone=".",le="2.048"} 1125
+    coredns_dns_request_duration_seconds_bucket{server="dns://:8053",view="",zone=".",le="4.096"} 1125
+    coredns_dns_request_duration_seconds_bucket{server="dns://:8053",view="",zone=".",le="8.192"} 1125
+    coredns_dns_request_duration_seconds_bucket{server="dns://:8053",view="",zone=".",le="+Inf"} 1125
+    coredns_dns_request_duration_seconds_sum{server="dns://:8053",view="",zone="."} 0.22205055899999987
+    coredns_dns_request_duration_seconds_count{server="dns://:8053",view="",zone="."} 1125
+
+    The next panel contains the same information so we decided to drop this
+    panel without a replacement.
+
+    To avoid changes in the JSON document, we kept the layout the same. Only
+    the next panel fills the full row now.
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+index 055c3ba9a..4ca96c07b 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+@@ -31,129 +31,6 @@
+       "title": "General",
+       "type": "row"
+     },
+-    {
+-      "aliasColors": {},
+-      "bars": false,
+-      "dashLength": 10,
+-      "dashes": false,
+-      "datasource": "prometheus",
+-      "description": "Average rate of DNS requests (in packets per second) split by DNS record types, used protocol and DNS zone.\n\nNote: The `dot` zone is the local zone managed by the CoreDNS instance.",
+-      "editable": true,
+-      "error": false,
+-      "fieldConfig": {
+-        "defaults": {
+-          "links": []
+-        },
+-        "overrides": []
+-      },
+-      "fill": 1,
+-      "fillGradient": 0,
+-      "grid": {},
+-      "gridPos": {
+-        "h": 7,
+-        "w": 12,
+-        "x": 0,
+-        "y": 1
+-      },
+-      "hiddenSeries": false,
+-      "id": 8,
+-      "legend": {
+-        "alignAsTable": true,
+-        "avg": true,
+-        "current": true,
+-        "max": true,
+-        "min": false,
+-        "rightSide": true,
+-        "show": true,
+-        "sort": "current",
+-        "sortDesc": true,
+-        "total": false,
+-        "values": true
+-      },
+-      "lines": true,
+-      "linewidth": 2,
+-      "links": [],
+-      "nullPointMode": "connected",
+-      "options": {
+-        "alertThreshold": true
+-      },
+-      "percentage": false,
+-      "pluginVersion": "7.5.31",
+-      "pointradius": 5,
+-      "points": false,
+-      "renderer": "flot",
+-      "seriesOverrides": [],
+-      "spaceLength": 10,
+-      "stack": false,
+-      "steppedLine": false,
+-      "targets": [
+-        {
+-          "expr": "sum(rate(coredns_dns_request_duration_seconds_count{pod=~\"$pod\"}[$__rate_interval])) by (type)",
+-          "format": "time_series",
+-          "interval": "",
+-          "intervalFactor": 2,
+-          "legendFormat": "By Record: {{type}}",
+-          "refId": "A",
+-          "step": 60
+-        },
+-        {
+-          "expr": "sum(rate(coredns_dns_request_duration_seconds_count{pod=~\"$pod\"}[$__rate_interval])) by (proto)",
+-          "format": "time_series",
+-          "interval": "",
+-          "intervalFactor": 1,
+-          "legendFormat": "By Protocol: {{proto}}",
+-          "refId": "B"
+-        },
+-        {
+-          "expr": "sum(rate(coredns_dns_request_duration_seconds_count{pod=~\"$pod\"}[$__rate_interval])) by (zone)",
+-          "format": "time_series",
+-          "interval": "",
+-          "intervalFactor": 1,
+-          "legendFormat": "By Zone: {{zone}}",
+-          "refId": "C"
+-        }
+-      ],
+-      "thresholds": [],
+-      "timeFrom": null,
+-      "timeRegions": [],
+-      "timeShift": null,
+-      "title": "DNS Requests (Packets per Second)",
+-      "tooltip": {
+-        "shared": true,
+-        "sort": 0,
+-        "value_type": "cumulative"
+-      },
+-      "type": "graph",
+-      "xaxis": {
+-        "buckets": null,
+-        "mode": "time",
+-        "name": null,
+-        "show": true,
+-        "values": []
+-      },
+-      "yaxes": [
+-        {
+-          "$$hashKey": "object:99",
+-          "format": "pps",
+-          "logBase": 1,
+-          "max": null,
+-          "min": 0,
+-          "show": true
+-        },
+-        {
+-          "$$hashKey": "object:100",
+-          "format": "pps",
+-          "logBase": 1,
+-          "max": null,
+-          "min": 0,
+-          "show": false
+-        }
+-      ],
+-      "yaxis": {
+-        "align": false,
+-        "alignLevel": null
+-      }
+-    },
+     {
+       "aliasColors": {},
+       "bars": false,
+@@ -175,8 +52,8 @@
+       "grid": {},
+       "gridPos": {
+         "h": 7,
+-        "w": 12,
+-        "x": 12,
++        "w": 24,
++        "x": 0,
+         "y": 1
+       },
+       "hiddenSeries": false,
+
+commit 59c24e92cee0786e26ba752cecf9b3f2f80abf89
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Fri Jun 28 13:48:21 2024 +0200
+
+    Export the current state of the CoreDNS dashboard
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+index 07e93ae2a..055c3ba9a 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+@@ -15,8 +15,6 @@
+   "editable": true,
+   "gnetId": null,
+   "graphTooltip": 1,
+-  "id": 3,
+-  "iteration": 1631101541091,
+   "links": [],
+   "panels": [
+     {
+@@ -80,7 +78,7 @@
+         "alertThreshold": true
+       },
+       "percentage": false,
+-      "pluginVersion": "7.5.10",
++      "pluginVersion": "7.5.31",
+       "pointradius": 5,
+       "points": false,
+       "renderer": "flot",
+@@ -204,7 +202,7 @@
+         "alertThreshold": true
+       },
+       "percentage": false,
+-      "pluginVersion": "7.5.10",
++      "pluginVersion": "7.5.31",
+       "pointradius": 5,
+       "points": false,
+       "renderer": "flot",
+@@ -323,7 +321,7 @@
+         "alertThreshold": true
+       },
+       "percentage": false,
+-      "pluginVersion": "7.5.10",
++      "pluginVersion": "7.5.31",
+       "pointradius": 2,
+       "points": false,
+       "renderer": "flot",
+@@ -426,7 +424,7 @@
+         "alertThreshold": true
+       },
+       "percentage": false,
+-      "pluginVersion": "7.5.10",
++      "pluginVersion": "7.5.31",
+       "pointradius": 2,
+       "points": false,
+       "renderer": "flot",
+@@ -537,7 +535,7 @@
+         "alertThreshold": true
+       },
+       "percentage": false,
+-      "pluginVersion": "7.5.10",
++      "pluginVersion": "7.5.31",
+       "pointradius": 5,
+       "points": false,
+       "renderer": "flot",
+@@ -730,7 +728,7 @@
+         "alertThreshold": true
+       },
+       "percentage": false,
+-      "pluginVersion": "7.5.10",
++      "pluginVersion": "7.5.31",
+       "pointradius": 5,
+       "points": false,
+       "renderer": "flot",
+@@ -843,7 +841,7 @@
+         "alertThreshold": true
+       },
+       "percentage": false,
+-      "pluginVersion": "7.5.10",
++      "pluginVersion": "7.5.31",
+       "pointradius": 5,
+       "points": false,
+       "renderer": "flot",
+@@ -955,7 +953,7 @@
+         "alertThreshold": true
+       },
+       "percentage": false,
+-      "pluginVersion": "7.5.10",
++      "pluginVersion": "7.5.31",
+       "pointradius": 2,
+       "points": false,
+       "renderer": "flot",
+@@ -1075,7 +1073,7 @@
+         "alertThreshold": true
+       },
+       "percentage": false,
+-      "pluginVersion": "7.5.10",
++      "pluginVersion": "7.5.31",
+       "pointradius": 2,
+       "points": false,
+       "renderer": "flot",
+@@ -1179,7 +1177,7 @@
+         "alertThreshold": true
+       },
+       "percentage": false,
+-      "pluginVersion": "7.5.10",
++      "pluginVersion": "7.5.31",
+       "pointradius": 2,
+       "points": false,
+       "renderer": "flot",
+@@ -1281,7 +1279,7 @@
+         "alertThreshold": true
+       },
+       "percentage": false,
+-      "pluginVersion": "7.5.10",
++      "pluginVersion": "7.5.31",
+       "pointradius": 2,
+       "points": false,
+       "renderer": "flot",
+@@ -1382,7 +1380,7 @@
+         "alertThreshold": true
+       },
+       "percentage": false,
+-      "pluginVersion": "7.5.10",
++      "pluginVersion": "7.5.31",
+       "pointradius": 2,
+       "points": false,
+       "renderer": "flot",
+@@ -1503,7 +1501,7 @@
+         "alertThreshold": true
+       },
+       "percentage": false,
+-      "pluginVersion": "7.5.10",
++      "pluginVersion": "7.5.31",
+       "pointradius": 2,
+       "points": false,
+       "renderer": "flot",
+@@ -1607,7 +1605,7 @@
+         "alertThreshold": true
+       },
+       "percentage": false,
+-      "pluginVersion": "7.5.10",
++      "pluginVersion": "7.5.31",
+       "pointradius": 2,
+       "points": false,
+       "renderer": "flot",
+@@ -1861,6 +1859,5 @@
+   },
+   "timezone": "utc",
+   "title": "CoreDNS",
+-  "uid": "core-dns",
+-  "version": 1
++  "uid": "core-dns"
+ }
+
+commit c789dcdaafb67aeff34239a20f5ed28b9f9f5f7e
+Author: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+Date:   Fri Jun 28 11:51:16 2024 +0200
+
+    A helper script to export Plutono dashboards when renovating them
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+    Co-authored-by: Victor Herrero Otal <victor.herrero.otal@sap.com>
+    Co-authored-by: Christoph Kleineweber <c.kleineweber@sap.com>
+
+diff --git a/hack/export-dashboard.sh b/hack/export-dashboard.sh
+new file mode 100755
+index 000000000..3761217ef
+--- /dev/null
++++ b/hack/export-dashboard.sh
+@@ -0,0 +1,60 @@
++#!/bin/sh
++
++# When "renovating" Plutono dashboards, it is useful to export them
++# and capture the changes in small git commits, otherwise it is hard
++# to review the changes in the dashboard JSON files.
++#
++# To facilitate this workflow, this script exports a given dashboard
++# from Plutono that is port-forwarded to localhost:3000.
++#
++# This script expects that changes to a dashboard that are made in the Plutono UI
++# are saved in the Plutono database and can be exported via the Plutono API.
++# To allow this in a _local development environment_, please do the following:
++#
++# 1. Ignore the Plutono managed resource:
++#
++# ```bash
++# k annotate mr plutono resources.gardener.cloud/ignore=true
++# ```
++#
++# 2. Edit the Plutono deployment and enable the login form:
++#
++# ```bash
++# k edit deployment plutono
++# ```
++#
++# ```yaml
++# - name: PL_AUTH_DISABLE_LOGIN_FORM
++#   value: "false" # was "true
++# ```
++#
++# 3.The admin password for Plutono can accessed via:
++#
++# ```bash
++# k get secret -l name=plutono-admin -o json | jq '.items[].data.password | @base64d' -r
++# ```
++#
++# 4. Port-forward Plutono to localhost:3000 and login as admin:
++#
++# ```bash
++# k port-forward deployment/plutono 3000
++# ```
++#
++# 5. Make a copy of the provisioned dashboard you plan to edit, keep the
++# suggested title with the " Copy" suffix, get its generated uid (Settings, JSON
++# model). Make changes in the Plutono UI, save the dashboard, export it via this
++# script and create meaningful git commits.
++#
++# ```bash
++# hack/export-dashboard.sh QSl_u1wIz core-dns pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
++# ```
++
++cd "$(dirname "$(realpath "$0")")/.." || exit 1
++
++curl -s "http://localhost:3000/api/dashboards/uid/$1" \
++| jq --arg original_uid "$2" '
++  .dashboard |
++  .uid |= $original_uid |
++  .title |= (. | sub(" Copy$"; "")) |
++  del(.id, .iteration, .version)
++' > "$3"
+
+commit 19c8ec7d5c595f5eea1bd6644b61cc9c3b2f7e2e
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Mon Jun 24 16:34:08 2024 +0200
+
+    Revist CoreDNS wording on the NodeLocalDNS dashboard
+
+    Fix wrong references to CoreDNS in the NodeLocalDNS dashboard to refer
+    to NodeLocalDNS instead.
+
+    Also, remove parenthesis in some dashboard titles
+    (Per Interval) -> Per Interval to make it more homogeneous to the CoreDNS
+    dashboard.
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns/node-local-dns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns/node-local-dns-dashboard.json
+index 38da21292..aa5ad1ce1 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns/node-local-dns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns/node-local-dns-dashboard.json
+@@ -24,7 +24,7 @@
+       "dashLength": 10,
+       "dashes": false,
+       "datasource": "prometheus",
+-      "description": "Average rate of DNS requests (in packets per second) split by DNS record types, used protocol and DNS zone.\n\nNote: The `dot` zone is the local zone managed by the CoreDNS instance.",
++      "description": "Average rate of DNS requests (in packets per second) split by DNS record types, used protocol and DNS zone.\n\nNote: The `dot` zone is the local zone managed by the NodeLocalDNS instance.",
+       "editable": true,
+       "error": false,
+       "fieldConfig": {
+@@ -148,7 +148,7 @@
+       "dashes": false,
+       "datasource": "prometheus",
+       "decimals": 0,
+-      "description": "Rate of DNS Requests received by CoreDNS.\n\nNote: The `dot` zone is the local zone managed by the CoreDNS instance.",
++      "description": "Rate of DNS Requests received by NodeLocalDNS.\n\nNote: The `dot` zone is the local zone managed by the NodeLocalDNS instance.",
+       "editable": true,
+       "error": false,
+       "fieldConfig": {
+@@ -1083,7 +1083,7 @@
+       "timeFrom": null,
+       "timeRegions": [],
+       "timeShift": null,
+-      "title": "Upstream DNS Requests (Per Interval)",
++      "title": "Upstream DNS Requests Per Interval",
+       "tooltip": {
+         "shared": true,
+         "sort": 0,
+@@ -1288,7 +1288,7 @@
+       "timeFrom": null,
+       "timeRegions": [],
+       "timeShift": null,
+-      "title": "Upstream DNS Forward Responses (Per Interval)",
++      "title": "Upstream DNS Forward Responses Per Interval",
+       "tooltip": {
+         "shared": true,
+         "sort": 0,
+@@ -1563,7 +1563,7 @@
+         "error": null,
+         "hide": 0,
+         "includeAll": true,
+-        "label": "CoreDNS Pod",
++        "label": "NodeLocalDNS Pod",
+         "multi": true,
+         "name": "pod",
+         "options": [],
+
+commit 270efeef9cc49b163b40e0d19e068dbaab3ec183
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Fri Jun 21 15:29:31 2024 +0200
+
+    Adapt CoreDNS dashboard to new metrics
+
+    As per documentation, the data comes now from the metric:
+    `coredns_proxy_request_duration_seconds_count{proxy_name="forward"}`:
+
+    CoreDNS has esentially taken advantage of the 1:1 relationship between
+    requests and responses to create a single metric that measures both. Each
+    sample in the new metric is a request and a response. The request
+    destination and the response code are added as labels (`to` and `rcode`,
+    respectively). The replacement for the old
+    `coredns_forward_requests_total{to}` metric is described in the
+    documentation as the `sum(coredns_proxy_..._{to, proxy_name="forward"})`.
+    In other words, the number of requests with destination `to` is the sum
+    of responses from `to`, regardless of their `rcode`.
+
+    The dashboard queries that need adaptation already use the sum to
+    aggregate by the `to` label. Since the sum is an associative operation,
+    we can use this sum to count requests. As an example, imagine we have the
+    following metrics with their corresponding labels at both times `t` and
+    `t - offset`. If we take the first adapted query in the change as an
+    example, it calculates the difference in the number of requests within a
+    time interval:
+
+    {rcode="NOERROR",  to="1.2.3.4"} = 100 @ t
+    {rcode="NXDOMAIN", to="1.2.3.4"} = 200 @ t
+    {rcode="SERVFAIL", to="6.7.8.9"} = 50  @ t
+
+    {rcode="NOERROR",  to="1.2.3.4"} = 10  @ t - offset
+    {rcode="NXDOMAIN", to="1.2.3.4"} = 10  @ t - offset
+    {rcode="SERVFAIL", to="6.7.8.9"} = 3   @ t - offset
+
+    The strategy followed by this commit calculates, first, the difference
+    between samples with the same label values:
+
+    {rcode="NOERROR",  to="1.2.3.4"} = 100 - 10 = 90
+    {rcode="NXDOMAIN", to="1.2.3.4"} = 200 - 10 = 190
+    {rcode="SERVFAIL", to="6.7.8.9"} = 50  - 3  = 47
+
+    and, second, the sum by the `to` label:
+
+    {to="1.2.3.4"} = 90 + 190 = 280
+    {to="6.7.8.9"}            = 47
+    Alternatively, if we would want to follow the documentation closely and
+
+    do the sum first, then the sum by the `to` label at times `t` and
+    `t - offset` would be the first step:
+
+    {to="1.2.3.4"} = 100 + 200 = 300       @ t
+    {to="6.7.8.9"}             = 50        @ t
+
+    {to="1.2.3.4"} = 10  + 10  = 20        @ t - offset
+    {to="6.7.8.9"}             = 3         @ t - offset
+
+    And then difference calculation:
+
+    {to="1.2.3.4"} = 300 - 20 = 280
+    {to="6.7.8.9"} = 50  - 3  = 47
+
+    Note the former approach is preferrable because it requires only one
+    aggregation (the latter requires two) which keeps the final query simpler.
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+index d261d5977..07e93ae2a 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
+@@ -1086,7 +1086,7 @@
+       "targets": [
+         {
+           "exemplar": true,
+-          "expr": "sum(coredns_forward_requests_total{pod=~\"$pod\"} - coredns_forward_requests_total{pod=~\"$pod\"} offset $__interval) by (to)",
++          "expr": "sum(coredns_proxy_request_duration_seconds_count{pod=~\"$pod\", proxy_name=\"forward\"} - coredns_proxy_request_duration_seconds_count{pod=~\"$pod\", proxy_name=\"forward\"} offset $__interval) by (to)",
+           "format": "time_series",
+           "interval": "",
+           "intervalFactor": 1,
+@@ -1190,7 +1190,7 @@
+       "targets": [
+         {
+           "exemplar": true,
+-          "expr": "sum(rate(coredns_forward_requests_total{pod=~\"$pod\"}[$__rate_interval])) by (to)",
++          "expr": "sum(rate(coredns_proxy_request_duration_seconds_count{pod=~\"$pod\", proxy_name=\"forward\"}[$__rate_interval])) by (to)",
+           "format": "time_series",
+           "interval": "",
+           "intervalFactor": 1,
+@@ -1292,7 +1292,7 @@
+       "targets": [
+         {
+           "exemplar": true,
+-          "expr": "sum(coredns_forward_responses_total{pod=~\"$pod\"} - coredns_forward_responses_total{pod=~\"$pod\"} offset $__interval) by (to,rcode)",
++          "expr": "sum(coredns_proxy_request_duration_seconds_count{pod=~\"$pod\", proxy_name=\"forward\"} - coredns_proxy_request_duration_seconds_count{pod=~\"$pod\", proxy_name=\"forward\"} offset $__interval) by (to,rcode)",
+           "hide": false,
+           "interval": "",
+           "legendFormat": "{{rcode}}  ({{to}})",
+@@ -1393,7 +1393,7 @@
+       "targets": [
+         {
+           "exemplar": true,
+-          "expr": "rate(coredns_forward_responses_total{pod=~\"$pod\"}[$__rate_interval])",
++          "expr": "rate(coredns_proxy_request_duration_seconds_count{pod=~\"$pod\", proxy_name=\"forward\"}[$__rate_interval])",
+           "format": "time_series",
+           "interval": "",
+           "intervalFactor": 1,
+
+commit 3de8026b7f69ce3052292b1577555343eb78a26e
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Fri Jun 21 13:38:35 2024 +0200
+
+    Adapt scrape configuration to new CoreDNS metric
+
+    CoreDNS deprecated the `coredns_forward_requests_total` and
+    `coredns_forward_responses_total` metrics. As per documentation,
+    both metrics are now replaced by the
+    `coredns_proxy_request_duration_seconds_count` metric.
+
+diff --git a/pkg/component/networking/coredns/coredns.go b/pkg/component/networking/coredns/coredns.go
+index 8b2c67298..505a02a59 100644
+--- a/pkg/component/networking/coredns/coredns.go
++++ b/pkg/component/networking/coredns/coredns.go
+@@ -136,8 +136,7 @@ func (c *coreDNS) Deploy(ctx context.Context) error {
+ 			"coredns_dns_request_duration_seconds_bucket",
+ 			"coredns_dns_requests_total",
+ 			"coredns_dns_responses_total",
+-			"coredns_forward_requests_total",
+-			"coredns_forward_responses_total",
++			"coredns_proxy_request_duration_seconds_count",
+ 			"coredns_kubernetes_dns_programming_duration_seconds_bucket",
+ 			"coredns_kubernetes_dns_programming_duration_seconds_count",
+ 			"coredns_kubernetes_dns_programming_duration_seconds_sum",
+diff --git a/pkg/component/networking/coredns/coredns_test.go b/pkg/component/networking/coredns/coredns_test.go
+index fa9ec03d5..7ac042652 100644
+--- a/pkg/component/networking/coredns/coredns_test.go
++++ b/pkg/component/networking/coredns/coredns_test.go
+@@ -652,7 +652,7 @@ status: {}
+ 				MetricRelabelConfigs: []monitoringv1.RelabelConfig{{
+ 					SourceLabels: []monitoringv1.LabelName{"__name__"},
+ 					Action:       "keep",
+-					Regex:        `^(coredns_build_info|coredns_cache_entries|coredns_cache_hits_total|coredns_cache_misses_total|coredns_dns_request_duration_seconds_count|coredns_dns_request_duration_seconds_bucket|coredns_dns_requests_total|coredns_dns_responses_total|coredns_forward_requests_total|coredns_forward_responses_total|coredns_kubernetes_dns_programming_duration_seconds_bucket|coredns_kubernetes_dns_programming_duration_seconds_count|coredns_kubernetes_dns_programming_duration_seconds_sum|process_max_fds|process_open_fds)$`,
++					Regex:        `^(coredns_build_info|coredns_cache_entries|coredns_cache_hits_total|coredns_cache_misses_total|coredns_dns_request_duration_seconds_count|coredns_dns_request_duration_seconds_bucket|coredns_dns_requests_total|coredns_dns_responses_total|coredns_proxy_request_duration_seconds_count|coredns_kubernetes_dns_programming_duration_seconds_bucket|coredns_kubernetes_dns_programming_duration_seconds_count|coredns_kubernetes_dns_programming_duration_seconds_sum|process_max_fds|process_open_fds)$`,
+ 				}},
+ 			},
+ 		}
