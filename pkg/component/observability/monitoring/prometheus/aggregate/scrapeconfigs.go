@@ -28,8 +28,8 @@ func CentralScrapeConfigs() []*monitoringv1alpha1.ScrapeConfig {
 					"match[]": {
 						`{__name__=~"metering:.+", __name__!~"metering:.+(over_time|_seconds|:this_month)"}`,
 						`{__name__=~"seed:(.+):(.+)"}`,
-						`{job="kube-state-metrics",namespace=~"garden|extension-.+"}`,
-						`{job="kube-state-metrics",namespace=""}`,
+						`{job="kube-state-metrics-seed",namespace=~"garden|extension-.+"}`,
+						`{job="kube-state-metrics-seed",namespace=""}`,
 						`{job="cadvisor",namespace=~"garden|extension-.+"}`,
 						`{job="etcd-druid",namespace="garden"}`,
 					},
