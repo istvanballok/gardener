@@ -1,31 +1,51 @@
-commit bead794b4dcbef88f71f730b5349b029d030f9d8
+commit 541f9fa791047bf4c4b442171ecf817ccf9743d1
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
-Date:   Wed Jul 3 13:39:56 2024 +0200
+Date:   Thu Jul 4 17:15:40 2024 +0200
 
-    Add license headers for new file
-    Maybe fixup c789dcdaa A helper script to export Plutono dashboards when renovating them
+    Export the dashboard one last time
 
-    ```
-    make add-license-headers
-    ```
+    This commit exports the new dashboard after applying all the changes one
+    last time to align the dashboard JSON file with the final JSON generated
+    by Plutono.
 
     Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
 
-diff --git a/hack/export-dashboard.sh b/hack/export-dashboard.sh
-index 2af30fe46..eb7385d39 100755
---- a/hack/export-dashboard.sh
-+++ b/hack/export-dashboard.sh
-@@ -1,4 +1,8 @@
- #!/bin/sh
-+# SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
-+#
-+# SPDX-License-Identifier: Apache-2.0
-+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
+index 770245668..ced32a5cd 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
+@@ -15,6 +15,7 @@
+   "editable": true,
+   "gnetId": null,
+   "graphTooltip": 1,
++  "hideControls": false,
+   "links": [],
+   "panels": [
+     {
 
- # When "renovating" Plutono dashboards, it is useful to export them
- # and capture the changes in small git commits, otherwise it is hard
+commit 3a741e01fab52bb4821569c2f25f7d070d48ce09
+Author: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+Date:   Thu Jul 4 10:25:04 2024 +0200
 
-commit cbaa6dcf0f65adfbece3a257f92983c415756bce
+    Sort drop-down list options alphabetically
+
+    Co-authored-by: Victor Herrero Otal <victor.herrero.otal@sap.com>
+
+diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
+index 105973d84..770245668 100644
+--- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
+@@ -1577,7 +1577,7 @@
+         "refresh": 2,
+         "regex": "",
+         "skipUrlSync": false,
+-        "sort": 0,
++        "sort": 1,
+         "tagValuesQuery": "",
+         "tags": [],
+         "tagsQuery": "",
+
+commit 3cb8a8292c4ea6660d57a2a90fadcff793bc87cd
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Wed Jul 3 13:22:14 2024 +0200
 
@@ -34,7 +54,7 @@ Date:   Wed Jul 3 13:22:14 2024 +0200
     Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
 
 diff --git a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
-index 2da06c0e2..c1d8afb58 100644
+index 2da06c0e2..105973d84 100644
 --- a/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
 +++ b/pkg/component/observability/plutono/dashboards/shoot/owners/worker/dns-dashboard.json
 @@ -51,7 +51,7 @@
@@ -46,7 +66,7 @@ index 2da06c0e2..c1d8afb58 100644
          "w": 24,
          "x": 0,
          "y": 1
-@@ -162,7 +162,7 @@
+@@ -162,10 +162,10 @@
        "fillGradient": 0,
        "grid": {},
        "gridPos": {
@@ -54,8 +74,12 @@ index 2da06c0e2..c1d8afb58 100644
 +        "h": 8,
          "w": 24,
          "x": 0,
-         "y": 8
-@@ -272,7 +272,7 @@
+-        "y": 8
++        "y": 9
+       },
+       "hiddenSeries": false,
+       "id": 42,
+@@ -272,10 +272,10 @@
        "fillGradient": 0,
        "grid": {},
        "gridPos": {
@@ -63,8 +87,12 @@ index 2da06c0e2..c1d8afb58 100644
 +        "h": 8,
          "w": 24,
          "x": 0,
-         "y": 15
-@@ -378,7 +378,7 @@
+-        "y": 15
++        "y": 17
+       },
+       "hiddenSeries": false,
+       "id": 41,
+@@ -378,10 +378,10 @@
        "fill": 1,
        "fillGradient": 0,
        "gridPos": {
@@ -72,8 +100,12 @@ index 2da06c0e2..c1d8afb58 100644
 +        "h": 8,
          "w": 24,
          "x": 0,
-         "y": 22
-@@ -486,7 +486,7 @@
+-        "y": 22
++        "y": 25
+       },
+       "hiddenSeries": false,
+       "id": 16,
+@@ -486,10 +486,10 @@
        "fillGradient": 0,
        "grid": {},
        "gridPos": {
@@ -81,8 +113,12 @@ index 2da06c0e2..c1d8afb58 100644
 +        "h": 8,
          "w": 24,
          "x": 0,
-         "y": 29
-@@ -597,7 +597,7 @@
+-        "y": 29
++        "y": 33
+       },
+       "hiddenSeries": false,
+       "id": 26,
+@@ -597,10 +597,10 @@
          "overrides": []
        },
        "gridPos": {
@@ -90,8 +126,21 @@ index 2da06c0e2..c1d8afb58 100644
 +        "h": 8,
          "w": 24,
          "x": 0,
-         "y": 36
-@@ -683,7 +683,7 @@
+-        "y": 36
++        "y": 41
+       },
+       "heatmap": {},
+       "hideZeroBuckets": true,
+@@ -657,7 +657,7 @@
+         "h": 1,
+         "w": 24,
+         "x": 0,
+-        "y": 43
++        "y": 49
+       },
+       "id": 18,
+       "panels": [],
+@@ -683,10 +683,10 @@
        "fillGradient": 0,
        "grid": {},
        "gridPos": {
@@ -99,8 +148,12 @@ index 2da06c0e2..c1d8afb58 100644
 +        "h": 8,
          "w": 24,
          "x": 0,
-         "y": 44
-@@ -797,7 +797,7 @@
+-        "y": 44
++        "y": 50
+       },
+       "hiddenSeries": false,
+       "id": 6,
+@@ -797,10 +797,10 @@
        "fill": 1,
        "fillGradient": 0,
        "gridPos": {
@@ -108,8 +161,21 @@ index 2da06c0e2..c1d8afb58 100644
 +        "h": 8,
          "w": 24,
          "x": 0,
-         "y": 50
-@@ -916,7 +916,7 @@
+-        "y": 50
++        "y": 58
+       },
+       "hiddenSeries": false,
+       "id": 2,
+@@ -893,7 +893,7 @@
+         "h": 1,
+         "w": 24,
+         "x": 0,
+-        "y": 57
++        "y": 66
+       },
+       "id": 14,
+       "panels": [],
+@@ -916,10 +916,10 @@
        "fill": 1,
        "fillGradient": 0,
        "gridPos": {
@@ -117,8 +183,12 @@ index 2da06c0e2..c1d8afb58 100644
 +        "h": 8,
          "w": 24,
          "x": 0,
-         "y": 58
-@@ -1021,7 +1021,7 @@
+-        "y": 58
++        "y": 67
+       },
+       "hiddenSeries": false,
+       "id": 23,
+@@ -1021,10 +1021,10 @@
        "fill": 1,
        "fillGradient": 0,
        "gridPos": {
@@ -126,8 +196,21 @@ index 2da06c0e2..c1d8afb58 100644
 +        "h": 8,
          "w": 24,
          "x": 0,
-         "y": 65
-@@ -1138,7 +1138,7 @@
+-        "y": 65
++        "y": 75
+       },
+       "hiddenSeries": false,
+       "id": 12,
+@@ -1116,7 +1116,7 @@
+         "h": 1,
+         "w": 24,
+         "x": 0,
+-        "y": 72
++        "y": 83
+       },
+       "id": 35,
+       "panels": [],
+@@ -1138,10 +1138,10 @@
        "fill": 1,
        "fillGradient": 0,
        "gridPos": {
@@ -135,8 +218,12 @@ index 2da06c0e2..c1d8afb58 100644
 +        "h": 8,
          "w": 24,
          "x": 0,
-         "y": 73
-@@ -1237,7 +1237,7 @@
+-        "y": 73
++        "y": 84
+       },
+       "hiddenSeries": false,
+       "id": 32,
+@@ -1237,10 +1237,10 @@
        "fill": 1,
        "fillGradient": 0,
        "gridPos": {
@@ -144,8 +231,30 @@ index 2da06c0e2..c1d8afb58 100644
 +        "h": 8,
          "w": 24,
          "x": 0,
-         "y": 79
-@@ -1419,7 +1419,7 @@
+-        "y": 79
++        "y": 92
+       },
+       "hiddenSeries": false,
+       "id": 33,
+@@ -1345,7 +1345,7 @@
+         "h": 8,
+         "w": 24,
+         "x": 0,
+-        "y": 86
++        "y": 100
+       },
+       "heatmap": {},
+       "hideZeroBuckets": true,
+@@ -1398,7 +1398,7 @@
+         "h": 1,
+         "w": 24,
+         "x": 0,
+-        "y": 94
++        "y": 108
+       },
+       "id": 38,
+       "panels": [],
+@@ -1419,10 +1419,10 @@
        "fill": 1,
        "fillGradient": 0,
        "gridPos": {
@@ -153,9 +262,21 @@ index 2da06c0e2..c1d8afb58 100644
 +        "h": 8,
          "w": 24,
          "x": 0,
-         "y": 95
+-        "y": 95
++        "y": 109
+       },
+       "hiddenSeries": false,
+       "id": 40,
+@@ -1518,7 +1518,6 @@
+         "allValue": ".*",
+         "current": {
+           "selected": true,
+-          "tags": [],
+           "text": [
+             "All"
+           ],
 
-commit c9a93ef40a76c731f3559ccfd420b50cb9696735
+commit 6310283f7f56e57a250f539ee0387b188b867e5e
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Wed Jul 3 13:20:01 2024 +0200
 
@@ -278,7 +399,7 @@ index 4efb4a569..2da06c0e2 100644
        "gridPos": {
          "h": 7,
 
-commit 6b83115d6cbdebaf3bf36e022dfeeb7c819aa888
+commit e7f2a93c682994e536ca8a5334517b1e1d84747f
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Wed Jul 3 11:58:42 2024 +0200
 
@@ -300,7 +421,7 @@ index 9bd871f78..4efb4a569 100644
    },
    "timepicker": {
 
-commit 4c0502fe3740c0ab4773a6a2d07d69b58407c77b
+commit b692d15849251c795fd9da89aa58f2c5eeea1a8f
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Wed Jul 3 11:58:25 2024 +0200
 
@@ -328,7 +449,7 @@ index dfe570d97..9bd871f78 100644
          },
          "datasource": "prometheus",
 
-commit 0c6595b432a8ac8b0488dfa7c1da7ec42ffc108d
+commit 879ac8f059d87dd9a509a09fff901a4017e45ce8
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Wed Jul 3 11:56:31 2024 +0200
 
@@ -377,7 +498,7 @@ index 35e088172..dfe570d97 100644
          "shared": true,
          "sort": 0,
 
-commit 621a8fc0474923acb137ac7b035d842a08c47536
+commit 4ccbd4fe2528ff87892742cb4d3d97a6879eec14
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Wed Jul 3 11:51:50 2024 +0200
 
@@ -416,7 +537,7 @@ index 21d5abc27..35e088172 100644
          "defaults": {},
          "overrides": []
 
-commit 44f2cc0509b433a8f8d2726abbe9f3e6670edd7c
+commit 82c60dc2f3278ae345802cfaaeb5b6955e6f0198
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Wed Jul 3 11:36:51 2024 +0200
 
@@ -580,7 +701,7 @@ index 466c68c77..21d5abc27 100644
        "hiddenSeries": false,
        "id": 40,
 
-commit e9a3cd40cc379d091878951271ba4fb73a4dc9f7
+commit fd5dd9b61e95f51398e03abc5fe68174aa4488b0
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Wed Jul 3 11:30:56 2024 +0200
 
@@ -973,7 +1094,7 @@ index 1ff898101..466c68c77 100644
        "hiddenSeries": false,
        "id": 40,
 
-commit f07db351180eee5ac608c506193aa3721861a5c9
+commit 89778f7b5d65c3c554f5030f604c1bcbfcbe2100
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Tue Jul 2 18:17:11 2024 +0200
 
@@ -984,11 +1105,11 @@ Date:   Tue Jul 2 18:17:11 2024 +0200
     Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
 
 diff --git a/hack/export-dashboard.sh b/hack/export-dashboard.sh
-index 3761217ef..2af30fe46 100755
+index a2b87f908..f9865e277 100755
 --- a/hack/export-dashboard.sh
 +++ b/hack/export-dashboard.sh
-@@ -46,7 +46,7 @@
- # script and create meaningful git commits.
+@@ -50,7 +50,7 @@
+ # export it via this script and create meaningful git commits.
  #
  # ```bash
 -# hack/export-dashboard.sh QSl_u1wIz core-dns pkg/component/observability/plutono/dashboards/shoot/owners/worker/coredns-dashboard.json
@@ -1022,7 +1143,7 @@ index 7b130fd83..1ff898101 100644
 +  "uid": "dns"
  }
 
-commit 4e164e49a1d84055fa725d147aae08fd82932310
+commit 9711dedc1b428bbf302b460e783fa0cd4884c8bb
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Wed Jul 3 13:42:22 2024 +0200
 
@@ -2762,7 +2883,7 @@ index dc959dc50..9b6082ef6 100644
  	)
  }
 
-commit bd7b286a2b9f5d46a0928f881ac3e3bc94be60bf
+commit 5698b6a5e9ffbf70bee1f3faf2c6e728ab61342b
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Tue Jul 2 16:39:05 2024 +0200
 
@@ -2893,7 +3014,7 @@ index 85a63f07a..7b130fd83 100644
    ],
    "refresh": false,
 
-commit 5561b31270cd634c176722592a95c72bfdf0db08
+commit f2b6fb7be0a7f314a4f161649001bdcdaa8c60d6
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Tue Jul 2 16:32:34 2024 +0200
 
@@ -2931,7 +3052,7 @@ index 7466cf66e..85a63f07a 100644
    ],
    "refresh": false,
 
-commit 88f8f05fddce1a45f6325edf5fa41445e7f438a6
+commit 3eeefc2c6c4a51aae1ab34f36abf7b3066599f2f
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Tue Jul 2 16:30:27 2024 +0200
 
@@ -2962,7 +3083,7 @@ index 8ba173277..7466cf66e 100644
      },
      {
 
-commit 5136a4c0ef850ca73fb1120a1f25b4f245892fd4
+commit 0c74d4c3bf64968c9c68b9176e49be76ddde41dd
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Tue Jul 2 16:25:35 2024 +0200
 
@@ -2984,7 +3105,7 @@ index cc094e81f..8ba173277 100644
            "interval": "",
            "intervalFactor": 1,
 
-commit 5c7c039f197aa49f29ab1b3d3295057eb5b2e93a
+commit 2e292fbaf0c3c153907f5325ea380960b77791c0
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Tue Jul 2 16:24:21 2024 +0200
 
@@ -3012,7 +3133,7 @@ index 6fe35925b..cc094e81f 100644
            "hide": false,
            "interval": "",
 
-commit 6b550745cb786412188c7a8490d771479642e526
+commit b26aac6d2d20aabffe4e8ed80599cfd399958d80
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Tue Jul 2 16:12:08 2024 +0200
 
@@ -3151,7 +3272,7 @@ index e13a72b4e..6fe35925b 100644
            "interval": "",
            "intervalFactor": 2,
 
-commit 30078098f0f77934bb7000d201fd981d0c441320
+commit 83ca93a6159471c53534c4335c647c829a6e7306
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Tue Jul 2 16:06:42 2024 +0200
 
@@ -3160,7 +3281,7 @@ Date:   Tue Jul 2 16:06:42 2024 +0200
     The CoreDNS and NodeLocalDNS dashboards are to be merged into one single
     dashboard. In order to achieve that, a new job variable is necessary to
     differentiate between the two. Also, the old pod variable needs to capture
-    all values now .
+    all values now.
 
     Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
 
@@ -3240,7 +3361,7 @@ index 59328acd4..e13a72b4e 100644
          "sort": 0,
          "tagValuesQuery": "",
 
-commit cf34a1e46c9b9979a0172f9a24ee240c37905ad9
+commit 82d2764abd2f8971870e6ff5f147e601007cf99f
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Tue Jul 2 14:57:07 2024 +0200
 
@@ -3311,7 +3432,7 @@ index a8554d5b5..59328acd4 100644
          {
            "exemplar": false,
 
-commit 1b365f1e501ca2cc39749bdd62cb3aacf83ca91f
+commit 1c3c80f3dc4d32af757dfaaf2a1de810cff34994
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Tue Jul 2 14:53:41 2024 +0200
 
@@ -3336,7 +3457,7 @@ index e0cf2f4b4..a8554d5b5 100644
            "legendFormat": "{{service_kind}}",
            "refId": "A"
 
-commit 069b68fb3fa8779eac50071a35e0af1cc5526c09
+commit cd53c38f3339fb776864bef9f94740ab0051ce21
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Fri Jun 28 16:48:12 2024 +0200
 
@@ -3348,7 +3469,7 @@ Date:   Fri Jun 28 16:48:12 2024 +0200
     https://github.com/kubernetes/dns/blob/1.23.1/go.mod#L7
 
 diff --git a/imagevector/images.yaml b/imagevector/images.yaml
-index f4a1bf59d..caa1e7fd3 100644
+index 7bd4cda38..f30d5d8ba 100644
 --- a/imagevector/images.yaml
 +++ b/imagevector/images.yaml
 @@ -395,6 +395,7 @@ images:
@@ -3360,7 +3481,7 @@ index f4a1bf59d..caa1e7fd3 100644
    sourceRepository: github.com/kubernetes/kubernetes/blob/master/cluster/addons/dns/nodelocaldns
    repository: registry.k8s.io/dns/k8s-dns-node-cache
 
-commit 7677184d7347fa84b18fc4582e45e23292311120
+commit 044d8772f35279ef6c0d6da4ee57e03115404955
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Fri Jun 28 16:26:59 2024 +0200
 
@@ -3419,7 +3540,7 @@ index 005dd1799..e0cf2f4b4 100644
        "yBucketSize": null
      }
 
-commit f0b44de1a4e636e3bcdbd57df3af9167f4c409c3
+commit aafdb456f44281f00ca09a8699a89d7d44c52c13
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Fri Jun 28 16:21:01 2024 +0200
 
@@ -3552,7 +3673,7 @@ index 6f6ba2e97..005dd1799 100644
      ]
    },
 
-commit 407120292ce73c7ef935b58fca6e585622b240bf
+commit 930f32b07cacd5e2b6c5250ec551215a7a573ea0
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Fri Jun 28 16:10:50 2024 +0200
 
@@ -3650,7 +3771,7 @@ index 57e70e443..6f6ba2e97 100644
        "heatmap": {},
        "hideZeroBuckets": true,
 
-commit f8d9cd5b27d23714f640817766c71422f12d919d
+commit 3ecb6f484d083f1678df0c62ff9f2cfbc0153a43
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Fri Jun 28 15:59:06 2024 +0200
 
@@ -3725,7 +3846,7 @@ index f70bd2339..57e70e443 100644
          },
          {
 
-commit 65aea92012e1e2024cdb92d0ec1ec2f7bb94ffdd
+commit 2a7f04dd1f43257867483bf58d507e287381cb73
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Fri Jun 28 15:56:07 2024 +0200
 
@@ -3857,7 +3978,7 @@ index bed80b472..f70bd2339 100644
        },
        "hiddenSeries": false,
 
-commit c5d782289e23b648a34841fc53b8a3e84915a9cb
+commit 140afa7abb541d31ea20e830cf79d777bfd5b0ba
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Fri Jun 28 15:54:42 2024 +0200
 
@@ -3935,7 +4056,7 @@ index fea9a2ecb..bed80b472 100644
          },
          {
 
-commit c80bfa7b9986f758e9befa9593804ad5d5c7c9ce
+commit da449589564b828c309df6db5a1330c83589315e
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Fri Jun 28 15:39:20 2024 +0200
 
@@ -4071,7 +4192,7 @@ index 8957c566d..fea9a2ecb 100644
        },
        "hiddenSeries": false,
 
-commit 763b20b8312b8e3ad58c086f544fb48ae3e9aba5
+commit 121f6f17573dcb67370122dcff80e3d89fad3e43
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Fri Jun 28 15:28:24 2024 +0200
 
@@ -4154,7 +4275,7 @@ index 5807b9a20..8957c566d 100644
          },
          {
 
-commit 1e96640b976eaa8e0c5088dc21bdfdf452f782b3
+commit e4edb02df0427a128782dcaf5c1a34c69d352fbc
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Fri Jun 28 15:21:18 2024 +0200
 
@@ -4393,7 +4514,7 @@ index 6ccd3f9a2..5807b9a20 100644
        "heatmap": {},
        "hideZeroBuckets": true,
 
-commit 654f4dbbadd959c88c2ca1c8e5f5ad0816eb0955
+commit 3051b4e9f84503d5e9d69f4fb9bf6e391253c7cb
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Fri Jun 28 15:18:38 2024 +0200
 
@@ -4497,7 +4618,7 @@ index e10a08819..6ccd3f9a2 100644
            "max": null,
            "min": 0,
 
-commit 632646c3d2d9c6e2c2a59f117466d67448143409
+commit ebcc88618472272cb2d25306d634be79f23e70ac
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Fri Jun 28 15:08:12 2024 +0200
 
@@ -4547,7 +4668,7 @@ index 88b7c8c05..e10a08819 100644
        "yBucketSize": null
      },
 
-commit be912ea86da81aeb48061f033758609d53038293
+commit 090d38ffeff5c6e2f1377fbb4736596771d02c36
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Fri Jun 28 14:59:50 2024 +0200
 
@@ -4632,7 +4753,7 @@ index 928cc3b59..88b7c8c05 100644
            "label": "",
            "logBase": 1,
 
-commit f7ebfd94db78574df1a36a2ed665a5305a9d3c05
+commit ed90facc741148161cfa5e6f97543a7c91f1703b
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Fri Jun 28 14:34:04 2024 +0200
 
@@ -4706,7 +4827,7 @@ index b44dc1b53..928cc3b59 100644
            "logBase": 1,
            "max": null,
 
-commit 4b6145fd7d059ecd68b2b35c2da393c36851a0e5
+commit 0c6d4249d87479fad762b4fec79b0b8562d51a2b
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Fri Jun 28 14:25:45 2024 +0200
 
@@ -4843,7 +4964,7 @@ index 635fd0517..b44dc1b53 100644
        "aliasColors": {},
        "bars": false,
 
-commit b24cb562897d1b9c0fdde7f05384bd14a0a30ccc
+commit 870e930fb3c3506e1867b3c4071675a00dbfc42d
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Fri Jun 28 14:20:45 2024 +0200
 
@@ -4944,7 +5065,7 @@ index 4ca96c07b..635fd0517 100644
            "logBase": 1,
            "max": null,
 
-commit 0a9087e83a2aa045b66443578f7e6e47d0efd927
+commit 0b5a876086d041b9c96e4f62662cbb094fb95cb0
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Fri Jun 28 14:12:00 2024 +0200
 
@@ -5126,7 +5247,7 @@ index 055c3ba9a..4ca96c07b 100644
        },
        "hiddenSeries": false,
 
-commit 59c24e92cee0786e26ba752cecf9b3f2f80abf89
+commit 4876c00679566ed0ca8892c31b099c9c4dd15f40
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Fri Jun 28 13:48:21 2024 +0200
 
@@ -5282,7 +5403,7 @@ index 07e93ae2a..055c3ba9a 100644
 +  "uid": "core-dns"
  }
 
-commit c789dcdaafb67aeff34239a20f5ed28b9f9f5f7e
+commit d076deccc86cfb5e4c1cf58c532eab34bda37f14
 Author: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
 Date:   Fri Jun 28 11:51:16 2024 +0200
 
@@ -5294,11 +5415,15 @@ Date:   Fri Jun 28 11:51:16 2024 +0200
 
 diff --git a/hack/export-dashboard.sh b/hack/export-dashboard.sh
 new file mode 100755
-index 000000000..3761217ef
+index 000000000..a2b87f908
 --- /dev/null
 +++ b/hack/export-dashboard.sh
-@@ -0,0 +1,60 @@
+@@ -0,0 +1,64 @@
 +#!/bin/sh
++# SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
++#
++# SPDX-License-Identifier: Apache-2.0
++
 +
 +# When "renovating" Plutono dashboards, it is useful to export them
 +# and capture the changes in small git commits, otherwise it is hard
@@ -5359,7 +5484,7 @@ index 000000000..3761217ef
 +  del(.id, .iteration, .version)
 +' > "$3"
 
-commit 19c8ec7d5c595f5eea1bd6644b61cc9c3b2f7e2e
+commit 956dfd5c582cabb0992cc9f63e49f5abbc4eb3e8
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Mon Jun 24 16:34:08 2024 +0200
 
@@ -5422,7 +5547,7 @@ index 38da21292..aa5ad1ce1 100644
          "name": "pod",
          "options": [],
 
-commit 270efeef9cc49b163b40e0d19e068dbaab3ec183
+commit 389f9c234a67d4358ccc895a7557fb92b83d95b9
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Fri Jun 21 15:29:31 2024 +0200
 
@@ -5524,12 +5649,11 @@ index d261d5977..07e93ae2a 100644
            "exemplar": true,
 -          "expr": "rate(coredns_forward_responses_total{pod=~\"$pod\"}[$__rate_interval])",
 +          "expr": "rate(coredns_proxy_request_duration_seconds_count{pod=~\"$pod\", proxy_name=\"forward\"}[$__rate_interval])",
-                    here the sum was and is missing, so we get a timeseries for each pod. It is fixed in f8d9cd5b27d2.
            "format": "time_series",
            "interval": "",
            "intervalFactor": 1,
 
-commit 3de8026b7f69ce3052292b1577555343eb78a26e
+commit b3f1bdd4c0afc23ba9909897479a149980090f21
 Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date:   Fri Jun 21 13:38:35 2024 +0200
 
