@@ -23,3 +23,5 @@ Special notes for your reviewer:
 Release note:
 
 Migrate VPA metrics to CustomResourceState metrics and upgrade kube-state-metrics to v2.12.0
+
+Perfect.

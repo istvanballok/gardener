@@ -63,13 +63,12 @@ Date:   Wed Jun 26 16:55:31 2024 +0200
     Fix VPA recommendations dashboards for the Prometheus custom resource
 
     Since the introduction of the Prometheus operator as part of GEP-19, VPA
-    targets the Prometheus custom resource. Prometheus pods are ever since
-    prefixed with prometheus-, which breaks the VPA dashboard because the
-    targetName is not enough anymore for the pattern matching. We also need
-    the targetKind to match the pod name. We use flag `?i` to match
-    case-insenstively, given that "kinds" in kubernetes are titled but pods
-    are not.
-    
+    targets the Prometheus custom resource which is called `shoot`. The Prometheus pods are
+    prefixed with prometheus-, e.g. `prometheus-shoot-0`, which breaks the VPA dashboard because the
+    assumption that the VPA target name is a prefix of the pod name is no longer true:
+    in this case the VPA target kind (`Prometheus`) is added as a prefix to the pod name in lower case.
+    So we use the `?i` flag to expect the target kind to be an optional prefix of the pod name.
+
     Example: kind is Prometheus but pod name is prometheus-shoot-0.
 ---
  .../plutono/dashboards/common/vpa/vpa-dashboard.json         | 12 ++++++------
@@ -143,9 +142,14 @@ Date:   Wed Jun 26 16:18:58 2024 +0200
     The kube-system namespace was previously used. This was wrong in two ways.
     First, those pods are not deployed in the kube-system of the shoot, but
     in a specific namespace in the seed. Second, there is a blackbox
-    exporter in both the shoot's namespace in the seed and in the actual
-    kube-system namespace in the shoot. This led to name conflicts and
-    possibly unexpected query results. This is changed to shoot-control-plane.
+    exporter in both the shoot's control-plane namespace in the seed and in the actual
+    kube-system namespace in the shoot. This led to naming conflicts and
+    possibly unexpected query results, e.g. in the VPA dashboard when checking the VPA recommendations for the blackbox_exporter pods. The namespace is changed to shoot-control-plane,
+    which properly describe what it is.
+
+    Note that the control plane namespace is technically called `shoot--<project>--<shoot name>`, but
+    instead of leaking this implementation detail to the monitoring stack, we use the more user-friendly
+    name `shoot-control-plane`.
 ---
  .../observability/monitoring/prometheus/shoot/scrapeconfigs.go        | 4 ++--
  .../observability/monitoring/prometheus/shoot/scrapeconfigs_test.go   | 2 +-
@@ -217,6 +221,8 @@ Date:   Wed Jun 5 15:23:40 2024 +0200
     go get k8s.io/kube-state-metrics/v2@v2.11.0
     go mod tidy
     ```
+
+NOTE: I think a renovate PR will be created after this PR is merged, and we'll need to close that with a reference to this commit.
 
     Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
 ---
@@ -315,6 +321,8 @@ Date:   Mon May 27 16:15:31 2024 +0200
     are queried using the or expression so that visualizations do not break.
     Once Prometheus instances have dropped the old metrics, we can simplify
     these dashboard queries by removing the previous ones.
+
+Shall we add a TODO to the observability backlog, maybe in 2 months from now, e.g. for October 2024?
 
     The templating can always use `_cpu` metrics because the new VPA
     metrics have `nilIsZero` set to true. That means the time series always
@@ -539,12 +547,12 @@ Date:   Thu May 23 16:15:58 2024 +0200
     kube-state-metrics deployment document not so readable.
 
     We tried to preserve the old metric labels and naming as much as
-    possible. However, there are few changes:
+    possible. However, there are a few changes:
 
     1. We can't have one common metric for several resources (e.g., CPU
       and memory) and distinguish between them via labels. Instead, we
       need to migrate to one specific metric per resource. For instance,
-      previously we would have a `target` metric with labels `resource=cpu`
+      previously we had a `target` metric with labels `resource=cpu`
       or `resource=memory` to indicate the value corresponding to CPU or
       memory. After this change two metrics are added: `target_cpu` and
       `target_memory`. Nevertheless, we consider this as an improvement
@@ -565,6 +573,9 @@ Date:   Thu May 23 16:15:58 2024 +0200
        dashboard, to know there is no recommendation at all, rather than
        relying on not having data, which could also be the case if there is
        an issue and metrics are missing.
+
+NOTE that I think this will mean a bit more time series, but it is fine.
+
     4. Metrics containing `container_policies` in their name have been
        renamed to `containerpolicies` to respect the containerPolicies key
        in the spec file (similar to resourcePolicy or
@@ -721,6 +732,7 @@ index 000000000..80e9fb4cc
 +	customResourceStateConfigMountDir  = "/config"
 +	customResourceStateConfigMountFile = "custom-resource-state.yaml"
 +	customResourceStateConfigMapName   = "custom-resource-state-config"
+just a mental note: this will need a suffix in Christoph's work, so that the 2 ksm-s create 2 different cm-s.
 +)
 +
 +func newCustomResourceStateMetricNameForVPA(path, valuePath []string) string {
@@ -868,7 +880,7 @@ index 000000000..48b5c92d0
 +// Returns the expected CustomResourceState config and also asserts that the actual value is the same.
 +// This assertion is performed inside this function to allow to give more human readable errors when the
 +// long config document actually differs. This also allows to keep the expectation in a standalone yaml
-+// file and to easily update it when it needs to be changed
++// file and to easily update it when it needs to be changed.
 +func expectedCustomResourceStateConfig() string {
 +	defer GinkgoRecover()
 +
@@ -929,6 +941,7 @@ index 26d2fbcce..0820aff30 100644
 
 -	return component.DeployResourceConfigs(ctx, k.client, k.namespace, k.values.ClusterType, k.managedResourceName(), map[string]string{v1beta1constants.LabelCareConditionType: v1beta1constants.ObservabilityComponentsHealthy}, registry, k.getResourceConfigs(genericTokenKubeconfigSecretName, shootAccessSecret))
 +	return component.DeployResourceConfigs(ctx, k.client, k.namespace, k.values.ClusterType, k.managedResourceName(), map[string]string{v1beta1constants.LabelCareConditionType: v1beta1constants.ObservabilityComponentsHealthy}, registry, k.getResourceConfigs(genericTokenKubeconfigSecretName, shootAccessSecret, string(customResourceStateConfig)))
+here*
  }
 
  func (k *kubeStateMetrics) Destroy(ctx context.Context) error {
@@ -1095,6 +1108,10 @@ index 29c6bf983..567030a29 100644
 +			Data: map[string]string{
 +				"custom-resource-state.yaml": expectedCustomResourceStateConfig(),
 +			},
+Just a thought: this configmap is not immutable, so it'll be updated in place. It seems to be the default behaviour from above*.
+I think it means that if in a future PR, we'd like to update the CRS config, the configmap will be updated, but the pod will not be restarted. (I haven't actually tested this).
+With immutable config maps this is no issue, because they get a hash suffix. Only the hash suffix would need to be used when the volume is created. The hash is based on the content,
+so it is consistent for test executions. I'm not sure though if it could be avoided for the tests.
 +		}
  		serviceAccount = &corev1.ServiceAccount{
  			ObjectMeta: metav1.ObjectMeta{
@@ -1220,7 +1237,7 @@ index c999d4050..0d74c400c 100644
 +				VolumeSource: corev1.VolumeSource{
 +					ConfigMap: &corev1.ConfigMapVolumeSource{
 +						LocalObjectReference: corev1.LocalObjectReference{
-+							Name: customResourceStateConfigMapName,
++							Name: customResourceStateConfigMapName, // so this would be the immutable config map name
 +						},
 +					},
 +				},
@@ -1289,6 +1306,8 @@ index c999d4050..0d74c400c 100644
 +	cm.Data = map[string]string{
 +		customResourceStateConfigMountFile: customResourceStateConfig,
 +	}
+and the immutability could be added here.
+Something like utilruntime.Must(kubernetesutils.MakeUnique(configMap))
 +}
 diff --git a/pkg/component/observability/monitoring/kubestatemetrics/testdata/custom-resource-state.expectation.yaml b/pkg/component/observability/monitoring/kubestatemetrics/testdata/custom-resource-state.expectation.yaml
 new file mode 100644
