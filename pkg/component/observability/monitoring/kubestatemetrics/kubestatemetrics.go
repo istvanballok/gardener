@@ -32,6 +32,9 @@ const (
 
 	port            = 8080
 	portNameMetrics = "metrics"
+
+	suffixSeed    = "-seed"
+	suffixRuntime = "-runtime"
 )
 
 // New creates a new instance of DeployWaiter for the kube-state-metrics.

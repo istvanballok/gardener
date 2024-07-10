@@ -161,19 +161,24 @@ var _ = Describe("KubeStateMetrics", func() {
 			return obj
 		}
 		serviceFor = func(clusterType component.ClusterType) *corev1.Service {
+			name := "kube-state-metrics"
+			if clusterType == component.ClusterTypeSeed {
+				name += values.NameSuffix
+			}
+
 			obj := &corev1.Service{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "kube-state-metrics",
+					Name:      name,
 					Namespace: namespace,
 					Labels: map[string]string{
-						"component": "kube-state-metrics",
+						"component": name,
 						"type":      string(clusterType),
 					},
 				},
 				Spec: corev1.ServiceSpec{
 					Type: corev1.ServiceTypeClusterIP,
 					Selector: map[string]string{
-						"component": "kube-state-metrics",
+						"component": name,
 						"type":      string(clusterType),
 					},
 					Ports: []corev1.ServicePort{{
@@ -198,6 +203,11 @@ var _ = Describe("KubeStateMetrics", func() {
 			return obj
 		}
 		deploymentFor = func(clusterType component.ClusterType) *appsv1.Deployment {
+			name := "kube-state-metrics"
+			if clusterType == component.ClusterTypeSeed {
+				name += values.NameSuffix
+			}
+
 			var (
 				maxUnavailable = intstr.FromInt32(1)
 				selectorLabels = map[string]string{
@@ -216,12 +226,12 @@ var _ = Describe("KubeStateMetrics", func() {
 
 			if clusterType == component.ClusterTypeSeed {
 				deploymentLabels = map[string]string{
-					"component": "kube-state-metrics",
+					"component": name,
 					"type":      string(clusterType),
 					"role":      "monitoring",
 				}
 				podLabels = map[string]string{
-					"component":                        "kube-state-metrics",
+					"component":                        name,
 					"type":                             string(clusterType),
 					"role":                             "monitoring",
 					"networking.gardener.cloud/to-dns": "allowed",
@@ -354,7 +364,7 @@ var _ = Describe("KubeStateMetrics", func() {
 
 			return &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "kube-state-metrics",
+					Name:      name,
 					Namespace: namespace,
 					Labels:    deploymentLabels,
 				},
@@ -476,7 +486,7 @@ var _ = Describe("KubeStateMetrics", func() {
 		}
 		scrapeConfigSeed = &monitoringv1alpha1.ScrapeConfig{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "seed-kube-state-metrics",
+				Name:      "seed-kube-state-metrics-seed",
 				Namespace: namespace,
 				Labels:    map[string]string{"prometheus": "seed"},
 			},
@@ -491,17 +501,17 @@ var _ = Describe("KubeStateMetrics", func() {
 							"__meta_kubernetes_service_label_component",
 							"__meta_kubernetes_service_port_name",
 						},
-						Regex:  "kube-state-metrics;metrics",
+						Regex:  "kube-state-metrics-seed;metrics",
 						Action: "keep",
 					},
 					{
 						Action:      "replace",
-						Replacement: ptr.To("kube-state-metrics"),
+						Replacement: ptr.To("kube-state-metrics-seed"),
 						TargetLabel: "job",
 					},
 					{
 						TargetLabel: "instance",
-						Replacement: ptr.To("kube-state-metrics"),
+						Replacement: ptr.To("kube-state-metrics-seed"),
 					},
 				},
 				MetricRelabelConfigs: []monitoringv1.RelabelConfig{{
@@ -513,7 +523,7 @@ var _ = Describe("KubeStateMetrics", func() {
 		}
 		scrapeConfigGarden = &monitoringv1alpha1.ScrapeConfig{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "garden-kube-state-metrics",
+				Name:      "garden-kube-state-metrics-runtime",
 				Namespace: namespace,
 				Labels:    map[string]string{"prometheus": "garden"},
 			},
@@ -528,17 +538,17 @@ var _ = Describe("KubeStateMetrics", func() {
 							"__meta_kubernetes_service_label_component",
 							"__meta_kubernetes_service_port_name",
 						},
-						Regex:  "kube-state-metrics;metrics",
+						Regex:  "kube-state-metrics-runtime;metrics",
 						Action: "keep",
 					},
 					{
 						Action:      "replace",
-						Replacement: ptr.To("kube-state-metrics"),
+						Replacement: ptr.To("kube-state-metrics-runtime"),
 						TargetLabel: "job",
 					},
 					{
 						TargetLabel: "instance",
-						Replacement: ptr.To("kube-state-metrics"),
+						Replacement: ptr.To("kube-state-metrics-runtime"),
 					},
 				},
 				MetricRelabelConfigs: []monitoringv1.RelabelConfig{
@@ -718,7 +728,7 @@ var _ = Describe("KubeStateMetrics", func() {
 		managedResourceName = ""
 
 		selectorLabelsClusterTypeSeed := map[string]string{
-			"component": "kube-state-metrics",
+			"component": "kube-state-metrics-seed",
 			"type":      string(component.ClusterTypeSeed),
 		}
 
@@ -825,8 +835,9 @@ var _ = Describe("KubeStateMetrics", func() {
 					KubernetesVersion: semver.MustParse("1.26.3"),
 					Image:             image,
 					PriorityClassName: priorityClassName,
+					NameSuffix:        "-seed",
 				})
-				managedResourceName = "kube-state-metrics"
+				managedResourceName = "kube-state-metrics-seed"
 			})
 
 			JustBeforeEach(func() {
