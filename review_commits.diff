@@ -1,0 +1,1785 @@
+commit 5b217803edda66d87def2061841436c140213658
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Mon Jul 8 16:35:53 2024 +0200
+
+    Re-introduce the kube_pod_labels metric
+
+    The upgrade to kube-state-metrics v2.12 changes the default to disable
+    this metric if not explicitly enabled, but we still need it in Gardener.
+---
+ .../monitoring/kubestatemetrics/kubestatemetrics_test.go              | 4 ++--
+ pkg/component/observability/monitoring/kubestatemetrics/resources.go  | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/pkg/component/observability/monitoring/kubestatemetrics/kubestatemetrics_test.go b/pkg/component/observability/monitoring/kubestatemetrics/kubestatemetrics_test.go
+index 567030a29..09934eeb7 100644
+--- a/pkg/component/observability/monitoring/kubestatemetrics/kubestatemetrics_test.go
++++ b/pkg/component/observability/monitoring/kubestatemetrics/kubestatemetrics_test.go
+@@ -238,7 +238,7 @@ var _ = Describe("KubeStateMetrics", func() {
+ 					"--port=8080",
+ 					"--telemetry-port=8081",
+ 					"--resources=deployments,pods,statefulsets,nodes,horizontalpodautoscalers,persistentvolumeclaims,replicasets,namespaces",
+-					"--metric-labels-allowlist=nodes=[*]",
++					"--metric-labels-allowlist=nodes=[*],pods=[*]",
+ 					"--metric-annotations-allowlist=namespaces=[shoot.gardener.cloud/uid]",
+ 					"--metric-allowlist=" +
+ 						"kube_daemonset_metadata_generation," +
+@@ -338,7 +338,7 @@ var _ = Describe("KubeStateMetrics", func() {
+ 					"--resources=daemonsets,deployments,nodes,pods,statefulsets,replicasets",
+ 					"--namespaces=kube-system",
+ 					"--kubeconfig=/var/run/secrets/gardener.cloud/shoot/generic-kubeconfig/kubeconfig",
+-					"--metric-labels-allowlist=nodes=[*]",
++					"--metric-labels-allowlist=nodes=[*],pods=[*]",
+ 					"--custom-resource-state-config-file=/config/custom-resource-state.yaml",
+ 				}
+ 				automountServiceAccountToken = ptr.To(false)
+diff --git a/pkg/component/observability/monitoring/kubestatemetrics/resources.go b/pkg/component/observability/monitoring/kubestatemetrics/resources.go
+index 0d74c400c..c4908003e 100644
+--- a/pkg/component/observability/monitoring/kubestatemetrics/resources.go
++++ b/pkg/component/observability/monitoring/kubestatemetrics/resources.go
+@@ -242,7 +242,7 @@ func (k *kubeStateMetrics) reconcileDeployment(
+
+ 		args = append(args,
+ 			"--resources=deployments,pods,statefulsets,nodes,horizontalpodautoscalers,persistentvolumeclaims,replicasets,namespaces",
+-			"--metric-labels-allowlist=nodes=[*]",
++			"--metric-labels-allowlist=nodes=[*],pods=[*]",
+ 			"--metric-annotations-allowlist=namespaces=[shoot.gardener.cloud/uid]",
+ 			"--metric-allowlist="+strings.Join(cachePrometheusAllowedMetrics, ","),
+ 			"--custom-resource-state-config-file="+customResourceStateConfigFile,
+@@ -258,7 +258,7 @@ func (k *kubeStateMetrics) reconcileDeployment(
+ 			"--resources=daemonsets,deployments,nodes,pods,statefulsets,replicasets",
+ 			"--namespaces="+metav1.NamespaceSystem,
+ 			"--kubeconfig="+gardenerutils.PathGenericKubeconfig,
+-			"--metric-labels-allowlist=nodes=[*]",
++			"--metric-labels-allowlist=nodes=[*],pods=[*]",
+ 			"--custom-resource-state-config-file="+customResourceStateConfigFile,
+ 		)
+ 	}
+
+commit 8f9990d374df44e3fc0b3a58061f4833dc848abf
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Wed Jun 26 16:55:31 2024 +0200
+
+    Fix VPA recommendations dashboards for the Prometheus custom resource
+
+    Since the introduction of the Prometheus operator as part of GEP-19, VPA
+    targets the Prometheus custom resource. Prometheus pods are ever since
+    prefixed with prometheus-, which breaks the VPA dashboard because the
+    targetName is not enough anymore for the pattern matching. We also need
+    the targetKind to match the pod name. We use flag `?i` to match
+    case-insenstively, given that "kinds" in kubernetes are titled but pods
+    are not.
+    
+    Example: kind is Prometheus but pod name is prometheus-shoot-0.
+---
+ .../plutono/dashboards/common/vpa/vpa-dashboard.json         | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/pkg/component/observability/plutono/dashboards/common/vpa/vpa-dashboard.json b/pkg/component/observability/plutono/dashboards/common/vpa/vpa-dashboard.json
+index 5b2f805a9..dbfbb7568 100644
+--- a/pkg/component/observability/plutono/dashboards/common/vpa/vpa-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/common/vpa/vpa-dashboard.json
+@@ -148,7 +148,7 @@
+       "targets": [
+         {
+           "exemplar": true,
+-          "expr": "sum(container_memory_working_set_bytes{namespace=~\"$namespace\",pod=~\"$targetName(.+)\", container=~\"$container\"}) by (pod)",
++          "expr": "sum(container_memory_working_set_bytes{namespace=~\"$namespace\",pod=~\"(?i:$targetKind-)?$targetName(.+)\", container=~\"$container\"}) by (pod)",
+           "format": "time_series",
+           "hide": false,
+           "interval": "",
+@@ -307,7 +307,7 @@
+       "targets": [
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_pod_container_resource_requests{namespace=~\"$namespace\",resource=\"memory\", unit=\"byte\", pod=~\"$targetName(.+)\",  container=~\"$container\"}) by (pod)",
++          "expr": "sum(kube_pod_container_resource_requests{namespace=~\"$namespace\",resource=\"memory\", unit=\"byte\", pod=~\"(?i:$targetKind-)?$targetName(.+)\",  container=~\"$container\"}) by (pod)",
+           "format": "time_series",
+           "interval": "",
+           "intervalFactor": 1,
+@@ -316,7 +316,7 @@
+         },
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_pod_container_resource_limits{namespace=~\"$namespace\",resource=\"memory\", unit=\"byte\", pod=~\"$targetName(.+)\",  container=~\"$container\"})  by (pod)",
++          "expr": "sum(kube_pod_container_resource_limits{namespace=~\"$namespace\",resource=\"memory\", unit=\"byte\", pod=~\"(?i:$targetKind-)?$targetName(.+)\",  container=~\"$container\"})  by (pod)",
+           "format": "time_series",
+           "interval": "",
+           "intervalFactor": 1,
+@@ -438,7 +438,7 @@
+       "targets": [
+         {
+           "exemplar": true,
+-          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\",pod=~\"$targetName-(.+)\",container=~\"$container\"}[$__rate_interval])) by (pod)",
++          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\",pod=~\"(?i:$targetKind-)?$targetName-(.+)\",container=~\"$container\"}[$__rate_interval])) by (pod)",
+           "format": "time_series",
+           "hide": false,
+           "interval": "",
+@@ -596,7 +596,7 @@
+       "targets": [
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_pod_container_resource_requests{resource=\"cpu\", unit=\"core\", pod=~\"$targetName(.+)\",  container=~\"$container\"}) by (pod)",
++          "expr": "sum(kube_pod_container_resource_requests{resource=\"cpu\", unit=\"core\", pod=~\"(?i:$targetKind-)?$targetName(.+)\",  container=~\"$container\"}) by (pod)",
+           "format": "time_series",
+           "interval": "",
+           "intervalFactor": 1,
+@@ -605,7 +605,7 @@
+         },
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_pod_container_resource_limits{resource=\"cpu\", unit=\"core\", pod=~\"$targetName(.+)\",  container=~\"$container\"}) by (pod)",
++          "expr": "sum(kube_pod_container_resource_limits{resource=\"cpu\", unit=\"core\", pod=~\"(?i:$targetKind-)?$targetName(.+)\",  container=~\"$container\"}) by (pod)",
+           "format": "time_series",
+           "interval": "",
+           "intervalFactor": 1,
+
+commit 67ba9a2ed69d8821ece94af58b37bf720eba2230
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Wed Jun 26 16:18:58 2024 +0200
+
+    Change namespace used in metric for control-plane shoot pods
+
+    The kube-system namespace was previously used. This was wrong in two ways.
+    First, those pods are not deployed in the kube-system of the shoot, but
+    in a specific namespace in the seed. Second, there is a blackbox
+    exporter in both the shoot's namespace in the seed and in the actual
+    kube-system namespace in the shoot. This led to name conflicts and
+    possibly unexpected query results. This is changed to shoot-control-plane.
+---
+ .../observability/monitoring/prometheus/shoot/scrapeconfigs.go        | 4 ++--
+ .../observability/monitoring/prometheus/shoot/scrapeconfigs_test.go   | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/pkg/component/observability/monitoring/prometheus/shoot/scrapeconfigs.go b/pkg/component/observability/monitoring/prometheus/shoot/scrapeconfigs.go
+index e7463475f..02d3959fa 100644
+--- a/pkg/component/observability/monitoring/prometheus/shoot/scrapeconfigs.go
++++ b/pkg/component/observability/monitoring/prometheus/shoot/scrapeconfigs.go
+@@ -48,8 +48,8 @@ func CentralScrapeConfigs(namespace, clusterCASecretName string, isWorkerless bo
+ 					TargetLabel: "job",
+ 				}},
+ 				MetricRelabelConfigs: []monitoringv1.RelabelConfig{{
+-					// we make the shoot's pods in the shoot's namespace to appear in the kube-system namespace
+-					Replacement: ptr.To(metav1.NamespaceSystem),
++					// "shoot-control-plane" references the namespace of the shoot control-plane pods in the seed
++					Replacement: ptr.To("shoot-control-plane"),
+ 					TargetLabel: "namespace",
+ 				}},
+ 			},
+diff --git a/pkg/component/observability/monitoring/prometheus/shoot/scrapeconfigs_test.go b/pkg/component/observability/monitoring/prometheus/shoot/scrapeconfigs_test.go
+index 4f1a55537..69556e6ad 100644
+--- a/pkg/component/observability/monitoring/prometheus/shoot/scrapeconfigs_test.go
++++ b/pkg/component/observability/monitoring/prometheus/shoot/scrapeconfigs_test.go
+@@ -50,7 +50,7 @@ var _ = Describe("ScrapeConfigs", func() {
+ 							TargetLabel: "job",
+ 						}},
+ 						MetricRelabelConfigs: []monitoringv1.RelabelConfig{{
+-							Replacement: ptr.To("kube-system"),
++							Replacement: ptr.To("shoot-control-plane"),
+ 							TargetLabel: "namespace",
+ 						}},
+ 					},
+
+commit a30eb59f6a165e4fbb1877d7eba2635d1eb62c95
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Wed Jun 5 15:23:40 2024 +0200
+
+    Downgrade k8s.io/kube-state-metrics/v2 to v2.11.0
+
+    This commit downgrades k8s.io/kube-state-metrics/v2 from v2.12.0 to
+    v2.11.0 to avoid a version conflict with k8s.io/component-base v0.29.5.
+
+    The newer version of k8s.io/kube-state-metrics/v2 (v2.12.0) requires a
+    version of github.com/prometheus/common (v0.51.1) that contains a
+    breaking change. This breaking change is incompatible with the version of
+    k8s.io/component-base (v0.29.5) that we're using.
+
+    By downgrading k8s.io/kube-state-metrics/v2 to v2.11.0, we can avoid this
+    issue, as this version does not require the breaking change in
+    github.com/prometheus/common.
+
+    This change should not affect the runtime behavior, as the changes between
+    k8s.io/kube-state-metrics/v2 v2.11.0 and v2.12.0 do not affect the YAML
+    serialization of the custom resource state data structures.
+
+    Once a new version of kubernetes/component-base is released containing
+    the fix
+    https://github.com/kubernetes/component-base/commit/62c04b35eff68f7d4087f94b7b1228facb375141
+    for the breaking change
+    https://github.com/prometheus/common/commit/bd41eb6b9dee4fa983f31ae8756700efde1f3ea2
+    that was introduced in v0.48.0 of prometheus/common, we can upgrade the
+    kube-state-metrics/v2 to v2.12.0.
+
+    Otherwise when using kube-state-metrics/v2 in version v2.12.0 the build
+    fails with a compilation error.
+
+    ```
+    go get k8s.io/kube-state-metrics/v2@v2.11.0
+    go mod tidy
+    ```
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+---
+ go.mod |  8 ++++----
+ go.sum | 16 ++++++++--------
+ 2 files changed, 12 insertions(+), 12 deletions(-)
+
+diff --git a/go.mod b/go.mod
+index 7d4856da2..a1f4922c0 100644
+--- a/go.mod
++++ b/go.mod
+@@ -32,8 +32,8 @@ require (
+ 	github.com/opencontainers/image-spec v1.1.0
+ 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.74.0
+ 	github.com/prometheus/blackbox_exporter v0.24.0
+-	github.com/prometheus/client_golang v1.19.0
+-	github.com/prometheus/common v0.51.1
++	github.com/prometheus/client_golang v1.18.0
++	github.com/prometheus/common v0.47.0
+ 	github.com/robfig/cron v1.2.0
+ 	github.com/spf13/afero v1.11.0
+ 	github.com/spf13/cobra v1.8.1
+@@ -70,7 +70,7 @@ require (
+ 	k8s.io/kube-aggregator v0.29.6
+ 	k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00
+ 	k8s.io/kube-proxy v0.29.6
+-	k8s.io/kube-state-metrics/v2 v2.12.0
++	k8s.io/kube-state-metrics/v2 v2.11.0
+ 	k8s.io/kubelet v0.29.6
+ 	k8s.io/metrics v0.29.6
+ 	k8s.io/pod-security-admission v0.29.6
+@@ -251,7 +251,7 @@ require (
+ 	k8s.io/gengo v0.0.0-20230829151522-9cce18d56c01 // indirect
+ 	k8s.io/klog v1.0.0 // indirect
+ 	k8s.io/kms v0.29.6 // indirect
+-	k8s.io/sample-controller v0.29.3 // indirect
++	k8s.io/sample-controller v0.28.4 // indirect
+ 	oras.land/oras-go v1.2.4 // indirect
+ 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.28.0 // indirect
+ 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
+diff --git a/go.sum b/go.sum
+index b22cb3373..51d78016e 100644
+--- a/go.sum
++++ b/go.sum
+@@ -499,8 +499,8 @@ github.com/prometheus/blackbox_exporter v0.24.0/go.mod h1:SfZtJPNWmR8SskeJMmggTp
+ github.com/prometheus/client_golang v0.9.1/go.mod h1:7SWBe2y4D6OKWSNQJUaRYU/AaXPKyh/dDVn+NZz0KFw=
+ github.com/prometheus/client_golang v1.0.0/go.mod h1:db9x61etRT2tGnBNRi70OPL5FsnadC4Ky3P0J6CfImo=
+ github.com/prometheus/client_golang v1.1.0/go.mod h1:I1FGZT9+L76gKKOs5djB6ezCbFQP1xR9D75/vuwEF3g=
+-github.com/prometheus/client_golang v1.19.0 h1:ygXvpU1AoN1MhdzckN+PyD9QJOSD4x7kmXYlnfbA6JU=
+-github.com/prometheus/client_golang v1.19.0/go.mod h1:ZRM9uEAypZakd+q/x7+gmsvXdURP+DABIEIjnmDdp+k=
++github.com/prometheus/client_golang v1.18.0 h1:HzFfmkOzH5Q8L8G+kSJKUx5dtG87sewO+FoDDqP5Tbk=
++github.com/prometheus/client_golang v1.18.0/go.mod h1:T+GXkCk5wSJyOqMIzVgvvjFDlkOQntgjkJWKrN5txjA=
+ github.com/prometheus/client_model v0.0.0-20180712105110-5c3871d89910/go.mod h1:MbSGuTsp3dbXC40dX6PRTWyKYBIrTGTE9sqQNg2J8bo=
+ github.com/prometheus/client_model v0.0.0-20190129233127-fd36f4220a90/go.mod h1:xMI15A0UPsDsEKsMN9yxemIoYk6Tm2C1GtYGdfGttqA=
+ github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4/go.mod h1:xMI15A0UPsDsEKsMN9yxemIoYk6Tm2C1GtYGdfGttqA=
+@@ -508,8 +508,8 @@ github.com/prometheus/client_model v0.6.0 h1:k1v3CzpSRUTrKMppY35TLwPvxHqBu0bYgxZ
+ github.com/prometheus/client_model v0.6.0/go.mod h1:NTQHnmxFpouOD0DpvP4XujX3CdOAGQPoaGhyTchlyt8=
+ github.com/prometheus/common v0.4.1/go.mod h1:TNfzLD0ON7rHzMJeJkieUDPYmFC7Snx/y86RQel1bk4=
+ github.com/prometheus/common v0.6.0/go.mod h1:eBmuwkDJBwy6iBfxCBob6t6dR6ENT/y+J+Zk0j9GMYc=
+-github.com/prometheus/common v0.51.1 h1:eIjN50Bwglz6a/c3hAgSMcofL3nD+nFQkV6Dd4DsQCw=
+-github.com/prometheus/common v0.51.1/go.mod h1:lrWtQx+iDfn2mbH5GUzlH9TSHyfZpHkSiG1W7y3sF2Q=
++github.com/prometheus/common v0.47.0 h1:p5Cz0FNHo7SnWOmWmoRozVcjEp0bIVU8cV7OShpjL1k=
++github.com/prometheus/common v0.47.0/go.mod h1:0/KsvlIEfPQCQ5I2iNSAWKPZziNCvRs5EC6ILDTlAPc=
+ github.com/prometheus/procfs v0.0.0-20181005140218-185b4288413d/go.mod h1:c3At6R/oaqEKCNdg8wHV1ftS6bRYblBhIjjI8uT2IGk=
+ github.com/prometheus/procfs v0.0.2/go.mod h1:TjEm7ze935MbeOT/UhFTIMYKhuLP4wbCsTZCD3I8kEA=
+ github.com/prometheus/procfs v0.0.3/go.mod h1:4A/X28fw3Fc593LaREMrKMqOKvUAntwMDaekg4FpcdQ=
+@@ -969,16 +969,16 @@ k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00 h1:aVUu9fTY98ivBPKR9Y5w/A
+ k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00/go.mod h1:AsvuZPBlUDVuCdzJ87iajxtXuR9oktsTctW/R9wwouA=
+ k8s.io/kube-proxy v0.29.6 h1:H/wPg6vJ8ObzTJzV2bGQO/Nria5bXMlJxrPlxiacpJI=
+ k8s.io/kube-proxy v0.29.6/go.mod h1:EUKqW0BvMyPWbnlKRKJerLgrFBFRhoNNuMvhefJxCPc=
+-k8s.io/kube-state-metrics/v2 v2.12.0 h1:is2KqFjpkF+tLqhNfr1sWCEvucb//S50wxzzEhXRzHI=
+-k8s.io/kube-state-metrics/v2 v2.12.0/go.mod h1:s1Iq7mNhtbb4fnwMw39uUOrpdIaeoyDQDWA7OZoOqhc=
++k8s.io/kube-state-metrics/v2 v2.11.0 h1:SSp45nHWty4/1RTx9InxTvmEbQ7GAg8l5AWgB84aNRo=
++k8s.io/kube-state-metrics/v2 v2.11.0/go.mod h1:huOgAz/5dqUoPsoqbE8/VPiLLm93jPedmWmzj3fwrWo=
+ k8s.io/kubelet v0.29.6 h1:jXnnBNHK/KNNEJesmlIZmCvlYC3a5/e04BIS9VPM49M=
+ k8s.io/kubelet v0.29.6/go.mod h1:kGEUqodVM120YTTQLSCTXzZP4XMFDp7qLf7iU3hrRE4=
+ k8s.io/metrics v0.29.6 h1:kjMGPYxtCi4OO0fUar76y0CiUoeGYDNmUV0LXJIis4Q=
+ k8s.io/metrics v0.29.6/go.mod h1:vqGzOaYGuNSSAI7GM1+v6L5z8aAUSzui1W0eQB3wVJY=
+ k8s.io/pod-security-admission v0.29.6 h1:xxT9NWEWnbS49y6p7jY9S4pvcUBd9/8vPx2Y8GSZvrU=
+ k8s.io/pod-security-admission v0.29.6/go.mod h1:KKimOte/+7k3NJbvRFdRDRTPvgUNSzUVABT9tDIAzLw=
+-k8s.io/sample-controller v0.29.3 h1:1g96iu1sH9zFaZ4Nq7s10R1eq1cNgiM9l/F4ttEURJI=
+-k8s.io/sample-controller v0.29.3/go.mod h1:zjhfoVX5Bcf7G4yNUoUmhXbVMMqM+TUoz3pILzH0OLo=
++k8s.io/sample-controller v0.28.4 h1:qghAHWGAFbDaTssOEiktdjbpq9avioOKRMB+KEwBIR0=
++k8s.io/sample-controller v0.28.4/go.mod h1:XXL627j2rVrUQTMpebt6imNnSE30tmFnAOvZsYUsWpo=
+ k8s.io/utils v0.0.0-20200729134348-d5654de09c73/go.mod h1:jPW/WVKK9YHAvNhRxK0md/EJ228hCsBRufyofKtW8HA=
+ k8s.io/utils v0.0.0-20240502163921-fe8a2dddb1d0 h1:jgGTlFYnhF1PM1Ax/lAlxUPE+KfCIXHaathvJg1C3ak=
+ k8s.io/utils v0.0.0-20240502163921-fe8a2dddb1d0/go.mod h1:OLgZIPagt7ERELqWJFomSt595RzquPNLL48iOWgYOg0=
+
+commit 7fd6aabc11175c20baf530fdec158906443e35ed
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Mon May 27 16:15:31 2024 +0200
+
+    Adapt VPA dashboard to new metrics
+
+    Queries will look lengthy for a short period of time because new metrics
+    are queried using the or expression so that visualizations do not break.
+    Once Prometheus instances have dropped the old metrics, we can simplify
+    these dashboard queries by removing the previous ones.
+
+    The templating can always use `_cpu` metrics because the new VPA
+    metrics have `nilIsZero` set to true. That means the time series always
+    exists for all VPAs, whether they have a target CPU or not. Note we could
+    take any other metric as an example.
+---
+ .../dashboards/common/vpa/vpa-dashboard.json       | 42 +++++++++++-----------
+ 1 file changed, 21 insertions(+), 21 deletions(-)
+
+diff --git a/pkg/component/observability/plutono/dashboards/common/vpa/vpa-dashboard.json b/pkg/component/observability/plutono/dashboards/common/vpa/vpa-dashboard.json
+index 38eb15a55..5b2f805a9 100644
+--- a/pkg/component/observability/plutono/dashboards/common/vpa/vpa-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/common/vpa/vpa-dashboard.json
+@@ -71,7 +71,7 @@
+       "targets": [
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_verticalpodautoscaler_spec_updatepolicy_updatemode{namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\"}) by (update_mode) > 0",
++          "expr": "sum({__name__=~\"kube(_customresource)?_verticalpodautoscaler_spec_updatepolicy_updatemode\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\"}) by (update_mode) > 0",
+           "format": "time_series",
+           "hide": false,
+           "instant": true,
+@@ -158,7 +158,7 @@
+         },
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{resource=\"memory\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
++          "expr": "sum(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{resource=\"memory\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"} or kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_memory{namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
+           "format": "time_series",
+           "hide": false,
+           "interval": "",
+@@ -168,7 +168,7 @@
+         },
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound{resource=\"memory\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
++          "expr": "sum(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound{resource=\"memory\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"} or kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_memory{namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
+           "format": "time_series",
+           "hide": false,
+           "interval": "",
+@@ -178,7 +178,7 @@
+         },
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound{resource=\"memory\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
++          "expr": "sum(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound{resource=\"memory\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"} or kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_memory{namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
+           "format": "time_series",
+           "hide": false,
+           "interval": "",
+@@ -188,7 +188,7 @@
+         },
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed{resource=\"memory\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
++          "expr": "sum(kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed{resource=\"memory\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"} or kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_minallowed_memory{namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
+           "format": "time_series",
+           "hide": false,
+           "interval": "",
+@@ -198,7 +198,7 @@
+         },
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed{resource=\"memory\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
++          "expr": "sum(kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed{resource=\"memory\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"} or kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_maxallowed_memory{namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
+           "format": "time_series",
+           "hide": false,
+           "interval": "",
+@@ -325,7 +325,7 @@
+         },
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{resource=\"memory\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container\"})",
++          "expr": "sum(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{resource=\"memory\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container\"} or kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_memory{namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container\"})",
+           "format": "time_series",
+           "interval": "",
+           "intervalFactor": 1,
+@@ -448,7 +448,7 @@
+         },
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{resource=\"cpu\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
++          "expr": "sum(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{resource=\"cpu\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"} or kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu{namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
+           "format": "time_series",
+           "hide": false,
+           "interval": "",
+@@ -458,7 +458,7 @@
+         },
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound{resource=\"cpu\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
++          "expr": "sum(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound{resource=\"cpu\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"} or kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_cpu{namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
+           "format": "time_series",
+           "hide": false,
+           "interval": "",
+@@ -468,7 +468,7 @@
+         },
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound{resource=\"cpu\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
++          "expr": "sum(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound{resource=\"cpu\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"} or kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_cpu{namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
+           "format": "time_series",
+           "hide": false,
+           "interval": "",
+@@ -478,7 +478,7 @@
+         },
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed{resource=\"cpu\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
++          "expr": "sum(kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed{resource=\"cpu\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"} or kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_minallowed_cpu{namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
+           "format": "time_series",
+           "hide": false,
+           "interval": "",
+@@ -488,7 +488,7 @@
+         },
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed{resource=\"cpu\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
++          "expr": "sum(kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed{resource=\"cpu\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"} or kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_maxallowed_cpu{namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
+           "format": "time_series",
+           "hide": false,
+           "interval": "",
+@@ -614,7 +614,7 @@
+         },
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{resource=\"cpu\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container\"})",
++          "expr": "sum(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{resource=\"cpu\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container\"} or kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu{namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container\"})",
+           "format": "time_series",
+           "interval": "",
+           "intervalFactor": 1,
+@@ -685,7 +685,7 @@
+           ]
+         },
+         "datasource": null,
+-        "definition": "label_values(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target, namespace)",
++        "definition": "label_values(kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu, namespace)",
+         "description": null,
+         "error": null,
+         "hide": 0,
+@@ -695,7 +695,7 @@
+         "name": "namespace",
+         "options": [],
+         "query": {
+-          "query": "label_values(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target, namespace)",
++          "query": "label_values(kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu, namespace)",
+           "refId": "StandardVariableQuery"
+         },
+         "refresh": 1,
+@@ -716,7 +716,7 @@
+           "value": "Deployment"
+         },
+         "datasource": "prometheus",
+-        "definition": "label_values(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{namespace=~\"$namespace\"}, target_kind)",
++        "definition": "label_values(kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu{namespace=~\"$namespace\"}, target_kind)",
+         "description": null,
+         "error": null,
+         "hide": 0,
+@@ -726,7 +726,7 @@
+         "name": "targetKind",
+         "options": [],
+         "query": {
+-          "query": "label_values(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{namespace=~\"$namespace\"}, target_kind)",
++          "query": "label_values(kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu{namespace=~\"$namespace\"}, target_kind)",
+           "refId": "StandardVariableQuery"
+         },
+         "refresh": 1,
+@@ -747,7 +747,7 @@
+           "value": "blackbox-exporter"
+         },
+         "datasource": "prometheus",
+-        "definition": "label_values(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{namespace=~\"$namespace\", target_kind=~\"$targetKind\"}, target_name)",
++        "definition": "label_values(kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu{namespace=~\"$namespace\", target_kind=~\"$targetKind\"}, target_name)",
+         "description": null,
+         "error": null,
+         "hide": 0,
+@@ -757,7 +757,7 @@
+         "name": "targetName",
+         "options": [],
+         "query": {
+-          "query": "label_values(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{namespace=~\"$namespace\", target_kind=~\"$targetKind\"}, target_name)",
++          "query": "label_values(kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu{namespace=~\"$namespace\", target_kind=~\"$targetKind\"}, target_name)",
+           "refId": "StandardVariableQuery"
+         },
+         "refresh": 1,
+@@ -778,7 +778,7 @@
+           "value": "blackbox-exporter"
+         },
+         "datasource": "prometheus",
+-        "definition": "label_values(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{namespace=~\"$namespace\", target_kind=~\"$targetKind\",target_name=~\"$targetName\"}, container)",
++        "definition": "label_values(kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu{namespace=~\"$namespace\", target_kind=~\"$targetKind\",target_name=~\"$targetName\"}, container)",
+         "description": null,
+         "error": null,
+         "hide": 0,
+@@ -788,7 +788,7 @@
+         "name": "container",
+         "options": [],
+         "query": {
+-          "query": "label_values(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{namespace=~\"$namespace\", target_kind=~\"$targetKind\",target_name=~\"$targetName\"}, container)",
++          "query": "label_values(kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu{namespace=~\"$namespace\", target_kind=~\"$targetKind\",target_name=~\"$targetName\"}, container)",
+           "refId": "StandardVariableQuery"
+         },
+         "refresh": 1,
+
+commit aee0eef690a9b9b48dc74130038fe6d7ba1c64d2
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Thu May 23 16:15:58 2024 +0200
+
+    Adapt VPA metrics to new solution CustomResourceState
+
+    This commit adds the necessary configuration changes to readd the VPA
+    metrics using the new strategy CustomResourceState from the
+    kube-state-metrics. Such configuration is created programmatically thanks
+    to the the kube-state-metrics dependency downloaded in the previous
+    commit. This commit also runs `go mod tidy` in order to make this
+    dependency direct.
+
+    The new CustomResourceState configuration is stored in a ConfigMap and
+    mounted into the kube-state-metrics deployment using the
+    `--custom-resource-state-config-file`. There is an alternative command
+    flag `--custom-resource-state-config` to pass such configuration inline
+    but the resulting configuration is very lengthy, which would make the
+    kube-state-metrics deployment document not so readable.
+
+    We tried to preserve the old metric labels and naming as much as
+    possible. However, there are few changes:
+
+    1. We can't have one common metric for several resources (e.g., CPU
+      and memory) and distinguish between them via labels. Instead, we
+      need to migrate to one specific metric per resource. For instance,
+      previously we would have a `target` metric with labels `resource=cpu`
+      or `resource=memory` to indicate the value corresponding to CPU or
+      memory. After this change two metrics are added: `target_cpu` and
+      `target_memory`. Nevertheless, we consider this as an improvement
+      because values in the new metrics are not mixing units as before
+      (cores were used for the CPU and bytes for the memory).
+    2. Using `CustomResourceState` prefixes the metric name with
+       `kube_customresource` by default. Therefore, the old prefix
+       `kube_verticalpodautoscaler` becomes now
+       `kube_customresource_verticalpodautoscaler`. Such default prefix
+       can be overwritten to match the one we want, but we choose not to
+       so that the new name reflects better that the metric is generated
+       by the `CustomResourceState`.
+    3. The property `nilIsZero` is set to true for the recommendation
+       metrics to set the value to zero if the recommendation path does not
+       exist in the VPA spec file (i.e., it doesn't have a recommendation).
+       In the past, the time series would simply not exist. Since a
+       recommendation to 0 does not make sense, this is a way, e.g., in the
+       dashboard, to know there is no recommendation at all, rather than
+       relying on not having data, which could also be the case if there is
+       an issue and metrics are missing.
+    4. Metrics containing `container_policies` in their name have been
+       renamed to `containerpolicies` to respect the containerPolicies key
+       in the spec file (similar to resourcePolicy or
+       containerRecommendations). This way, the metric format is unified to
+       use underscores to separate keys in the path.
+    5. The `CustomResourceState` documentation does not mention that
+       kube-state-metrics needs `get` permissions on RBAC-enabled clusters,
+       but only `list` and `watch`. Therefore, the old `get` permissions are
+       removed.
+
+    A unit test is added to assert the generated configuration matches the
+    one originally generated for testing. The test expectation is saved into
+    a yaml file and committed to git. The test saves the generated
+    configuration in a different file in the temporary folder (but does not
+    commit it). The benefit of this approach is that it helps comparing the
+    actual and expected configuration, no matter how large the files are: we
+    have two separate files that we can compare using any tool.
+
+    The `expectedCustomResourceStateConfig()` utility returns the expected
+    CustomResourceState config and also asserts that the actual value is the
+    same. This function is to be used to load the test expectation during
+    the test setup. The assertion is performed inside this function to allow
+    to give more human readable errors when the long config document actually
+    differs. When the assertion fails, a custom message is shown. It tries to
+    mimic the wording from usual ginkgo test runs but adds a hint in the end
+    on how to use the diff command to see the diff. This of course will only
+    work on UNIX systems. Developers can review this diff and react
+    accordingly e.g., check if there is a bug in the code or if indeed the
+    expectation has to be changed.
+
+    Finally, this commit also runs `go mod tidy` to make the new
+    kube-state-metrics dependency direct.
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+---
+ go.mod                                             |   5 +-
+ go.sum                                             |  10 -
+ .../kubestatemetrics/customresourcestate.go        | 138 ++++++++++
+ .../kubestatemetrics/customresourcestate_test.go   |  51 ++++
+ .../kubestatemetrics/kubestatemetrics.go           |  10 +-
+ .../kubestatemetrics/kubestatemetrics_test.go      |  81 ++++--
+ .../monitoring/kubestatemetrics/resources.go       | 103 ++++++--
+ .../custom-resource-state.expectation.yaml         | 290 +++++++++++++++++++++
+ 8 files changed, 625 insertions(+), 63 deletions(-)
+
+diff --git a/go.mod b/go.mod
+index 4ed540c91..7d4856da2 100644
+--- a/go.mod
++++ b/go.mod
+@@ -70,6 +70,7 @@ require (
+ 	k8s.io/kube-aggregator v0.29.6
+ 	k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00
+ 	k8s.io/kube-proxy v0.29.6
++	k8s.io/kube-state-metrics/v2 v2.12.0
+ 	k8s.io/kubelet v0.29.6
+ 	k8s.io/metrics v0.29.6
+ 	k8s.io/pod-security-admission v0.29.6
+@@ -168,7 +169,6 @@ require (
+ 	github.com/mailru/easyjson v0.7.7 // indirect
+ 	github.com/mattn/go-colorable v0.1.13 // indirect
+ 	github.com/mattn/go-isatty v0.0.20 // indirect
+-	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
+ 	github.com/miekg/dns v1.1.58 // indirect
+ 	github.com/mitchellh/copystructure v1.2.0 // indirect
+ 	github.com/mitchellh/go-homedir v1.1.0 // indirect
+@@ -187,7 +187,6 @@ require (
+ 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
+ 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
+ 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
+-	github.com/oklog/run v1.1.0 // indirect
+ 	github.com/opencontainers/go-digest v1.0.0 // indirect
+ 	github.com/opencontainers/runtime-spec v1.1.0 // indirect
+ 	github.com/opencontainers/selinux v1.11.0 // indirect
+@@ -195,7 +194,6 @@ require (
+ 	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
+ 	github.com/pkg/errors v0.9.1 // indirect
+ 	github.com/prometheus/client_model v0.6.0 // indirect
+-	github.com/prometheus/exporter-toolkit v0.11.0 // indirect
+ 	github.com/prometheus/procfs v0.12.0 // indirect
+ 	github.com/redis/go-redis/extra/rediscmd/v9 v9.0.5 // indirect
+ 	github.com/redis/go-redis/extra/redisotel/v9 v9.0.5 // indirect
+@@ -253,7 +251,6 @@ require (
+ 	k8s.io/gengo v0.0.0-20230829151522-9cce18d56c01 // indirect
+ 	k8s.io/klog v1.0.0 // indirect
+ 	k8s.io/kms v0.29.6 // indirect
+-	k8s.io/kube-state-metrics/v2 v2.12.0 // indirect
+ 	k8s.io/sample-controller v0.29.3 // indirect
+ 	oras.land/oras-go v1.2.4 // indirect
+ 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.28.0 // indirect
+diff --git a/go.sum b/go.sum
+index 30f897ba4..b22cb3373 100644
+--- a/go.sum
++++ b/go.sum
+@@ -409,8 +409,6 @@ github.com/mattn/go-isatty v0.0.16/go.mod h1:kYGgaQfpe5nmfYZH+SKPsOc2e4SrIfOl2e/
+ github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=
+ github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
+ github.com/matttproud/golang_protobuf_extensions v1.0.1/go.mod h1:D8He9yQNgCq6Z5Ld7szi9bcBfOoFv/3dc6xSMkL2PC0=
+-github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 h1:jWpvCLoY8Z/e3VKvlsiIGKtc+UG6U5vzxaoagmhXfyg=
+-github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0/go.mod h1:QUyp042oQthUoa9bqDv0ER0wrtXnBruoNd7aNjkbP+k=
+ github.com/miekg/dns v1.1.58 h1:ca2Hdkz+cDg/7eNF6V56jjzuZ4aCAE+DbVkILdQWG/4=
+ github.com/miekg/dns v1.1.58/go.mod h1:Ypv+3b/KadlvW9vJfXOTf300O4UqaHFzFCuHz+rPkBY=
+ github.com/mitchellh/copystructure v1.0.0/go.mod h1:SNtv71yrdKgLRyLFxmLdkAbkKEFWgYaq1OVrnRcwhnw=
+@@ -459,8 +457,6 @@ github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f/go.mod h1:ZdcZmHo+
+ github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
+ github.com/nxadm/tail v1.4.8 h1:nPr65rt6Y5JFSKQO7qToXr7pePgD6Gwiw05lkbyAQTE=
+ github.com/nxadm/tail v1.4.8/go.mod h1:+ncqLTQzXmGhMZNUePPaPqPvBxHAIsmXswZKocGu+AU=
+-github.com/oklog/run v1.1.0 h1:GEenZ1cK0+q0+wsJew9qUg/DyD8k3JzYsZAi5gYi2mA=
+-github.com/oklog/run v1.1.0/go.mod h1:sVPdnTZT1zYwAJeCMu2Th4T21pA3FPOQRfWjQlk7DVU=
+ github.com/onsi/ginkgo v0.0.0-20170829012221-11459a886d9c/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
+ github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
+ github.com/onsi/ginkgo v1.11.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
+@@ -503,8 +499,6 @@ github.com/prometheus/blackbox_exporter v0.24.0/go.mod h1:SfZtJPNWmR8SskeJMmggTp
+ github.com/prometheus/client_golang v0.9.1/go.mod h1:7SWBe2y4D6OKWSNQJUaRYU/AaXPKyh/dDVn+NZz0KFw=
+ github.com/prometheus/client_golang v1.0.0/go.mod h1:db9x61etRT2tGnBNRi70OPL5FsnadC4Ky3P0J6CfImo=
+ github.com/prometheus/client_golang v1.1.0/go.mod h1:I1FGZT9+L76gKKOs5djB6ezCbFQP1xR9D75/vuwEF3g=
+-github.com/prometheus/client_golang v1.18.0 h1:HzFfmkOzH5Q8L8G+kSJKUx5dtG87sewO+FoDDqP5Tbk=
+-github.com/prometheus/client_golang v1.18.0/go.mod h1:T+GXkCk5wSJyOqMIzVgvvjFDlkOQntgjkJWKrN5txjA=
+ github.com/prometheus/client_golang v1.19.0 h1:ygXvpU1AoN1MhdzckN+PyD9QJOSD4x7kmXYlnfbA6JU=
+ github.com/prometheus/client_golang v1.19.0/go.mod h1:ZRM9uEAypZakd+q/x7+gmsvXdURP+DABIEIjnmDdp+k=
+ github.com/prometheus/client_model v0.0.0-20180712105110-5c3871d89910/go.mod h1:MbSGuTsp3dbXC40dX6PRTWyKYBIrTGTE9sqQNg2J8bo=
+@@ -514,12 +508,8 @@ github.com/prometheus/client_model v0.6.0 h1:k1v3CzpSRUTrKMppY35TLwPvxHqBu0bYgxZ
+ github.com/prometheus/client_model v0.6.0/go.mod h1:NTQHnmxFpouOD0DpvP4XujX3CdOAGQPoaGhyTchlyt8=
+ github.com/prometheus/common v0.4.1/go.mod h1:TNfzLD0ON7rHzMJeJkieUDPYmFC7Snx/y86RQel1bk4=
+ github.com/prometheus/common v0.6.0/go.mod h1:eBmuwkDJBwy6iBfxCBob6t6dR6ENT/y+J+Zk0j9GMYc=
+-github.com/prometheus/common v0.45.0 h1:2BGz0eBc2hdMDLnO/8n0jeB3oPrt2D08CekT0lneoxM=
+-github.com/prometheus/common v0.45.0/go.mod h1:YJmSTw9BoKxJplESWWxlbyttQR4uaEcGyv9MZjVOJsY=
+ github.com/prometheus/common v0.51.1 h1:eIjN50Bwglz6a/c3hAgSMcofL3nD+nFQkV6Dd4DsQCw=
+ github.com/prometheus/common v0.51.1/go.mod h1:lrWtQx+iDfn2mbH5GUzlH9TSHyfZpHkSiG1W7y3sF2Q=
+-github.com/prometheus/exporter-toolkit v0.11.0 h1:yNTsuZ0aNCNFQ3aFTD2uhPOvr4iD7fdBvKPAEGkNf+g=
+-github.com/prometheus/exporter-toolkit v0.11.0/go.mod h1:BVnENhnNecpwoTLiABx7mrPB/OLRIgN74qlQbV+FK1Q=
+ github.com/prometheus/procfs v0.0.0-20181005140218-185b4288413d/go.mod h1:c3At6R/oaqEKCNdg8wHV1ftS6bRYblBhIjjI8uT2IGk=
+ github.com/prometheus/procfs v0.0.2/go.mod h1:TjEm7ze935MbeOT/UhFTIMYKhuLP4wbCsTZCD3I8kEA=
+ github.com/prometheus/procfs v0.0.3/go.mod h1:4A/X28fw3Fc593LaREMrKMqOKvUAntwMDaekg4FpcdQ=
+diff --git a/pkg/component/observability/monitoring/kubestatemetrics/customresourcestate.go b/pkg/component/observability/monitoring/kubestatemetrics/customresourcestate.go
+new file mode 100644
+index 000000000..80e9fb4cc
+--- /dev/null
++++ b/pkg/component/observability/monitoring/kubestatemetrics/customresourcestate.go
+@@ -0,0 +1,138 @@
++// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
++//
++// SPDX-License-Identifier: Apache-2.0
++
++package kubestatemetrics
++
++import (
++	"fmt"
++	"strings"
++
++	"k8s.io/kube-state-metrics/v2/pkg/customresourcestate"
++)
++
++const (
++	customResourceStateConfigMountDir  = "/config"
++	customResourceStateConfigMountFile = "custom-resource-state.yaml"
++	customResourceStateConfigMapName   = "custom-resource-state-config"
++)
++
++func newCustomResourceStateMetricNameForVPA(path, valuePath []string) string {
++	metricName := "verticalpodautoscaler_" + strings.ToLower(strings.Join(path, "_"))
++	if len(valuePath) > 0 {
++		metricName += "_" + strings.ToLower(strings.Join(valuePath, "_"))
++	}
++
++	return metricName
++}
++
++func newCustomResourceStateGaugeMetricForVPA(path, valueFrom []string, help, unit string) customresourcestate.Generator {
++	return customresourcestate.Generator{
++		Name: newCustomResourceStateMetricNameForVPA(path, valueFrom),
++		Help: help,
++		Labels: customresourcestate.Labels{
++			CommonLabels: map[string]string{
++				"unit": unit,
++			},
++		},
++		Each: customresourcestate.Metric{
++			Type: "Gauge",
++			Gauge: &customresourcestate.MetricGauge{
++				MetricMeta: customresourcestate.MetricMeta{
++					Path: path,
++					LabelsFromPath: map[string][]string{
++						"container": {"containerName"},
++					},
++				},
++				ValueFrom: valueFrom,
++				NilIsZero: true,
++			},
++		},
++	}
++}
++
++func newCustomResourceStateMetricsForVPA() customresourcestate.Resource {
++	resource := customresourcestate.Resource{
++		GroupVersionKind: customresourcestate.GroupVersionKind{
++			Group:   "autoscaling.k8s.io",
++			Kind:    "VerticalPodAutoscaler",
++			Version: "v1",
++		},
++		Labels: customresourcestate.Labels{
++			LabelsFromPath: map[string][]string{
++				"verticalpodautoscaler": {"metadata", "name"},
++				"namespace":             {"metadata", "namespace"},
++				"target_api_version":    {"spec", "targetRef", "apiVersion"},
++				"target_kind":           {"spec", "targetRef", "kind"},
++				"target_name":           {"spec", "targetRef", "name"},
++			},
++		},
++	}
++
++	units := map[string]string{
++		"cpu":    "core",
++		"memory": "byte",
++	}
++
++	helpMessages := map[string]string{
++		"target":     "Target %s the VerticalPodAutoscaler recommends for the container.",
++		"upperBound": "Maximum %s the container can use before the VerticalPodAutoscaler updater evicts it.",
++		"lowerBound": "Minimum %s the container can use before the VerticalPodAutoscaler updater evicts it.",
++		"minAllowed": "Minimum %s the VerticalPodAutoscaler can set for containers matching the name.",
++		"maxAllowed": "Maximum %s the VerticalPodAutoscaler can set for containers matching the name.",
++	}
++
++	for _, res := range []string{"cpu", "memory"} {
++		for _, attr := range []string{"target", "upperBound", "lowerBound"} {
++			generator := newCustomResourceStateGaugeMetricForVPA(
++				[]string{"status", "recommendation", "containerRecommendations"},
++				[]string{attr, res},
++				fmt.Sprintf(helpMessages[attr], res),
++				units[res],
++			)
++
++			resource.Metrics = append(resource.Metrics, generator)
++		}
++
++		for _, attr := range []string{"minAllowed", "maxAllowed"} {
++			generator := newCustomResourceStateGaugeMetricForVPA(
++				[]string{"spec", "resourcePolicy", "containerPolicies"},
++				[]string{attr, res},
++				fmt.Sprintf(helpMessages[attr], res),
++				units[res],
++			)
++
++			resource.Metrics = append(resource.Metrics, generator)
++		}
++	}
++
++	path := []string{"spec", "updatePolicy", "updateMode"}
++	resource.Metrics = append(resource.Metrics, customresourcestate.Generator{
++		Name: newCustomResourceStateMetricNameForVPA(path, nil),
++		Help: "Update mode of the VerticalPodAutoscaler.",
++		Each: customresourcestate.Metric{
++			Type: "StateSet",
++			StateSet: &customresourcestate.MetricStateSet{
++				MetricMeta: customresourcestate.MetricMeta{
++					Path: path,
++				},
++				LabelName: "update_mode",
++				List:      []string{"Off", "Initial", "Recreate", "Auto"},
++			},
++		},
++	})
++
++	return resource
++}
++
++// NewCustomResourceStateConfig returns a new CustomResourceState configuration that can be serialized
++// and passed to the kube-state-metrics binary to create metrics from custom resource definitions
++func NewCustomResourceStateConfig() customresourcestate.Metrics {
++	return customresourcestate.Metrics{
++		Spec: customresourcestate.MetricsSpec{
++			Resources: []customresourcestate.Resource{
++				newCustomResourceStateMetricsForVPA(),
++			},
++		},
++	}
++}
+diff --git a/pkg/component/observability/monitoring/kubestatemetrics/customresourcestate_test.go b/pkg/component/observability/monitoring/kubestatemetrics/customresourcestate_test.go
+new file mode 100644
+index 000000000..48b5c92d0
+--- /dev/null
++++ b/pkg/component/observability/monitoring/kubestatemetrics/customresourcestate_test.go
+@@ -0,0 +1,51 @@
++// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
++//
++// SPDX-License-Identifier: Apache-2.0
++
++package kubestatemetrics_test
++
++import (
++	"os"
++	"path/filepath"
++
++	. "github.com/onsi/ginkgo/v2"
++	. "github.com/onsi/gomega"
++
++	. "github.com/gardener/gardener/pkg/component/observability/monitoring/kubestatemetrics"
++	"github.com/gardener/gardener/third_party/gopkg.in/yaml.v2"
++)
++
++// Returns the expected CustomResourceState config and also asserts that the actual value is the same.
++// This assertion is performed inside this function to allow to give more human readable errors when the
++// long config document actually differs. This also allows to keep the expectation in a standalone yaml
++// file and to easily update it when it needs to be changed
++func expectedCustomResourceStateConfig() string {
++	defer GinkgoRecover()
++
++	rawActual, err := yaml.Marshal(NewCustomResourceStateConfig())
++	Expect(err).ToNot(HaveOccurred())
++
++	actual := string(rawActual)
++
++	expectFilePath, err := filepath.Abs("testdata/custom-resource-state.expectation.yaml")
++	Expect(err).ToNot(HaveOccurred())
++
++	rawExpect, err := os.ReadFile(expectFilePath)
++	Expect(err).ToNot(HaveOccurred())
++
++	if actual != string(rawExpect) {
++		actualFilePath := os.TempDir() + "/custom-resource-state.actual.yaml"
++		err = os.WriteFile(actualFilePath, rawActual, 0644)
++		Expect(err).ToNot(HaveOccurred())
++
++		AbortSuite("CustomResourceState configuration did not match the expectation:\n" +
++			"Expected file\n" +
++			"\t" + actualFilePath + "\n" +
++			"to match contents from file\n" +
++			"\t" + expectFilePath + "\n" +
++			"Execute 'diff -Bb " + actualFilePath + " " + expectFilePath + "' to see the difference",
++		)
++	}
++
++	return actual
++}
+diff --git a/pkg/component/observability/monitoring/kubestatemetrics/kubestatemetrics.go b/pkg/component/observability/monitoring/kubestatemetrics/kubestatemetrics.go
+index 26d2fbcce..0820aff30 100644
+--- a/pkg/component/observability/monitoring/kubestatemetrics/kubestatemetrics.go
++++ b/pkg/component/observability/monitoring/kubestatemetrics/kubestatemetrics.go
+@@ -18,6 +18,7 @@ import (
+ 	gardenerutils "github.com/gardener/gardener/pkg/utils/gardener"
+ 	"github.com/gardener/gardener/pkg/utils/managedresources"
+ 	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
++	"github.com/gardener/gardener/third_party/gopkg.in/yaml.v2"
+ )
+
+ const (
+@@ -82,6 +83,11 @@ func (k *kubeStateMetrics) Deploy(ctx context.Context) error {
+ 		shootAccessSecret                *gardenerutils.AccessSecret
+ 	)
+
++	customResourceStateConfig, err := yaml.Marshal(NewCustomResourceStateConfig())
++	if err != nil {
++		return err
++	}
++
+ 	if k.values.ClusterType == component.ClusterTypeShoot {
+ 		genericTokenKubeconfigSecret, found := k.secretsManager.Get(v1beta1constants.SecretNameGenericTokenKubeconfig)
+ 		if !found {
+@@ -102,11 +108,11 @@ func (k *kubeStateMetrics) Deploy(ctx context.Context) error {
+ 		registry = managedresources.NewRegistry(kubernetes.ShootScheme, kubernetes.ShootCodec, kubernetes.ShootSerializer)
+ 	}
+
+-	return component.DeployResourceConfigs(ctx, k.client, k.namespace, k.values.ClusterType, k.managedResourceName(), map[string]string{v1beta1constants.LabelCareConditionType: v1beta1constants.ObservabilityComponentsHealthy}, registry, k.getResourceConfigs(genericTokenKubeconfigSecretName, shootAccessSecret))
++	return component.DeployResourceConfigs(ctx, k.client, k.namespace, k.values.ClusterType, k.managedResourceName(), map[string]string{v1beta1constants.LabelCareConditionType: v1beta1constants.ObservabilityComponentsHealthy}, registry, k.getResourceConfigs(genericTokenKubeconfigSecretName, shootAccessSecret, string(customResourceStateConfig)))
+ }
+
+ func (k *kubeStateMetrics) Destroy(ctx context.Context) error {
+-	if err := component.DestroyResourceConfigs(ctx, k.client, k.namespace, k.values.ClusterType, k.managedResourceName(), k.getResourceConfigs("", nil)); err != nil {
++	if err := component.DestroyResourceConfigs(ctx, k.client, k.namespace, k.values.ClusterType, k.managedResourceName(), k.getResourceConfigs("", nil, "")); err != nil {
+ 		return err
+ 	}
+
+diff --git a/pkg/component/observability/monitoring/kubestatemetrics/kubestatemetrics_test.go b/pkg/component/observability/monitoring/kubestatemetrics/kubestatemetrics_test.go
+index 29c6bf983..567030a29 100644
+--- a/pkg/component/observability/monitoring/kubestatemetrics/kubestatemetrics_test.go
++++ b/pkg/component/observability/monitoring/kubestatemetrics/kubestatemetrics_test.go
+@@ -63,11 +63,13 @@ var _ = Describe("KubeStateMetrics", func() {
+ 		vpaUpdateMode       = vpaautoscalingv1.UpdateModeAuto
+ 		vpaControlledValues = vpaautoscalingv1.ContainerControlledValuesRequestsOnly
+
+-		serviceAccount    *corev1.ServiceAccount
+-		secretShootAccess *corev1.Secret
+-		vpa               *vpaautoscalingv1.VerticalPodAutoscaler
+-		pdbFor            func(bool) *policyv1.PodDisruptionBudget
+-		clusterRoleFor    = func(clusterType component.ClusterType) *rbacv1.ClusterRole {
++		serviceAccount               *corev1.ServiceAccount
++		secretShootAccess            *corev1.Secret
++		vpa                          *vpaautoscalingv1.VerticalPodAutoscaler
++		pdbFor                       func(bool) *policyv1.PodDisruptionBudget
++		customResourceStateConfigMap *corev1.ConfigMap
++
++		clusterRoleFor = func(clusterType component.ClusterType) *rbacv1.ClusterRole {
+ 			name := "gardener.cloud:monitoring:kube-state-metrics"
+ 			if clusterType == component.ClusterTypeSeed {
+ 				name += "-seed"
+@@ -106,10 +108,15 @@ var _ = Describe("KubeStateMetrics", func() {
+ 						Resources: []string{"cronjobs", "jobs"},
+ 						Verbs:     []string{"list", "watch"},
+ 					},
++					{
++						APIGroups: []string{"apiextensions.k8s.io"},
++						Resources: []string{"customresourcedefinitions"},
++						Verbs:     []string{"list", "watch"},
++					},
+ 					{
+ 						APIGroups: []string{"autoscaling.k8s.io"},
+ 						Resources: []string{"verticalpodautoscalers"},
+-						Verbs:     []string{"get", "list", "watch"},
++						Verbs:     []string{"list", "watch"},
+ 					},
+ 				},
+ 			}
+@@ -230,7 +237,7 @@ var _ = Describe("KubeStateMetrics", func() {
+ 				args = []string{
+ 					"--port=8080",
+ 					"--telemetry-port=8081",
+-					"--resources=deployments,pods,statefulsets,nodes,verticalpodautoscalers,horizontalpodautoscalers,persistentvolumeclaims,replicasets,namespaces",
++					"--resources=deployments,pods,statefulsets,nodes,horizontalpodautoscalers,persistentvolumeclaims,replicasets,namespaces",
+ 					"--metric-labels-allowlist=nodes=[*]",
+ 					"--metric-annotations-allowlist=namespaces=[shoot.gardener.cloud/uid]",
+ 					"--metric-allowlist=" +
+@@ -279,16 +286,39 @@ var _ = Describe("KubeStateMetrics", func() {
+ 						"kube_statefulset_status_replicas_current," +
+ 						"kube_statefulset_status_replicas_ready," +
+ 						"kube_statefulset_status_replicas_updated," +
+-						"kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target," +
+-						"kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound," +
+-						"kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound," +
+-						"kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed," +
+-						"kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed," +
+-						"kube_verticalpodautoscaler_spec_updatepolicy_updatemode",
++						"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu," +
++						"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_memory," +
++						"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_cpu," +
++						"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_memory," +
++						"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_cpu," +
++						"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_memory," +
++						"kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_minallowed_cpu," +
++						"kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_minallowed_memory," +
++						"kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_maxallowed_cpu," +
++						"kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_maxallowed_memory," +
++						"kube_customresource_verticalpodautoscaler_spec_updatepolicy_updatemode",
++					"--custom-resource-state-config-file=/config/custom-resource-state.yaml",
+ 				}
+ 				serviceAccountName = "kube-state-metrics"
+ 			}
+
++			volumes = []corev1.Volume{{
++				Name: "custom-resource-state-config",
++				VolumeSource: corev1.VolumeSource{
++					ConfigMap: &corev1.ConfigMapVolumeSource{
++						LocalObjectReference: corev1.LocalObjectReference{
++							Name: "custom-resource-state-config",
++						},
++					},
++				},
++			}}
++
++			volumeMounts = []corev1.VolumeMount{{
++				Name:      "custom-resource-state-config",
++				MountPath: "/config",
++				ReadOnly:  true,
++			}}
++
+ 			if clusterType == component.ClusterTypeShoot {
+ 				deploymentLabels = map[string]string{
+ 					"component":           "kube-state-metrics",
+@@ -305,18 +335,19 @@ var _ = Describe("KubeStateMetrics", func() {
+ 				args = []string{
+ 					"--port=8080",
+ 					"--telemetry-port=8081",
+-					"--resources=daemonsets,deployments,nodes,pods,statefulsets,verticalpodautoscalers,replicasets",
++					"--resources=daemonsets,deployments,nodes,pods,statefulsets,replicasets",
+ 					"--namespaces=kube-system",
+ 					"--kubeconfig=/var/run/secrets/gardener.cloud/shoot/generic-kubeconfig/kubeconfig",
+ 					"--metric-labels-allowlist=nodes=[*]",
++					"--custom-resource-state-config-file=/config/custom-resource-state.yaml",
+ 				}
+ 				automountServiceAccountToken = ptr.To(false)
+-				volumeMounts = []corev1.VolumeMount{{
++				volumeMounts = append(volumeMounts, corev1.VolumeMount{
+ 					Name:      "kubeconfig",
+ 					MountPath: "/var/run/secrets/gardener.cloud/shoot/generic-kubeconfig",
+ 					ReadOnly:  true,
+-				}}
+-				volumes = []corev1.Volume{{
++				})
++				volumes = append(volumes, corev1.Volume{
+ 					Name: "kubeconfig",
+ 					VolumeSource: corev1.VolumeSource{
+ 						Projected: &corev1.ProjectedVolumeSource{
+@@ -349,7 +380,7 @@ var _ = Describe("KubeStateMetrics", func() {
+ 							},
+ 						},
+ 					},
+-				}}
++				})
+ 			}
+
+ 			return &appsv1.Deployment{
+@@ -469,7 +500,7 @@ var _ = Describe("KubeStateMetrics", func() {
+ 					{
+ 						SourceLabels: []monitoringv1.LabelName{"__name__"},
+ 						Action:       "keep",
+-						Regex:        `^(kube_daemonset_metadata_generation|kube_daemonset_status_current_number_scheduled|kube_daemonset_status_desired_number_scheduled|kube_daemonset_status_number_available|kube_daemonset_status_number_unavailable|kube_daemonset_status_updated_number_scheduled|kube_deployment_metadata_generation|kube_deployment_spec_replicas|kube_deployment_status_observed_generation|kube_deployment_status_replicas|kube_deployment_status_replicas_available|kube_deployment_status_replicas_unavailable|kube_deployment_status_replicas_updated|kube_horizontalpodautoscaler_spec_max_replicas|kube_horizontalpodautoscaler_spec_min_replicas|kube_horizontalpodautoscaler_status_current_replicas|kube_horizontalpodautoscaler_status_desired_replicas|kube_horizontalpodautoscaler_status_condition|kube_namespace_annotations|kube_node_info|kube_node_labels|kube_node_spec_taint|kube_node_spec_unschedulable|kube_node_status_allocatable|kube_node_status_capacity|kube_node_status_condition|kube_persistentvolumeclaim_resource_requests_storage_bytes|kube_pod_container_info|kube_pod_container_resource_limits|kube_pod_container_resource_requests|kube_pod_container_status_restarts_total|kube_pod_info|kube_pod_labels|kube_pod_owner|kube_pod_spec_volumes_persistentvolumeclaims_info|kube_pod_status_phase|kube_pod_status_ready|kube_replicaset_owner|kube_statefulset_metadata_generation|kube_statefulset_replicas|kube_statefulset_status_observed_generation|kube_statefulset_status_replicas|kube_statefulset_status_replicas_current|kube_statefulset_status_replicas_ready|kube_statefulset_status_replicas_updated|kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target|kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound|kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound|kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed|kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed|kube_verticalpodautoscaler_spec_updatepolicy_updatemode)$`,
++						Regex:        `^(kube_daemonset_metadata_generation|kube_daemonset_status_current_number_scheduled|kube_daemonset_status_desired_number_scheduled|kube_daemonset_status_number_available|kube_daemonset_status_number_unavailable|kube_daemonset_status_updated_number_scheduled|kube_deployment_metadata_generation|kube_deployment_spec_replicas|kube_deployment_status_observed_generation|kube_deployment_status_replicas|kube_deployment_status_replicas_available|kube_deployment_status_replicas_unavailable|kube_deployment_status_replicas_updated|kube_horizontalpodautoscaler_spec_max_replicas|kube_horizontalpodautoscaler_spec_min_replicas|kube_horizontalpodautoscaler_status_current_replicas|kube_horizontalpodautoscaler_status_desired_replicas|kube_horizontalpodautoscaler_status_condition|kube_namespace_annotations|kube_node_info|kube_node_labels|kube_node_spec_taint|kube_node_spec_unschedulable|kube_node_status_allocatable|kube_node_status_capacity|kube_node_status_condition|kube_persistentvolumeclaim_resource_requests_storage_bytes|kube_pod_container_info|kube_pod_container_resource_limits|kube_pod_container_resource_requests|kube_pod_container_status_restarts_total|kube_pod_info|kube_pod_labels|kube_pod_owner|kube_pod_spec_volumes_persistentvolumeclaims_info|kube_pod_status_phase|kube_pod_status_ready|kube_replicaset_owner|kube_statefulset_metadata_generation|kube_statefulset_replicas|kube_statefulset_status_observed_generation|kube_statefulset_status_replicas|kube_statefulset_status_replicas_current|kube_statefulset_status_replicas_ready|kube_statefulset_status_replicas_updated|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_memory|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_cpu|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_memory|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_cpu|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_memory|kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_minallowed_cpu|kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_minallowed_memory|kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_maxallowed_cpu|kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_maxallowed_memory|kube_customresource_verticalpodautoscaler_spec_updatepolicy_updatemode)$`,
+ 					},
+ 				},
+ 			},
+@@ -605,7 +636,7 @@ var _ = Describe("KubeStateMetrics", func() {
+ 					{
+ 						SourceLabels: []monitoringv1.LabelName{"__name__"},
+ 						Action:       "keep",
+-						Regex:        `^(kube_daemonset_metadata_generation|kube_daemonset_status_current_number_scheduled|kube_daemonset_status_desired_number_scheduled|kube_daemonset_status_number_available|kube_daemonset_status_number_unavailable|kube_daemonset_status_updated_number_scheduled|kube_deployment_metadata_generation|kube_deployment_spec_replicas|kube_deployment_status_observed_generation|kube_deployment_status_replicas|kube_deployment_status_replicas_available|kube_deployment_status_replicas_unavailable|kube_deployment_status_replicas_updated|kube_node_info|kube_node_labels|kube_node_spec_taint|kube_node_spec_unschedulable|kube_node_status_allocatable|kube_node_status_capacity|kube_node_status_condition|kube_pod_container_info|kube_pod_container_resource_limits|kube_pod_container_resource_requests|kube_pod_container_status_restarts_total|kube_pod_info|kube_pod_labels|kube_pod_status_phase|kube_pod_status_ready|kube_replicaset_owner|kube_replicaset_metadata_generation|kube_replicaset_spec_replicas|kube_replicaset_status_observed_generation|kube_replicaset_status_replicas|kube_replicaset_status_ready_replicas|kube_statefulset_metadata_generation|kube_statefulset_replicas|kube_statefulset_status_observed_generation|kube_statefulset_status_replicas|kube_statefulset_status_replicas_current|kube_statefulset_status_replicas_ready|kube_statefulset_status_replicas_updated|kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target|kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound|kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound|kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed|kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed|kube_verticalpodautoscaler_spec_updatepolicy_updatemode)$`,
++						Regex:        `^(kube_daemonset_metadata_generation|kube_daemonset_status_current_number_scheduled|kube_daemonset_status_desired_number_scheduled|kube_daemonset_status_number_available|kube_daemonset_status_number_unavailable|kube_daemonset_status_updated_number_scheduled|kube_deployment_metadata_generation|kube_deployment_spec_replicas|kube_deployment_status_observed_generation|kube_deployment_status_replicas|kube_deployment_status_replicas_available|kube_deployment_status_replicas_unavailable|kube_deployment_status_replicas_updated|kube_node_info|kube_node_labels|kube_node_spec_taint|kube_node_spec_unschedulable|kube_node_status_allocatable|kube_node_status_capacity|kube_node_status_condition|kube_pod_container_info|kube_pod_container_resource_limits|kube_pod_container_resource_requests|kube_pod_container_status_restarts_total|kube_pod_info|kube_pod_labels|kube_pod_status_phase|kube_pod_status_ready|kube_replicaset_owner|kube_replicaset_metadata_generation|kube_replicaset_spec_replicas|kube_replicaset_status_observed_generation|kube_replicaset_status_replicas|kube_replicaset_status_ready_replicas|kube_statefulset_metadata_generation|kube_statefulset_replicas|kube_statefulset_status_observed_generation|kube_statefulset_status_replicas|kube_statefulset_status_replicas_current|kube_statefulset_status_replicas_ready|kube_statefulset_status_replicas_updated|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_memory|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_cpu|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_memory|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_cpu|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_memory|kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_minallowed_cpu|kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_minallowed_memory|kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_maxallowed_cpu|kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_maxallowed_memory|kube_customresource_verticalpodautoscaler_spec_updatepolicy_updatemode)$`,
+ 					},
+ 				},
+ 			},
+@@ -725,6 +756,15 @@ var _ = Describe("KubeStateMetrics", func() {
+ 		By("Create secrets managed outside of this package for whose secretsmanager.Get() will be called")
+ 		Expect(c.Create(ctx, &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "generic-token-kubeconfig", Namespace: namespace}})).To(Succeed())
+
++		customResourceStateConfigMap = &corev1.ConfigMap{
++			ObjectMeta: metav1.ObjectMeta{
++				Name:      "custom-resource-state-config",
++				Namespace: namespace,
++			},
++			Data: map[string]string{
++				"custom-resource-state.yaml": expectedCustomResourceStateConfig(),
++			},
++		}
+ 		serviceAccount = &corev1.ServiceAccount{
+ 			ObjectMeta: metav1.ObjectMeta{
+ 				Name:      "kube-state-metrics",
+@@ -865,6 +905,7 @@ var _ = Describe("KubeStateMetrics", func() {
+ 					scrapeConfigCache,
+ 					scrapeConfigSeed,
+ 					scrapeConfigGarden,
++					customResourceStateConfigMap,
+ 				}
+
+ 				managedResourceSecret.Name = managedResource.Spec.SecretRefs[0].Name
+diff --git a/pkg/component/observability/monitoring/kubestatemetrics/resources.go b/pkg/component/observability/monitoring/kubestatemetrics/resources.go
+index c999d4050..0d74c400c 100644
+--- a/pkg/component/observability/monitoring/kubestatemetrics/resources.go
++++ b/pkg/component/observability/monitoring/kubestatemetrics/resources.go
+@@ -37,24 +37,28 @@ import (
+ 	kubernetesutils "github.com/gardener/gardener/pkg/utils/kubernetes"
+ )
+
+-func (k *kubeStateMetrics) getResourceConfigs(genericTokenKubeconfigSecretName string, shootAccessSecret *gardenerutils.AccessSecret) component.ResourceConfigs {
++func (k *kubeStateMetrics) getResourceConfigs(genericTokenKubeconfigSecretName string, shootAccessSecret *gardenerutils.AccessSecret, customResourceStateConfig string) component.ResourceConfigs {
+ 	var (
+-		clusterRole         = k.emptyClusterRole()
+-		clusterRoleBinding  = k.emptyClusterRoleBinding()
+-		service             = k.emptyService()
+-		deployment          = k.emptyDeployment()
+-		vpa                 = k.emptyVerticalPodAutoscaler()
+-		pdb                 = k.emptyPodDisruptionBudget()
+-		scrapeConfigCache   = k.emptyScrapeConfigCache()
+-		scrapeConfigSeed    = k.emptyScrapeConfigSeed()
+-		scrapeConfigGarden  = k.emptyScrapeConfigGarden()
+-		scrapeConfigShoot   = k.emptyScrapeConfigShoot()
+-		prometheusRuleShoot = k.emptyPrometheusRuleShoot()
++		clusterRole                  = k.emptyClusterRole()
++		clusterRoleBinding           = k.emptyClusterRoleBinding()
++		service                      = k.emptyService()
++		deployment                   = k.emptyDeployment()
++		vpa                          = k.emptyVerticalPodAutoscaler()
++		pdb                          = k.emptyPodDisruptionBudget()
++		scrapeConfigCache            = k.emptyScrapeConfigCache()
++		scrapeConfigSeed             = k.emptyScrapeConfigSeed()
++		scrapeConfigGarden           = k.emptyScrapeConfigGarden()
++		scrapeConfigShoot            = k.emptyScrapeConfigShoot()
++		prometheusRuleShoot          = k.emptyPrometheusRuleShoot()
++		customResourceStateConfigMap = k.emptyCustomResourceStateConfigMap()
+
+ 		configs = component.ResourceConfigs{
+ 			{Obj: clusterRole, Class: component.Application, MutateFn: func() { k.reconcileClusterRole(clusterRole) }},
+ 			{Obj: service, Class: component.Runtime, MutateFn: func() { k.reconcileService(service) }},
+ 			{Obj: vpa, Class: component.Runtime, MutateFn: func() { k.reconcileVerticalPodAutoscaler(vpa, deployment) }},
++			{Obj: customResourceStateConfigMap, Class: component.Runtime, MutateFn: func() {
++				k.reconcileCustomResourceStateConfigMap(customResourceStateConfigMap, customResourceStateConfig)
++			}},
+ 		}
+ 	)
+
+@@ -133,10 +137,15 @@ func (k *kubeStateMetrics) reconcileClusterRole(clusterRole *rbacv1.ClusterRole)
+ 			Resources: []string{"cronjobs", "jobs"},
+ 			Verbs:     []string{"list", "watch"},
+ 		},
++		{
++			APIGroups: []string{"apiextensions.k8s.io"},
++			Resources: []string{"customresourcedefinitions"},
++			Verbs:     []string{"list", "watch"},
++		},
+ 		{
+ 			APIGroups: []string{"autoscaling.k8s.io"},
+ 			Resources: []string{"verticalpodautoscalers"},
+-			Verbs:     []string{"get", "list", "watch"},
++			Verbs:     []string{"list", "watch"},
+ 		},
+ 	}
+
+@@ -223,16 +232,20 @@ func (k *kubeStateMetrics) reconcileDeployment(
+ 		}
+ 	)
+
++	customResourceStateConfigFile := customResourceStateConfigMountDir + "/" + customResourceStateConfigMountFile
++
+ 	if k.values.ClusterType == component.ClusterTypeSeed {
+ 		deploymentLabels[v1beta1constants.LabelRole] = v1beta1constants.LabelMonitoring
+ 		podLabels = utils.MergeStringMaps(podLabels, deploymentLabels, map[string]string{
+ 			v1beta1constants.LabelNetworkPolicyToRuntimeAPIServer: v1beta1constants.LabelNetworkPolicyAllowed,
+ 		})
++
+ 		args = append(args,
+-			"--resources=deployments,pods,statefulsets,nodes,verticalpodautoscalers,horizontalpodautoscalers,persistentvolumeclaims,replicasets,namespaces",
++			"--resources=deployments,pods,statefulsets,nodes,horizontalpodautoscalers,persistentvolumeclaims,replicasets,namespaces",
+ 			"--metric-labels-allowlist=nodes=[*]",
+ 			"--metric-annotations-allowlist=namespaces=[shoot.gardener.cloud/uid]",
+ 			"--metric-allowlist="+strings.Join(cachePrometheusAllowedMetrics, ","),
++			"--custom-resource-state-config-file="+customResourceStateConfigFile,
+ 		)
+ 	}
+
+@@ -242,10 +255,11 @@ func (k *kubeStateMetrics) reconcileDeployment(
+ 			gardenerutils.NetworkPolicyLabel(v1beta1constants.DeploymentNameKubeAPIServer, kubeapiserverconstants.Port): v1beta1constants.LabelNetworkPolicyAllowed,
+ 		})
+ 		args = append(args,
+-			"--resources=daemonsets,deployments,nodes,pods,statefulsets,verticalpodautoscalers,replicasets",
++			"--resources=daemonsets,deployments,nodes,pods,statefulsets,replicasets",
+ 			"--namespaces="+metav1.NamespaceSystem,
+ 			"--kubeconfig="+gardenerutils.PathGenericKubeconfig,
+ 			"--metric-labels-allowlist=nodes=[*]",
++			"--custom-resource-state-config-file="+customResourceStateConfigFile,
+ 		)
+ 	}
+
+@@ -303,8 +317,23 @@ func (k *kubeStateMetrics) reconcileDeployment(
+ 						corev1.ResourceMemory: resource.MustParse("32Mi"),
+ 					},
+ 				},
++				VolumeMounts: []corev1.VolumeMount{{
++					Name:      customResourceStateConfigMapName,
++					MountPath: customResourceStateConfigMountDir,
++					ReadOnly:  true,
++				}},
+ 			}},
+ 			PriorityClassName: k.values.PriorityClassName,
++			Volumes: []corev1.Volume{{
++				Name: customResourceStateConfigMapName,
++				VolumeSource: corev1.VolumeSource{
++					ConfigMap: &corev1.ConfigMapVolumeSource{
++						LocalObjectReference: corev1.LocalObjectReference{
++							Name: customResourceStateConfigMapName,
++						},
++					},
++				},
++			}},
+ 		},
+ 	}
+
+@@ -449,12 +478,17 @@ var cachePrometheusAllowedMetrics = []string{
+ 	"kube_statefulset_status_replicas_current",
+ 	"kube_statefulset_status_replicas_ready",
+ 	"kube_statefulset_status_replicas_updated",
+-	"kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target",
+-	"kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound",
+-	"kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound",
+-	"kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed",
+-	"kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed",
+-	"kube_verticalpodautoscaler_spec_updatepolicy_updatemode",
++	"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu",
++	"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_memory",
++	"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_cpu",
++	"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_memory",
++	"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_cpu",
++	"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_memory",
++	"kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_minallowed_cpu",
++	"kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_minallowed_memory",
++	"kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_maxallowed_cpu",
++	"kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_maxallowed_memory",
++	"kube_customresource_verticalpodautoscaler_spec_updatepolicy_updatemode",
+ }
+
+ func (k *kubeStateMetrics) emptyScrapeConfigCache() *monitoringv1alpha1.ScrapeConfig {
+@@ -600,12 +634,17 @@ func (k *kubeStateMetrics) reconcileScrapeConfigShoot(scrapeConfig *monitoringv1
+ 		"kube_statefulset_status_replicas_current",
+ 		"kube_statefulset_status_replicas_ready",
+ 		"kube_statefulset_status_replicas_updated",
+-		"kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target",
+-		"kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound",
+-		"kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound",
+-		"kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed",
+-		"kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed",
+-		"kube_verticalpodautoscaler_spec_updatepolicy_updatemode",
++		"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu",
++		"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_memory",
++		"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_cpu",
++		"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_memory",
++		"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_cpu",
++		"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_memory",
++		"kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_minallowed_cpu",
++		"kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_minallowed_memory",
++		"kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_maxallowed_cpu",
++		"kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_maxallowed_memory",
++		"kube_customresource_verticalpodautoscaler_spec_updatepolicy_updatemode",
+ 	)
+ }
+
+@@ -726,3 +765,13 @@ func (k *kubeStateMetrics) nameSuffix() string {
+ 	}
+ 	return suffix + "-seed"
+ }
++
++func (k *kubeStateMetrics) emptyCustomResourceStateConfigMap() *corev1.ConfigMap {
++	return &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: customResourceStateConfigMapName, Namespace: k.namespace}}
++}
++
++func (k *kubeStateMetrics) reconcileCustomResourceStateConfigMap(cm *corev1.ConfigMap, customResourceStateConfig string) {
++	cm.Data = map[string]string{
++		customResourceStateConfigMountFile: customResourceStateConfig,
++	}
++}
+diff --git a/pkg/component/observability/monitoring/kubestatemetrics/testdata/custom-resource-state.expectation.yaml b/pkg/component/observability/monitoring/kubestatemetrics/testdata/custom-resource-state.expectation.yaml
+new file mode 100644
+index 000000000..a335c3014
+--- /dev/null
++++ b/pkg/component/observability/monitoring/kubestatemetrics/testdata/custom-resource-state.expectation.yaml
+@@ -0,0 +1,290 @@
++spec:
++  resources:
++  - metricNamePrefix: null
++    groupVersionKind:
++      group: autoscaling.k8s.io
++      version: v1
++      kind: VerticalPodAutoscaler
++    commonLabels: {}
++    labelsFromPath:
++      namespace:
++      - metadata
++      - namespace
++      target_api_version:
++      - spec
++      - targetRef
++      - apiVersion
++      target_kind:
++      - spec
++      - targetRef
++      - kind
++      target_name:
++      - spec
++      - targetRef
++      - name
++      verticalpodautoscaler:
++      - metadata
++      - name
++    metrics:
++    - name: verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu
++      help: Target cpu the VerticalPodAutoscaler recommends for the container.
++      each:
++        type: Gauge
++        gauge:
++          labelsFromPath:
++            container:
++            - containerName
++          path:
++          - status
++          - recommendation
++          - containerRecommendations
++          valueFrom:
++          - target
++          - cpu
++          labelFromKey: ""
++          nilIsZero: true
++        stateSet: null
++        info: null
++      commonLabels:
++        unit: core
++      labelsFromPath: {}
++      errorLogV: 0
++    - name: verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_cpu
++      help: Maximum cpu the container can use before the VerticalPodAutoscaler updater
++        evicts it.
++      each:
++        type: Gauge
++        gauge:
++          labelsFromPath:
++            container:
++            - containerName
++          path:
++          - status
++          - recommendation
++          - containerRecommendations
++          valueFrom:
++          - upperBound
++          - cpu
++          labelFromKey: ""
++          nilIsZero: true
++        stateSet: null
++        info: null
++      commonLabels:
++        unit: core
++      labelsFromPath: {}
++      errorLogV: 0
++    - name: verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_cpu
++      help: Minimum cpu the container can use before the VerticalPodAutoscaler updater
++        evicts it.
++      each:
++        type: Gauge
++        gauge:
++          labelsFromPath:
++            container:
++            - containerName
++          path:
++          - status
++          - recommendation
++          - containerRecommendations
++          valueFrom:
++          - lowerBound
++          - cpu
++          labelFromKey: ""
++          nilIsZero: true
++        stateSet: null
++        info: null
++      commonLabels:
++        unit: core
++      labelsFromPath: {}
++      errorLogV: 0
++    - name: verticalpodautoscaler_spec_resourcepolicy_containerpolicies_minallowed_cpu
++      help: Minimum cpu the VerticalPodAutoscaler can set for containers matching
++        the name.
++      each:
++        type: Gauge
++        gauge:
++          labelsFromPath:
++            container:
++            - containerName
++          path:
++          - spec
++          - resourcePolicy
++          - containerPolicies
++          valueFrom:
++          - minAllowed
++          - cpu
++          labelFromKey: ""
++          nilIsZero: true
++        stateSet: null
++        info: null
++      commonLabels:
++        unit: core
++      labelsFromPath: {}
++      errorLogV: 0
++    - name: verticalpodautoscaler_spec_resourcepolicy_containerpolicies_maxallowed_cpu
++      help: Maximum cpu the VerticalPodAutoscaler can set for containers matching
++        the name.
++      each:
++        type: Gauge
++        gauge:
++          labelsFromPath:
++            container:
++            - containerName
++          path:
++          - spec
++          - resourcePolicy
++          - containerPolicies
++          valueFrom:
++          - maxAllowed
++          - cpu
++          labelFromKey: ""
++          nilIsZero: true
++        stateSet: null
++        info: null
++      commonLabels:
++        unit: core
++      labelsFromPath: {}
++      errorLogV: 0
++    - name: verticalpodautoscaler_status_recommendation_containerrecommendations_target_memory
++      help: Target memory the VerticalPodAutoscaler recommends for the container.
++      each:
++        type: Gauge
++        gauge:
++          labelsFromPath:
++            container:
++            - containerName
++          path:
++          - status
++          - recommendation
++          - containerRecommendations
++          valueFrom:
++          - target
++          - memory
++          labelFromKey: ""
++          nilIsZero: true
++        stateSet: null
++        info: null
++      commonLabels:
++        unit: byte
++      labelsFromPath: {}
++      errorLogV: 0
++    - name: verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_memory
++      help: Maximum memory the container can use before the VerticalPodAutoscaler
++        updater evicts it.
++      each:
++        type: Gauge
++        gauge:
++          labelsFromPath:
++            container:
++            - containerName
++          path:
++          - status
++          - recommendation
++          - containerRecommendations
++          valueFrom:
++          - upperBound
++          - memory
++          labelFromKey: ""
++          nilIsZero: true
++        stateSet: null
++        info: null
++      commonLabels:
++        unit: byte
++      labelsFromPath: {}
++      errorLogV: 0
++    - name: verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_memory
++      help: Minimum memory the container can use before the VerticalPodAutoscaler
++        updater evicts it.
++      each:
++        type: Gauge
++        gauge:
++          labelsFromPath:
++            container:
++            - containerName
++          path:
++          - status
++          - recommendation
++          - containerRecommendations
++          valueFrom:
++          - lowerBound
++          - memory
++          labelFromKey: ""
++          nilIsZero: true
++        stateSet: null
++        info: null
++      commonLabels:
++        unit: byte
++      labelsFromPath: {}
++      errorLogV: 0
++    - name: verticalpodautoscaler_spec_resourcepolicy_containerpolicies_minallowed_memory
++      help: Minimum memory the VerticalPodAutoscaler can set for containers matching
++        the name.
++      each:
++        type: Gauge
++        gauge:
++          labelsFromPath:
++            container:
++            - containerName
++          path:
++          - spec
++          - resourcePolicy
++          - containerPolicies
++          valueFrom:
++          - minAllowed
++          - memory
++          labelFromKey: ""
++          nilIsZero: true
++        stateSet: null
++        info: null
++      commonLabels:
++        unit: byte
++      labelsFromPath: {}
++      errorLogV: 0
++    - name: verticalpodautoscaler_spec_resourcepolicy_containerpolicies_maxallowed_memory
++      help: Maximum memory the VerticalPodAutoscaler can set for containers matching
++        the name.
++      each:
++        type: Gauge
++        gauge:
++          labelsFromPath:
++            container:
++            - containerName
++          path:
++          - spec
++          - resourcePolicy
++          - containerPolicies
++          valueFrom:
++          - maxAllowed
++          - memory
++          labelFromKey: ""
++          nilIsZero: true
++        stateSet: null
++        info: null
++      commonLabels:
++        unit: byte
++      labelsFromPath: {}
++      errorLogV: 0
++    - name: verticalpodautoscaler_spec_updatepolicy_updatemode
++      help: Update mode of the VerticalPodAutoscaler.
++      each:
++        type: StateSet
++        gauge: null
++        stateSet:
++          labelsFromPath: {}
++          path:
++          - spec
++          - updatePolicy
++          - updateMode
++          list:
++          - "Off"
++          - Initial
++          - Recreate
++          - Auto
++          labelName: update_mode
++          valueFrom: []
++        info: null
++      commonLabels: {}
++      labelsFromPath: {}
++      errorLogV: 0
++    errorLogV: 0
++    resourcePlural: ""
+
+commit b731c3c48d1c722b6a6c627f1d45c6208e2ee8c8
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Wed Jun 19 16:38:32 2024 +0200
+
+    Extract dependencies with commented versions to their own require block
+
+    The next commits will use the new dependency kube-state-metrics, and
+    `go mod tidy` will convert it to a direct one.
+
+    Because of the controller-manager dependency with a commented version,
+    `go mod tidy` will identify the new kube-state-metrics dependency
+    belongs to none of the existing require blocks and it will attempt to
+    create a new block just for kube-state-metrics. Note that the default
+    behaviour of go.mod is to keep two blocks: one for direct dependencies
+    and one for indirect.
+
+    This commit extracts this third type of dependency (dependency with
+    commented version) into its own require block. This way, running
+    `go mod tidy` in the following commits will preserve the three blocks
+    defined.
+
+    Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+---
+ go.mod | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/go.mod b/go.mod
+index 46c86893b..4ed540c91 100644
+--- a/go.mod
++++ b/go.mod
+@@ -75,12 +75,13 @@ require (
+ 	k8s.io/pod-security-admission v0.29.6
+ 	k8s.io/utils v0.0.0-20240502163921-fe8a2dddb1d0
+ 	sigs.k8s.io/controller-runtime v0.17.5
+-	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20231015215740-bf15e44028f9 // v0.16.3
+ 	sigs.k8s.io/controller-tools v0.14.0
+ 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1
+ 	sigs.k8s.io/yaml v1.4.0
+ )
+
++require sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20231015215740-bf15e44028f9 // v0.16.3
++
+ require (
+ 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 // indirect
+ 	github.com/AdamKorcz/go-118-fuzz-build v0.0.0-20230306123547-8075edf89bb0 // indirect
+
+commit ff55cba6f8c78231a54d9135c8754b3b3eca82d3
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Tue May 28 11:53:02 2024 +0200
+
+    Add kube-state-metrics/v2 dependency
+
+    v2 includes the CustomResourceState metrics package, which will be used
+    in the following commits to generate the new CustomResourceState
+    configuration.
+
+    Execute:
+
+    ```
+    go get k8s.io/kube-state-metrics/v2
+    ```
+---
+ go.mod |  9 +++++++--
+ go.sum | 14 ++++++++++++++
+ 2 files changed, 21 insertions(+), 2 deletions(-)
+
+diff --git a/go.mod b/go.mod
+index 4289cda54..46c86893b 100644
+--- a/go.mod
++++ b/go.mod
+@@ -32,8 +32,8 @@ require (
+ 	github.com/opencontainers/image-spec v1.1.0
+ 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.74.0
+ 	github.com/prometheus/blackbox_exporter v0.24.0
+-	github.com/prometheus/client_golang v1.18.0
+-	github.com/prometheus/common v0.45.0
++	github.com/prometheus/client_golang v1.19.0
++	github.com/prometheus/common v0.51.1
+ 	github.com/robfig/cron v1.2.0
+ 	github.com/spf13/afero v1.11.0
+ 	github.com/spf13/cobra v1.8.1
+@@ -112,6 +112,7 @@ require (
+ 	github.com/coreos/go-semver v0.3.1 // indirect
+ 	github.com/cyphar/filepath-securejoin v0.2.4 // indirect
+ 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
++	github.com/dgryski/go-jump v0.0.0-20211018200510-ba001c3ffce0 // indirect
+ 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
+ 	github.com/distribution/reference v0.6.0 // indirect
+ 	github.com/docker/cli v26.1.2+incompatible // indirect
+@@ -185,6 +186,7 @@ require (
+ 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
+ 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
+ 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
++	github.com/oklog/run v1.1.0 // indirect
+ 	github.com/opencontainers/go-digest v1.0.0 // indirect
+ 	github.com/opencontainers/runtime-spec v1.1.0 // indirect
+ 	github.com/opencontainers/selinux v1.11.0 // indirect
+@@ -192,6 +194,7 @@ require (
+ 	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
+ 	github.com/pkg/errors v0.9.1 // indirect
+ 	github.com/prometheus/client_model v0.6.0 // indirect
++	github.com/prometheus/exporter-toolkit v0.11.0 // indirect
+ 	github.com/prometheus/procfs v0.12.0 // indirect
+ 	github.com/redis/go-redis/extra/rediscmd/v9 v9.0.5 // indirect
+ 	github.com/redis/go-redis/extra/redisotel/v9 v9.0.5 // indirect
+@@ -249,6 +252,8 @@ require (
+ 	k8s.io/gengo v0.0.0-20230829151522-9cce18d56c01 // indirect
+ 	k8s.io/klog v1.0.0 // indirect
+ 	k8s.io/kms v0.29.6 // indirect
++	k8s.io/kube-state-metrics/v2 v2.12.0 // indirect
++	k8s.io/sample-controller v0.29.3 // indirect
+ 	oras.land/oras-go v1.2.4 // indirect
+ 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.28.0 // indirect
+ 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
+diff --git a/go.sum b/go.sum
+index a3722c459..30f897ba4 100644
+--- a/go.sum
++++ b/go.sum
+@@ -128,6 +128,8 @@ github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
+ github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM=
+ github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+ github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
++github.com/dgryski/go-jump v0.0.0-20211018200510-ba001c3ffce0 h1:0wH6nO9QEa02Qx8sIQGw6ieKdz+BXjpccSOo9vXNl4U=
++github.com/dgryski/go-jump v0.0.0-20211018200510-ba001c3ffce0/go.mod h1:4hKCXuwrJoYvHZxJ86+bRVTOMyJ0Ej+RqfSm8mHi6KA=
+ github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f h1:lO4WD4F/rVNCu3HqELle0jiPLLBs70cWOduZpkS1E78=
+ github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f/go.mod h1:cuUVRXasLTGF7a8hSLbxyZXjz+1KgoB3wDUb6vlszIc=
+ github.com/distribution/distribution/v3 v3.0.0-alpha.1 h1:jn7I1gvjOvmLztH1+1cLiUFud7aeJCIQcgzugtwjyJo=
+@@ -457,6 +459,8 @@ github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f/go.mod h1:ZdcZmHo+
+ github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
+ github.com/nxadm/tail v1.4.8 h1:nPr65rt6Y5JFSKQO7qToXr7pePgD6Gwiw05lkbyAQTE=
+ github.com/nxadm/tail v1.4.8/go.mod h1:+ncqLTQzXmGhMZNUePPaPqPvBxHAIsmXswZKocGu+AU=
++github.com/oklog/run v1.1.0 h1:GEenZ1cK0+q0+wsJew9qUg/DyD8k3JzYsZAi5gYi2mA=
++github.com/oklog/run v1.1.0/go.mod h1:sVPdnTZT1zYwAJeCMu2Th4T21pA3FPOQRfWjQlk7DVU=
+ github.com/onsi/ginkgo v0.0.0-20170829012221-11459a886d9c/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
+ github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
+ github.com/onsi/ginkgo v1.11.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
+@@ -501,6 +505,8 @@ github.com/prometheus/client_golang v1.0.0/go.mod h1:db9x61etRT2tGnBNRi70OPL5Fsn
+ github.com/prometheus/client_golang v1.1.0/go.mod h1:I1FGZT9+L76gKKOs5djB6ezCbFQP1xR9D75/vuwEF3g=
+ github.com/prometheus/client_golang v1.18.0 h1:HzFfmkOzH5Q8L8G+kSJKUx5dtG87sewO+FoDDqP5Tbk=
+ github.com/prometheus/client_golang v1.18.0/go.mod h1:T+GXkCk5wSJyOqMIzVgvvjFDlkOQntgjkJWKrN5txjA=
++github.com/prometheus/client_golang v1.19.0 h1:ygXvpU1AoN1MhdzckN+PyD9QJOSD4x7kmXYlnfbA6JU=
++github.com/prometheus/client_golang v1.19.0/go.mod h1:ZRM9uEAypZakd+q/x7+gmsvXdURP+DABIEIjnmDdp+k=
+ github.com/prometheus/client_model v0.0.0-20180712105110-5c3871d89910/go.mod h1:MbSGuTsp3dbXC40dX6PRTWyKYBIrTGTE9sqQNg2J8bo=
+ github.com/prometheus/client_model v0.0.0-20190129233127-fd36f4220a90/go.mod h1:xMI15A0UPsDsEKsMN9yxemIoYk6Tm2C1GtYGdfGttqA=
+ github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4/go.mod h1:xMI15A0UPsDsEKsMN9yxemIoYk6Tm2C1GtYGdfGttqA=
+@@ -510,6 +516,10 @@ github.com/prometheus/common v0.4.1/go.mod h1:TNfzLD0ON7rHzMJeJkieUDPYmFC7Snx/y8
+ github.com/prometheus/common v0.6.0/go.mod h1:eBmuwkDJBwy6iBfxCBob6t6dR6ENT/y+J+Zk0j9GMYc=
+ github.com/prometheus/common v0.45.0 h1:2BGz0eBc2hdMDLnO/8n0jeB3oPrt2D08CekT0lneoxM=
+ github.com/prometheus/common v0.45.0/go.mod h1:YJmSTw9BoKxJplESWWxlbyttQR4uaEcGyv9MZjVOJsY=
++github.com/prometheus/common v0.51.1 h1:eIjN50Bwglz6a/c3hAgSMcofL3nD+nFQkV6Dd4DsQCw=
++github.com/prometheus/common v0.51.1/go.mod h1:lrWtQx+iDfn2mbH5GUzlH9TSHyfZpHkSiG1W7y3sF2Q=
++github.com/prometheus/exporter-toolkit v0.11.0 h1:yNTsuZ0aNCNFQ3aFTD2uhPOvr4iD7fdBvKPAEGkNf+g=
++github.com/prometheus/exporter-toolkit v0.11.0/go.mod h1:BVnENhnNecpwoTLiABx7mrPB/OLRIgN74qlQbV+FK1Q=
+ github.com/prometheus/procfs v0.0.0-20181005140218-185b4288413d/go.mod h1:c3At6R/oaqEKCNdg8wHV1ftS6bRYblBhIjjI8uT2IGk=
+ github.com/prometheus/procfs v0.0.2/go.mod h1:TjEm7ze935MbeOT/UhFTIMYKhuLP4wbCsTZCD3I8kEA=
+ github.com/prometheus/procfs v0.0.3/go.mod h1:4A/X28fw3Fc593LaREMrKMqOKvUAntwMDaekg4FpcdQ=
+@@ -969,12 +979,16 @@ k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00 h1:aVUu9fTY98ivBPKR9Y5w/A
+ k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00/go.mod h1:AsvuZPBlUDVuCdzJ87iajxtXuR9oktsTctW/R9wwouA=
+ k8s.io/kube-proxy v0.29.6 h1:H/wPg6vJ8ObzTJzV2bGQO/Nria5bXMlJxrPlxiacpJI=
+ k8s.io/kube-proxy v0.29.6/go.mod h1:EUKqW0BvMyPWbnlKRKJerLgrFBFRhoNNuMvhefJxCPc=
++k8s.io/kube-state-metrics/v2 v2.12.0 h1:is2KqFjpkF+tLqhNfr1sWCEvucb//S50wxzzEhXRzHI=
++k8s.io/kube-state-metrics/v2 v2.12.0/go.mod h1:s1Iq7mNhtbb4fnwMw39uUOrpdIaeoyDQDWA7OZoOqhc=
+ k8s.io/kubelet v0.29.6 h1:jXnnBNHK/KNNEJesmlIZmCvlYC3a5/e04BIS9VPM49M=
+ k8s.io/kubelet v0.29.6/go.mod h1:kGEUqodVM120YTTQLSCTXzZP4XMFDp7qLf7iU3hrRE4=
+ k8s.io/metrics v0.29.6 h1:kjMGPYxtCi4OO0fUar76y0CiUoeGYDNmUV0LXJIis4Q=
+ k8s.io/metrics v0.29.6/go.mod h1:vqGzOaYGuNSSAI7GM1+v6L5z8aAUSzui1W0eQB3wVJY=
+ k8s.io/pod-security-admission v0.29.6 h1:xxT9NWEWnbS49y6p7jY9S4pvcUBd9/8vPx2Y8GSZvrU=
+ k8s.io/pod-security-admission v0.29.6/go.mod h1:KKimOte/+7k3NJbvRFdRDRTPvgUNSzUVABT9tDIAzLw=
++k8s.io/sample-controller v0.29.3 h1:1g96iu1sH9zFaZ4Nq7s10R1eq1cNgiM9l/F4ttEURJI=
++k8s.io/sample-controller v0.29.3/go.mod h1:zjhfoVX5Bcf7G4yNUoUmhXbVMMqM+TUoz3pILzH0OLo=
+ k8s.io/utils v0.0.0-20200729134348-d5654de09c73/go.mod h1:jPW/WVKK9YHAvNhRxK0md/EJ228hCsBRufyofKtW8HA=
+ k8s.io/utils v0.0.0-20240502163921-fe8a2dddb1d0 h1:jgGTlFYnhF1PM1Ax/lAlxUPE+KfCIXHaathvJg1C3ak=
+ k8s.io/utils v0.0.0-20240502163921-fe8a2dddb1d0/go.mod h1:OLgZIPagt7ERELqWJFomSt595RzquPNLL48iOWgYOg0=
+
+commit 493373d6f6f31991cd286abf72cf3f1c7bc09350
+Author: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date:   Thu May 23 16:14:50 2024 +0200
+
+    Upgrade kube-state-metrics to latest version
+---
+ imagevector/images.yaml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/imagevector/images.yaml b/imagevector/images.yaml
+index 9854a10e0..6f85b02d5 100644
+--- a/imagevector/images.yaml
++++ b/imagevector/images.yaml
+@@ -264,7 +264,7 @@ images:
+ - name: kube-state-metrics
+   sourceRepository: github.com/kubernetes/kube-state-metrics
+   repository: registry.k8s.io/kube-state-metrics/kube-state-metrics
+-  tag: v2.8.2
++  tag: v2.12.0
+   labels:
+   - name: gardener.cloud/cve-categorisation
+     value:
