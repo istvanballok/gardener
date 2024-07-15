@@ -39,26 +39,26 @@ import (
 
 func (k *kubeStateMetrics) getResourceConfigs(genericTokenKubeconfigSecretName string, shootAccessSecret *gardenerutils.AccessSecret, customResourceStateConfig string) component.ResourceConfigs {
 	var (
-		clusterRole                  = k.emptyClusterRole()
-		clusterRoleBinding           = k.emptyClusterRoleBinding()
-		service                      = k.emptyService()
-		deployment                   = k.emptyDeployment()
-		vpa                          = k.emptyVerticalPodAutoscaler()
-		pdb                          = k.emptyPodDisruptionBudget()
-		scrapeConfigCache            = k.emptyScrapeConfigCache()
-		scrapeConfigSeed             = k.emptyScrapeConfigSeed()
-		scrapeConfigGarden           = k.emptyScrapeConfigGarden()
-		scrapeConfigShoot            = k.emptyScrapeConfigShoot()
-		prometheusRuleShoot          = k.emptyPrometheusRuleShoot()
-		customResourceStateConfigMap = k.emptyCustomResourceStateConfigMap()
+		// clusterRole                  = k.emptyClusterRole()
+		clusterRoleBinding  = k.emptyClusterRoleBinding()
+		service             = k.emptyService()
+		deployment          = k.emptyDeployment()
+		vpa                 = k.emptyVerticalPodAutoscaler()
+		pdb                 = k.emptyPodDisruptionBudget()
+		scrapeConfigCache   = k.emptyScrapeConfigCache()
+		scrapeConfigSeed    = k.emptyScrapeConfigSeed()
+		scrapeConfigGarden  = k.emptyScrapeConfigGarden()
+		scrapeConfigShoot   = k.emptyScrapeConfigShoot()
+		prometheusRuleShoot = k.emptyPrometheusRuleShoot()
+		// customResourceStateConfigMap = k.emptyCustomResourceStateConfigMap()
 
 		configs = component.ResourceConfigs{
-			{Obj: clusterRole, Class: component.Application, MutateFn: func() { k.reconcileClusterRole(clusterRole) }},
+			//{Obj: clusterRole, Class: component.Application, MutateFn: func() { k.reconcileClusterRole(clusterRole) }},
 			{Obj: service, Class: component.Runtime, MutateFn: func() { k.reconcileService(service) }},
 			{Obj: vpa, Class: component.Runtime, MutateFn: func() { k.reconcileVerticalPodAutoscaler(vpa, deployment) }},
-			{Obj: customResourceStateConfigMap, Class: component.Runtime, MutateFn: func() {
-				k.reconcileCustomResourceStateConfigMap(customResourceStateConfigMap, customResourceStateConfig)
-			}},
+			// {Obj: customResourceStateConfigMap, Class: component.Runtime, MutateFn: func() {
+			// 	k.reconcileCustomResourceStateConfigMap(customResourceStateConfigMap, customResourceStateConfig)
+			// }},
 		}
 	)
 
