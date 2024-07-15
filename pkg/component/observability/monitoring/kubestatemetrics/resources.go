@@ -39,7 +39,7 @@ import (
 
 func (k *kubeStateMetrics) getResourceConfigs(genericTokenKubeconfigSecretName string, shootAccessSecret *gardenerutils.AccessSecret, customResourceStateConfig string) component.ResourceConfigs {
 	var (
-		// clusterRole                  = k.emptyClusterRole()
+		clusterRole         = k.emptyClusterRole()
 		clusterRoleBinding  = k.emptyClusterRoleBinding()
 		service             = k.emptyService()
 		deployment          = k.emptyDeployment()
