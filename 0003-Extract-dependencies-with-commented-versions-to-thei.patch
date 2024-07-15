@@ -1,0 +1,48 @@
+From b731c3c48d1c722b6a6c627f1d45c6208e2ee8c8 Mon Sep 17 00:00:00 2001
+From: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date: Wed, 19 Jun 2024 16:38:32 +0200
+Subject: [PATCH 03/11] Extract dependencies with commented versions to their
+ own require block
+
+The next commits will use the new dependency kube-state-metrics, and
+`go mod tidy` will convert it to a direct one.
+
+Because of the controller-manager dependency with a commented version,
+`go mod tidy` will identify the new kube-state-metrics dependency
+belongs to none of the existing require blocks and it will attempt to
+create a new block just for kube-state-metrics. Note that the default
+behaviour of go.mod is to keep two blocks: one for direct dependencies
+and one for indirect.
+
+This commit extracts this third type of dependency (dependency with
+commented version) into its own require block. This way, running
+`go mod tidy` in the following commits will preserve the three blocks
+defined.
+
+Co-authored-by: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+---
+ go.mod | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/go.mod b/go.mod
+index 46c86893b..4ed540c91 100644
+--- a/go.mod
++++ b/go.mod
+@@ -75,12 +75,13 @@ require (
+ 	k8s.io/pod-security-admission v0.29.6
+ 	k8s.io/utils v0.0.0-20240502163921-fe8a2dddb1d0
+ 	sigs.k8s.io/controller-runtime v0.17.5
+-	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20231015215740-bf15e44028f9 // v0.16.3
+ 	sigs.k8s.io/controller-tools v0.14.0
+ 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1
+ 	sigs.k8s.io/yaml v1.4.0
+ )
+ 
++require sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20231015215740-bf15e44028f9 // v0.16.3
++
+ require (
+ 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 // indirect
+ 	github.com/AdamKorcz/go-118-fuzz-build v0.0.0-20230306123547-8075edf89bb0 // indirect
+-- 
+2.44.0
+

@@ -1,0 +1,60 @@
+From f21bc84a4f7d4c6e874ab5107cd2fd4281770dd9 Mon Sep 17 00:00:00 2001
+From: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date: Mon, 8 Jul 2024 16:35:53 +0200
+Subject: [PATCH 09/11] Re-introduce the kube_pod_labels metric
+
+The upgrade to kube-state-metrics v2.12 disables the kube_pod_labels
+metric by default and needs to be re-enabled explicitly. Only need
+the origin label is required by Gardener.
+---
+ .../monitoring/kubestatemetrics/kubestatemetrics_test.go      | 4 ++--
+ .../observability/monitoring/kubestatemetrics/resources.go    | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/pkg/component/observability/monitoring/kubestatemetrics/kubestatemetrics_test.go b/pkg/component/observability/monitoring/kubestatemetrics/kubestatemetrics_test.go
+index 567030a29..657e4dca0 100644
+--- a/pkg/component/observability/monitoring/kubestatemetrics/kubestatemetrics_test.go
++++ b/pkg/component/observability/monitoring/kubestatemetrics/kubestatemetrics_test.go
+@@ -238,7 +238,7 @@ var _ = Describe("KubeStateMetrics", func() {
+ 					"--port=8080",
+ 					"--telemetry-port=8081",
+ 					"--resources=deployments,pods,statefulsets,nodes,horizontalpodautoscalers,persistentvolumeclaims,replicasets,namespaces",
+-					"--metric-labels-allowlist=nodes=[*]",
++					"--metric-labels-allowlist=nodes=[*],pods=[origin]",
+ 					"--metric-annotations-allowlist=namespaces=[shoot.gardener.cloud/uid]",
+ 					"--metric-allowlist=" +
+ 						"kube_daemonset_metadata_generation," +
+@@ -338,7 +338,7 @@ var _ = Describe("KubeStateMetrics", func() {
+ 					"--resources=daemonsets,deployments,nodes,pods,statefulsets,replicasets",
+ 					"--namespaces=kube-system",
+ 					"--kubeconfig=/var/run/secrets/gardener.cloud/shoot/generic-kubeconfig/kubeconfig",
+-					"--metric-labels-allowlist=nodes=[*]",
++					"--metric-labels-allowlist=nodes=[*],pods=[origin]",
+ 					"--custom-resource-state-config-file=/config/custom-resource-state.yaml",
+ 				}
+ 				automountServiceAccountToken = ptr.To(false)
+diff --git a/pkg/component/observability/monitoring/kubestatemetrics/resources.go b/pkg/component/observability/monitoring/kubestatemetrics/resources.go
+index 0d74c400c..47fac0340 100644
+--- a/pkg/component/observability/monitoring/kubestatemetrics/resources.go
++++ b/pkg/component/observability/monitoring/kubestatemetrics/resources.go
+@@ -242,7 +242,7 @@ func (k *kubeStateMetrics) reconcileDeployment(
+ 
+ 		args = append(args,
+ 			"--resources=deployments,pods,statefulsets,nodes,horizontalpodautoscalers,persistentvolumeclaims,replicasets,namespaces",
+-			"--metric-labels-allowlist=nodes=[*]",
++			"--metric-labels-allowlist=nodes=[*],pods=[origin]",
+ 			"--metric-annotations-allowlist=namespaces=[shoot.gardener.cloud/uid]",
+ 			"--metric-allowlist="+strings.Join(cachePrometheusAllowedMetrics, ","),
+ 			"--custom-resource-state-config-file="+customResourceStateConfigFile,
+@@ -258,7 +258,7 @@ func (k *kubeStateMetrics) reconcileDeployment(
+ 			"--resources=daemonsets,deployments,nodes,pods,statefulsets,replicasets",
+ 			"--namespaces="+metav1.NamespaceSystem,
+ 			"--kubeconfig="+gardenerutils.PathGenericKubeconfig,
+-			"--metric-labels-allowlist=nodes=[*]",
++			"--metric-labels-allowlist=nodes=[*],pods=[origin]",
+ 			"--custom-resource-state-config-file="+customResourceStateConfigFile,
+ 		)
+ 	}
+-- 
+2.44.0
+

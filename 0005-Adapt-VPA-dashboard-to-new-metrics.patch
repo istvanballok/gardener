@@ -1,0 +1,214 @@
+From f533c1a9537f34d6a8068111307ac680a6494093 Mon Sep 17 00:00:00 2001
+From: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date: Mon, 27 May 2024 16:15:31 +0200
+Subject: [PATCH 05/11] Adapt VPA dashboard to new metrics
+
+Queries will look lengthy for a short period of time because new metrics
+are queried using the or expression so that visualizations do not break.
+Once Prometheus instances have dropped the old metrics, we can simplify
+these dashboard queries by removing the previous ones.
+
+The templating can always use `_cpu` metrics because the new VPA
+metrics have `nilIsZero` set to true. That means the time series always
+exists for all VPAs, whether they have a target CPU or not. Note we could
+take any other metric as an example.
+---
+ .../dashboards/common/vpa/vpa-dashboard.json  | 42 +++++++++----------
+ 1 file changed, 21 insertions(+), 21 deletions(-)
+
+diff --git a/pkg/component/observability/plutono/dashboards/common/vpa/vpa-dashboard.json b/pkg/component/observability/plutono/dashboards/common/vpa/vpa-dashboard.json
+index 38eb15a55..5b2f805a9 100644
+--- a/pkg/component/observability/plutono/dashboards/common/vpa/vpa-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/common/vpa/vpa-dashboard.json
+@@ -71,7 +71,7 @@
+       "targets": [
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_verticalpodautoscaler_spec_updatepolicy_updatemode{namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\"}) by (update_mode) > 0",
++          "expr": "sum({__name__=~\"kube(_customresource)?_verticalpodautoscaler_spec_updatepolicy_updatemode\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\"}) by (update_mode) > 0",
+           "format": "time_series",
+           "hide": false,
+           "instant": true,
+@@ -158,7 +158,7 @@
+         },
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{resource=\"memory\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
++          "expr": "sum(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{resource=\"memory\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"} or kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_memory{namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
+           "format": "time_series",
+           "hide": false,
+           "interval": "",
+@@ -168,7 +168,7 @@
+         },
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound{resource=\"memory\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
++          "expr": "sum(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound{resource=\"memory\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"} or kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_memory{namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
+           "format": "time_series",
+           "hide": false,
+           "interval": "",
+@@ -178,7 +178,7 @@
+         },
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound{resource=\"memory\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
++          "expr": "sum(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound{resource=\"memory\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"} or kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_memory{namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
+           "format": "time_series",
+           "hide": false,
+           "interval": "",
+@@ -188,7 +188,7 @@
+         },
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed{resource=\"memory\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
++          "expr": "sum(kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed{resource=\"memory\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"} or kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_minallowed_memory{namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
+           "format": "time_series",
+           "hide": false,
+           "interval": "",
+@@ -198,7 +198,7 @@
+         },
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed{resource=\"memory\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
++          "expr": "sum(kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed{resource=\"memory\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"} or kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_maxallowed_memory{namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
+           "format": "time_series",
+           "hide": false,
+           "interval": "",
+@@ -325,7 +325,7 @@
+         },
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{resource=\"memory\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container\"})",
++          "expr": "sum(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{resource=\"memory\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container\"} or kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_memory{namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container\"})",
+           "format": "time_series",
+           "interval": "",
+           "intervalFactor": 1,
+@@ -448,7 +448,7 @@
+         },
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{resource=\"cpu\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
++          "expr": "sum(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{resource=\"cpu\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"} or kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu{namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
+           "format": "time_series",
+           "hide": false,
+           "interval": "",
+@@ -458,7 +458,7 @@
+         },
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound{resource=\"cpu\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
++          "expr": "sum(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound{resource=\"cpu\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"} or kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_cpu{namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
+           "format": "time_series",
+           "hide": false,
+           "interval": "",
+@@ -468,7 +468,7 @@
+         },
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound{resource=\"cpu\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
++          "expr": "sum(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound{resource=\"cpu\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"} or kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_cpu{namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
+           "format": "time_series",
+           "hide": false,
+           "interval": "",
+@@ -478,7 +478,7 @@
+         },
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed{resource=\"cpu\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
++          "expr": "sum(kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_minallowed{resource=\"cpu\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"} or kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_minallowed_cpu{namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
+           "format": "time_series",
+           "hide": false,
+           "interval": "",
+@@ -488,7 +488,7 @@
+         },
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed{resource=\"cpu\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
++          "expr": "sum(kube_verticalpodautoscaler_spec_resourcepolicy_container_policies_maxallowed{resource=\"cpu\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"} or kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_maxallowed_cpu{namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"})",
+           "format": "time_series",
+           "hide": false,
+           "interval": "",
+@@ -614,7 +614,7 @@
+         },
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{resource=\"cpu\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container\"})",
++          "expr": "sum(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{resource=\"cpu\", namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container\"} or kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu{namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container\"})",
+           "format": "time_series",
+           "interval": "",
+           "intervalFactor": 1,
+@@ -685,7 +685,7 @@
+           ]
+         },
+         "datasource": null,
+-        "definition": "label_values(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target, namespace)",
++        "definition": "label_values(kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu, namespace)",
+         "description": null,
+         "error": null,
+         "hide": 0,
+@@ -695,7 +695,7 @@
+         "name": "namespace",
+         "options": [],
+         "query": {
+-          "query": "label_values(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target, namespace)",
++          "query": "label_values(kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu, namespace)",
+           "refId": "StandardVariableQuery"
+         },
+         "refresh": 1,
+@@ -716,7 +716,7 @@
+           "value": "Deployment"
+         },
+         "datasource": "prometheus",
+-        "definition": "label_values(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{namespace=~\"$namespace\"}, target_kind)",
++        "definition": "label_values(kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu{namespace=~\"$namespace\"}, target_kind)",
+         "description": null,
+         "error": null,
+         "hide": 0,
+@@ -726,7 +726,7 @@
+         "name": "targetKind",
+         "options": [],
+         "query": {
+-          "query": "label_values(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{namespace=~\"$namespace\"}, target_kind)",
++          "query": "label_values(kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu{namespace=~\"$namespace\"}, target_kind)",
+           "refId": "StandardVariableQuery"
+         },
+         "refresh": 1,
+@@ -747,7 +747,7 @@
+           "value": "blackbox-exporter"
+         },
+         "datasource": "prometheus",
+-        "definition": "label_values(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{namespace=~\"$namespace\", target_kind=~\"$targetKind\"}, target_name)",
++        "definition": "label_values(kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu{namespace=~\"$namespace\", target_kind=~\"$targetKind\"}, target_name)",
+         "description": null,
+         "error": null,
+         "hide": 0,
+@@ -757,7 +757,7 @@
+         "name": "targetName",
+         "options": [],
+         "query": {
+-          "query": "label_values(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{namespace=~\"$namespace\", target_kind=~\"$targetKind\"}, target_name)",
++          "query": "label_values(kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu{namespace=~\"$namespace\", target_kind=~\"$targetKind\"}, target_name)",
+           "refId": "StandardVariableQuery"
+         },
+         "refresh": 1,
+@@ -778,7 +778,7 @@
+           "value": "blackbox-exporter"
+         },
+         "datasource": "prometheus",
+-        "definition": "label_values(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{namespace=~\"$namespace\", target_kind=~\"$targetKind\",target_name=~\"$targetName\"}, container)",
++        "definition": "label_values(kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu{namespace=~\"$namespace\", target_kind=~\"$targetKind\",target_name=~\"$targetName\"}, container)",
+         "description": null,
+         "error": null,
+         "hide": 0,
+@@ -788,7 +788,7 @@
+         "name": "container",
+         "options": [],
+         "query": {
+-          "query": "label_values(kube_verticalpodautoscaler_status_recommendation_containerrecommendations_target{namespace=~\"$namespace\", target_kind=~\"$targetKind\",target_name=~\"$targetName\"}, container)",
++          "query": "label_values(kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu{namespace=~\"$namespace\", target_kind=~\"$targetKind\",target_name=~\"$targetName\"}, container)",
+           "refId": "StandardVariableQuery"
+         },
+         "refresh": 1,
+-- 
+2.44.0
+

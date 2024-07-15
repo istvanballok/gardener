@@ -1,0 +1,55 @@
+From 5be266623c0123c8b4352f69b5cebc3941c99f36 Mon Sep 17 00:00:00 2001
+From: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date: Wed, 26 Jun 2024 16:18:58 +0200
+Subject: [PATCH 07/11] Change namespace used in metric for control-plane shoot
+ pods
+
+The kube-system namespace was previously used. This was wrong in two ways.
+First, those pods are not deployed in the kube-system of the shoot, but
+in a specific namespace in the seed. Second, there is a blackbox
+exporter in both the shoot's control-plane namespace in the seed and in
+the actual kube-system namespace in the shoot. This led to naming conflicts and
+possibly unexpected query results, e.g. in the VPA dashboard when checking the
+VPA recommendations for the blackbox_exporter pods. The namespace is changed to
+shoot-control-plane, which properly describe what it is.
+
+Note that the control plane namespace is technically called
+`shoot--<project>--<shoot name>`, but instead of leaking this implementation
+detail to the monitoring stack, we use the more user-friendly name
+`shoot-control-plane`.
+---
+ .../monitoring/prometheus/shoot/scrapeconfigs.go              | 4 ++--
+ .../monitoring/prometheus/shoot/scrapeconfigs_test.go         | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/pkg/component/observability/monitoring/prometheus/shoot/scrapeconfigs.go b/pkg/component/observability/monitoring/prometheus/shoot/scrapeconfigs.go
+index e7463475f..02d3959fa 100644
+--- a/pkg/component/observability/monitoring/prometheus/shoot/scrapeconfigs.go
++++ b/pkg/component/observability/monitoring/prometheus/shoot/scrapeconfigs.go
+@@ -48,8 +48,8 @@ func CentralScrapeConfigs(namespace, clusterCASecretName string, isWorkerless bo
+ 					TargetLabel: "job",
+ 				}},
+ 				MetricRelabelConfigs: []monitoringv1.RelabelConfig{{
+-					// we make the shoot's pods in the shoot's namespace to appear in the kube-system namespace
+-					Replacement: ptr.To(metav1.NamespaceSystem),
++					// "shoot-control-plane" references the namespace of the shoot control-plane pods in the seed
++					Replacement: ptr.To("shoot-control-plane"),
+ 					TargetLabel: "namespace",
+ 				}},
+ 			},
+diff --git a/pkg/component/observability/monitoring/prometheus/shoot/scrapeconfigs_test.go b/pkg/component/observability/monitoring/prometheus/shoot/scrapeconfigs_test.go
+index 4f1a55537..69556e6ad 100644
+--- a/pkg/component/observability/monitoring/prometheus/shoot/scrapeconfigs_test.go
++++ b/pkg/component/observability/monitoring/prometheus/shoot/scrapeconfigs_test.go
+@@ -50,7 +50,7 @@ var _ = Describe("ScrapeConfigs", func() {
+ 							TargetLabel: "job",
+ 						}},
+ 						MetricRelabelConfigs: []monitoringv1.RelabelConfig{{
+-							Replacement: ptr.To("kube-system"),
++							Replacement: ptr.To("shoot-control-plane"),
+ 							TargetLabel: "namespace",
+ 						}},
+ 					},
+-- 
+2.44.0
+

@@ -1,0 +1,165 @@
+From 63931ecc3a11cef3f4d80461c763ee12d67bcce8 Mon Sep 17 00:00:00 2001
+From: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date: Fri, 12 Jul 2024 13:43:23 +0200
+Subject: [PATCH 10/11] Allow metric for the VPA uncapped target
+
+Although this metric was available in previous versions of
+kube-state-metrics, it was never allowed. However, we have identified it
+as relevant for certain use-cases (e.g., we plan to use it for follow-up
+alerts) and, hence, we add it here to the allow list.
+---
+ .../kubestatemetrics/customresourcestate.go   | 13 ++---
+ .../kubestatemetrics/kubestatemetrics_test.go |  6 ++-
+ .../monitoring/kubestatemetrics/resources.go  |  4 ++
+ .../custom-resource-state.expectation.yaml    | 48 +++++++++++++++++++
+ 4 files changed, 63 insertions(+), 8 deletions(-)
+
+diff --git a/pkg/component/observability/monitoring/kubestatemetrics/customresourcestate.go b/pkg/component/observability/monitoring/kubestatemetrics/customresourcestate.go
+index 80e9fb4cc..6cc79a9f8 100644
+--- a/pkg/component/observability/monitoring/kubestatemetrics/customresourcestate.go
++++ b/pkg/component/observability/monitoring/kubestatemetrics/customresourcestate.go
+@@ -75,15 +75,16 @@ func newCustomResourceStateMetricsForVPA() customresourcestate.Resource {
+ 	}
+ 
+ 	helpMessages := map[string]string{
+-		"target":     "Target %s the VerticalPodAutoscaler recommends for the container.",
+-		"upperBound": "Maximum %s the container can use before the VerticalPodAutoscaler updater evicts it.",
+-		"lowerBound": "Minimum %s the container can use before the VerticalPodAutoscaler updater evicts it.",
+-		"minAllowed": "Minimum %s the VerticalPodAutoscaler can set for containers matching the name.",
+-		"maxAllowed": "Maximum %s the VerticalPodAutoscaler can set for containers matching the name.",
++		"target":         "Target %s the VerticalPodAutoscaler recommends for the container.",
++		"uncappedTarget": "Target %s the VerticalPodAutoscaler recommends for the container ignoring bounds.",
++		"upperBound":     "Maximum %s the container can use before the VerticalPodAutoscaler updater evicts it.",
++		"lowerBound":     "Minimum %s the container can use before the VerticalPodAutoscaler updater evicts it.",
++		"minAllowed":     "Minimum %s the VerticalPodAutoscaler can set for containers matching the name.",
++		"maxAllowed":     "Maximum %s the VerticalPodAutoscaler can set for containers matching the name.",
+ 	}
+ 
+ 	for _, res := range []string{"cpu", "memory"} {
+-		for _, attr := range []string{"target", "upperBound", "lowerBound"} {
++		for _, attr := range []string{"target", "upperBound", "lowerBound", "uncappedTarget"} {
+ 			generator := newCustomResourceStateGaugeMetricForVPA(
+ 				[]string{"status", "recommendation", "containerRecommendations"},
+ 				[]string{attr, res},
+diff --git a/pkg/component/observability/monitoring/kubestatemetrics/kubestatemetrics_test.go b/pkg/component/observability/monitoring/kubestatemetrics/kubestatemetrics_test.go
+index 657e4dca0..2c4e3dd89 100644
+--- a/pkg/component/observability/monitoring/kubestatemetrics/kubestatemetrics_test.go
++++ b/pkg/component/observability/monitoring/kubestatemetrics/kubestatemetrics_test.go
+@@ -288,6 +288,8 @@ var _ = Describe("KubeStateMetrics", func() {
+ 						"kube_statefulset_status_replicas_updated," +
+ 						"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu," +
+ 						"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_memory," +
++						"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget_cpu," +
++						"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget_memory," +
+ 						"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_cpu," +
+ 						"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_memory," +
+ 						"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_cpu," +
+@@ -500,7 +502,7 @@ var _ = Describe("KubeStateMetrics", func() {
+ 					{
+ 						SourceLabels: []monitoringv1.LabelName{"__name__"},
+ 						Action:       "keep",
+-						Regex:        `^(kube_daemonset_metadata_generation|kube_daemonset_status_current_number_scheduled|kube_daemonset_status_desired_number_scheduled|kube_daemonset_status_number_available|kube_daemonset_status_number_unavailable|kube_daemonset_status_updated_number_scheduled|kube_deployment_metadata_generation|kube_deployment_spec_replicas|kube_deployment_status_observed_generation|kube_deployment_status_replicas|kube_deployment_status_replicas_available|kube_deployment_status_replicas_unavailable|kube_deployment_status_replicas_updated|kube_horizontalpodautoscaler_spec_max_replicas|kube_horizontalpodautoscaler_spec_min_replicas|kube_horizontalpodautoscaler_status_current_replicas|kube_horizontalpodautoscaler_status_desired_replicas|kube_horizontalpodautoscaler_status_condition|kube_namespace_annotations|kube_node_info|kube_node_labels|kube_node_spec_taint|kube_node_spec_unschedulable|kube_node_status_allocatable|kube_node_status_capacity|kube_node_status_condition|kube_persistentvolumeclaim_resource_requests_storage_bytes|kube_pod_container_info|kube_pod_container_resource_limits|kube_pod_container_resource_requests|kube_pod_container_status_restarts_total|kube_pod_info|kube_pod_labels|kube_pod_owner|kube_pod_spec_volumes_persistentvolumeclaims_info|kube_pod_status_phase|kube_pod_status_ready|kube_replicaset_owner|kube_statefulset_metadata_generation|kube_statefulset_replicas|kube_statefulset_status_observed_generation|kube_statefulset_status_replicas|kube_statefulset_status_replicas_current|kube_statefulset_status_replicas_ready|kube_statefulset_status_replicas_updated|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_memory|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_cpu|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_memory|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_cpu|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_memory|kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_minallowed_cpu|kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_minallowed_memory|kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_maxallowed_cpu|kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_maxallowed_memory|kube_customresource_verticalpodautoscaler_spec_updatepolicy_updatemode)$`,
++						Regex:        `^(kube_daemonset_metadata_generation|kube_daemonset_status_current_number_scheduled|kube_daemonset_status_desired_number_scheduled|kube_daemonset_status_number_available|kube_daemonset_status_number_unavailable|kube_daemonset_status_updated_number_scheduled|kube_deployment_metadata_generation|kube_deployment_spec_replicas|kube_deployment_status_observed_generation|kube_deployment_status_replicas|kube_deployment_status_replicas_available|kube_deployment_status_replicas_unavailable|kube_deployment_status_replicas_updated|kube_horizontalpodautoscaler_spec_max_replicas|kube_horizontalpodautoscaler_spec_min_replicas|kube_horizontalpodautoscaler_status_current_replicas|kube_horizontalpodautoscaler_status_desired_replicas|kube_horizontalpodautoscaler_status_condition|kube_namespace_annotations|kube_node_info|kube_node_labels|kube_node_spec_taint|kube_node_spec_unschedulable|kube_node_status_allocatable|kube_node_status_capacity|kube_node_status_condition|kube_persistentvolumeclaim_resource_requests_storage_bytes|kube_pod_container_info|kube_pod_container_resource_limits|kube_pod_container_resource_requests|kube_pod_container_status_restarts_total|kube_pod_info|kube_pod_labels|kube_pod_owner|kube_pod_spec_volumes_persistentvolumeclaims_info|kube_pod_status_phase|kube_pod_status_ready|kube_replicaset_owner|kube_statefulset_metadata_generation|kube_statefulset_replicas|kube_statefulset_status_observed_generation|kube_statefulset_status_replicas|kube_statefulset_status_replicas_current|kube_statefulset_status_replicas_ready|kube_statefulset_status_replicas_updated|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_memory|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget_cpu|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget_memory|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_cpu|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_memory|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_cpu|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_memory|kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_minallowed_cpu|kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_minallowed_memory|kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_maxallowed_cpu|kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_maxallowed_memory|kube_customresource_verticalpodautoscaler_spec_updatepolicy_updatemode)$`,
+ 					},
+ 				},
+ 			},
+@@ -636,7 +638,7 @@ var _ = Describe("KubeStateMetrics", func() {
+ 					{
+ 						SourceLabels: []monitoringv1.LabelName{"__name__"},
+ 						Action:       "keep",
+-						Regex:        `^(kube_daemonset_metadata_generation|kube_daemonset_status_current_number_scheduled|kube_daemonset_status_desired_number_scheduled|kube_daemonset_status_number_available|kube_daemonset_status_number_unavailable|kube_daemonset_status_updated_number_scheduled|kube_deployment_metadata_generation|kube_deployment_spec_replicas|kube_deployment_status_observed_generation|kube_deployment_status_replicas|kube_deployment_status_replicas_available|kube_deployment_status_replicas_unavailable|kube_deployment_status_replicas_updated|kube_node_info|kube_node_labels|kube_node_spec_taint|kube_node_spec_unschedulable|kube_node_status_allocatable|kube_node_status_capacity|kube_node_status_condition|kube_pod_container_info|kube_pod_container_resource_limits|kube_pod_container_resource_requests|kube_pod_container_status_restarts_total|kube_pod_info|kube_pod_labels|kube_pod_status_phase|kube_pod_status_ready|kube_replicaset_owner|kube_replicaset_metadata_generation|kube_replicaset_spec_replicas|kube_replicaset_status_observed_generation|kube_replicaset_status_replicas|kube_replicaset_status_ready_replicas|kube_statefulset_metadata_generation|kube_statefulset_replicas|kube_statefulset_status_observed_generation|kube_statefulset_status_replicas|kube_statefulset_status_replicas_current|kube_statefulset_status_replicas_ready|kube_statefulset_status_replicas_updated|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_memory|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_cpu|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_memory|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_cpu|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_memory|kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_minallowed_cpu|kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_minallowed_memory|kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_maxallowed_cpu|kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_maxallowed_memory|kube_customresource_verticalpodautoscaler_spec_updatepolicy_updatemode)$`,
++						Regex:        `^(kube_daemonset_metadata_generation|kube_daemonset_status_current_number_scheduled|kube_daemonset_status_desired_number_scheduled|kube_daemonset_status_number_available|kube_daemonset_status_number_unavailable|kube_daemonset_status_updated_number_scheduled|kube_deployment_metadata_generation|kube_deployment_spec_replicas|kube_deployment_status_observed_generation|kube_deployment_status_replicas|kube_deployment_status_replicas_available|kube_deployment_status_replicas_unavailable|kube_deployment_status_replicas_updated|kube_node_info|kube_node_labels|kube_node_spec_taint|kube_node_spec_unschedulable|kube_node_status_allocatable|kube_node_status_capacity|kube_node_status_condition|kube_pod_container_info|kube_pod_container_resource_limits|kube_pod_container_resource_requests|kube_pod_container_status_restarts_total|kube_pod_info|kube_pod_labels|kube_pod_status_phase|kube_pod_status_ready|kube_replicaset_owner|kube_replicaset_metadata_generation|kube_replicaset_spec_replicas|kube_replicaset_status_observed_generation|kube_replicaset_status_replicas|kube_replicaset_status_ready_replicas|kube_statefulset_metadata_generation|kube_statefulset_replicas|kube_statefulset_status_observed_generation|kube_statefulset_status_replicas|kube_statefulset_status_replicas_current|kube_statefulset_status_replicas_ready|kube_statefulset_status_replicas_updated|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_memory|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget_cpu|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget_memory|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_cpu|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_memory|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_cpu|kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_memory|kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_minallowed_cpu|kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_minallowed_memory|kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_maxallowed_cpu|kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_maxallowed_memory|kube_customresource_verticalpodautoscaler_spec_updatepolicy_updatemode)$`,
+ 					},
+ 				},
+ 			},
+diff --git a/pkg/component/observability/monitoring/kubestatemetrics/resources.go b/pkg/component/observability/monitoring/kubestatemetrics/resources.go
+index 47fac0340..2b1a12cdc 100644
+--- a/pkg/component/observability/monitoring/kubestatemetrics/resources.go
++++ b/pkg/component/observability/monitoring/kubestatemetrics/resources.go
+@@ -480,6 +480,8 @@ var cachePrometheusAllowedMetrics = []string{
+ 	"kube_statefulset_status_replicas_updated",
+ 	"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu",
+ 	"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_memory",
++	"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget_cpu",
++	"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget_memory",
+ 	"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_cpu",
+ 	"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_memory",
+ 	"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_cpu",
+@@ -636,6 +638,8 @@ func (k *kubeStateMetrics) reconcileScrapeConfigShoot(scrapeConfig *monitoringv1
+ 		"kube_statefulset_status_replicas_updated",
+ 		"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu",
+ 		"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_memory",
++		"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget_cpu",
++		"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget_memory",
+ 		"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_cpu",
+ 		"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_memory",
+ 		"kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_cpu",
+diff --git a/pkg/component/observability/monitoring/kubestatemetrics/testdata/custom-resource-state.expectation.yaml b/pkg/component/observability/monitoring/kubestatemetrics/testdata/custom-resource-state.expectation.yaml
+index a335c3014..adf7b4c42 100644
+--- a/pkg/component/observability/monitoring/kubestatemetrics/testdata/custom-resource-state.expectation.yaml
++++ b/pkg/component/observability/monitoring/kubestatemetrics/testdata/custom-resource-state.expectation.yaml
+@@ -97,6 +97,30 @@ spec:
+         unit: core
+       labelsFromPath: {}
+       errorLogV: 0
++    - name: verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget_cpu
++      help: Target cpu the VerticalPodAutoscaler recommends for the container ignoring
++        bounds.
++      each:
++        type: Gauge
++        gauge:
++          labelsFromPath:
++            container:
++            - containerName
++          path:
++          - status
++          - recommendation
++          - containerRecommendations
++          valueFrom:
++          - uncappedTarget
++          - cpu
++          labelFromKey: ""
++          nilIsZero: true
++        stateSet: null
++        info: null
++      commonLabels:
++        unit: core
++      labelsFromPath: {}
++      errorLogV: 0
+     - name: verticalpodautoscaler_spec_resourcepolicy_containerpolicies_minallowed_cpu
+       help: Minimum cpu the VerticalPodAutoscaler can set for containers matching
+         the name.
+@@ -216,6 +240,30 @@ spec:
+         unit: byte
+       labelsFromPath: {}
+       errorLogV: 0
++    - name: verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget_memory
++      help: Target memory the VerticalPodAutoscaler recommends for the container ignoring
++        bounds.
++      each:
++        type: Gauge
++        gauge:
++          labelsFromPath:
++            container:
++            - containerName
++          path:
++          - status
++          - recommendation
++          - containerRecommendations
++          valueFrom:
++          - uncappedTarget
++          - memory
++          labelFromKey: ""
++          nilIsZero: true
++        stateSet: null
++        info: null
++      commonLabels:
++        unit: byte
++      labelsFromPath: {}
++      errorLogV: 0
+     - name: verticalpodautoscaler_spec_resourcepolicy_containerpolicies_minallowed_memory
+       help: Minimum memory the VerticalPodAutoscaler can set for containers matching
+         the name.
+-- 
+2.44.0
+

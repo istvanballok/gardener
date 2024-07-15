@@ -1,0 +1,25 @@
+From 493373d6f6f31991cd286abf72cf3f1c7bc09350 Mon Sep 17 00:00:00 2001
+From: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date: Thu, 23 May 2024 16:14:50 +0200
+Subject: [PATCH 01/11] Upgrade kube-state-metrics to latest version
+
+---
+ imagevector/images.yaml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/imagevector/images.yaml b/imagevector/images.yaml
+index 9854a10e0..6f85b02d5 100644
+--- a/imagevector/images.yaml
++++ b/imagevector/images.yaml
+@@ -264,7 +264,7 @@ images:
+ - name: kube-state-metrics
+   sourceRepository: github.com/kubernetes/kube-state-metrics
+   repository: registry.k8s.io/kube-state-metrics/kube-state-metrics
+-  tag: v2.8.2
++  tag: v2.12.0
+   labels:
+   - name: gardener.cloud/cve-categorisation
+     value:
+-- 
+2.44.0
+

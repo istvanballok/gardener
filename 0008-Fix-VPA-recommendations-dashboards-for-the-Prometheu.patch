@@ -1,0 +1,78 @@
+From ba1e6a6973c83e7a372d7cad8173014abcb15df6 Mon Sep 17 00:00:00 2001
+From: Victor Herrero Otal <victor.herrero.otal@sap.com>
+Date: Wed, 26 Jun 2024 16:55:31 +0200
+Subject: [PATCH 08/11] Fix VPA recommendations dashboards for the Prometheus
+ custom resource
+
+Since the introduction of the Prometheus operator as part of GEP-19, VPA
+targets the Prometheus custom resource which is called `shoot`. The Prometheus
+pods are prefixed with prometheus-, e.g. `prometheus-shoot-0`, which breaks the
+VPA dashboard because the assumption that the VPA target name is a prefix of the
+pod name is no longer true: in this case the VPA target kind (`Prometheus`) is
+added as a prefix to the pod name in lower case. So we use the `?i` flag to expect
+the target kind to be an optional prefix of the pod name.
+---
+ .../plutono/dashboards/common/vpa/vpa-dashboard.json | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/pkg/component/observability/plutono/dashboards/common/vpa/vpa-dashboard.json b/pkg/component/observability/plutono/dashboards/common/vpa/vpa-dashboard.json
+index 5b2f805a9..dbfbb7568 100644
+--- a/pkg/component/observability/plutono/dashboards/common/vpa/vpa-dashboard.json
++++ b/pkg/component/observability/plutono/dashboards/common/vpa/vpa-dashboard.json
+@@ -148,7 +148,7 @@
+       "targets": [
+         {
+           "exemplar": true,
+-          "expr": "sum(container_memory_working_set_bytes{namespace=~\"$namespace\",pod=~\"$targetName(.+)\", container=~\"$container\"}) by (pod)",
++          "expr": "sum(container_memory_working_set_bytes{namespace=~\"$namespace\",pod=~\"(?i:$targetKind-)?$targetName(.+)\", container=~\"$container\"}) by (pod)",
+           "format": "time_series",
+           "hide": false,
+           "interval": "",
+@@ -307,7 +307,7 @@
+       "targets": [
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_pod_container_resource_requests{namespace=~\"$namespace\",resource=\"memory\", unit=\"byte\", pod=~\"$targetName(.+)\",  container=~\"$container\"}) by (pod)",
++          "expr": "sum(kube_pod_container_resource_requests{namespace=~\"$namespace\",resource=\"memory\", unit=\"byte\", pod=~\"(?i:$targetKind-)?$targetName(.+)\",  container=~\"$container\"}) by (pod)",
+           "format": "time_series",
+           "interval": "",
+           "intervalFactor": 1,
+@@ -316,7 +316,7 @@
+         },
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_pod_container_resource_limits{namespace=~\"$namespace\",resource=\"memory\", unit=\"byte\", pod=~\"$targetName(.+)\",  container=~\"$container\"})  by (pod)",
++          "expr": "sum(kube_pod_container_resource_limits{namespace=~\"$namespace\",resource=\"memory\", unit=\"byte\", pod=~\"(?i:$targetKind-)?$targetName(.+)\",  container=~\"$container\"})  by (pod)",
+           "format": "time_series",
+           "interval": "",
+           "intervalFactor": 1,
+@@ -438,7 +438,7 @@
+       "targets": [
+         {
+           "exemplar": true,
+-          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\",pod=~\"$targetName-(.+)\",container=~\"$container\"}[$__rate_interval])) by (pod)",
++          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\",pod=~\"(?i:$targetKind-)?$targetName-(.+)\",container=~\"$container\"}[$__rate_interval])) by (pod)",
+           "format": "time_series",
+           "hide": false,
+           "interval": "",
+@@ -596,7 +596,7 @@
+       "targets": [
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_pod_container_resource_requests{resource=\"cpu\", unit=\"core\", pod=~\"$targetName(.+)\",  container=~\"$container\"}) by (pod)",
++          "expr": "sum(kube_pod_container_resource_requests{resource=\"cpu\", unit=\"core\", pod=~\"(?i:$targetKind-)?$targetName(.+)\",  container=~\"$container\"}) by (pod)",
+           "format": "time_series",
+           "interval": "",
+           "intervalFactor": 1,
+@@ -605,7 +605,7 @@
+         },
+         {
+           "exemplar": true,
+-          "expr": "sum(kube_pod_container_resource_limits{resource=\"cpu\", unit=\"core\", pod=~\"$targetName(.+)\",  container=~\"$container\"}) by (pod)",
++          "expr": "sum(kube_pod_container_resource_limits{resource=\"cpu\", unit=\"core\", pod=~\"(?i:$targetKind-)?$targetName(.+)\",  container=~\"$container\"}) by (pod)",
+           "format": "time_series",
+           "interval": "",
+           "intervalFactor": 1,
+-- 
+2.44.0
+
