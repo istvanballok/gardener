@@ -3,6 +3,13 @@ From: Christoph Kleineweber <c.kleineweber@sap.com>
 Date: Fri, 5 Jul 2024 14:27:09 +0200
 Subject: [PATCH 5/7] Use separate ClusterRole and ClusterRoleBinding
 
+The clusterType is ClusterTypeSeed both for the seed and the runtime
+kube-state-metrics instances so the suffix "-seed" is not sufficient to
+distinguish between them.
+
+For the runtime-garden cluster, the kube-state-metrics instance is going to get
+an additional role to be able to monitor the Garden resource in a future PR.
+
 ---
  .../monitoring/kubestatemetrics/kubestatemetrics_test.go      | 4 ++--
  .../observability/monitoring/kubestatemetrics/resources.go    | 2 +-
@@ -19,7 +26,7 @@ index 29c6bf983..9bd908454 100644
 -				name += "-seed"
 +				name += values.NameSuffix
  			}
- 
+
  			obj := &rbacv1.ClusterRole{
 @@ -127,7 +127,7 @@ var _ = Describe("KubeStateMetrics", func() {
  		clusterRoleBindingFor = func(clusterType component.ClusterType) *rbacv1.ClusterRoleBinding {
@@ -28,7 +35,7 @@ index 29c6bf983..9bd908454 100644
 -				name += "-seed"
 +				name += values.NameSuffix
  			}
- 
+
  			obj := &rbacv1.ClusterRoleBinding{
 diff --git a/pkg/component/observability/monitoring/kubestatemetrics/resources.go b/pkg/component/observability/monitoring/kubestatemetrics/resources.go
 index 16d4d2e06..3cdde7eff 100644
@@ -41,6 +48,5 @@ index 16d4d2e06..3cdde7eff 100644
 -	return suffix + "-seed"
 +	return suffix + k.values.NameSuffix
  }
--- 
+--
 2.44.0
-

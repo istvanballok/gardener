@@ -3,6 +3,11 @@ From: Christoph Kleineweber <c.kleineweber@sap.com>
 Date: Fri, 5 Jul 2024 11:45:47 +0200
 Subject: [PATCH 4/7] Fix federation of KSM metrics to prometheus-aggregate
 
+In the local setup, both the seed and the runtime kube-state-metrics instances
+are deployed to the garden namespace. With the filter
+`job="kube-state-metrics-seed"` we can federate only from the seed
+kube-state-metrics instance, to preserve the previous behavior.
+
 ---
  .../monitoring/prometheus/aggregate/scrapeconfigs.go          | 4 ++--
  .../monitoring/prometheus/aggregate/scrapeconfigs_test.go     | 4 ++--
@@ -18,8 +23,8 @@ index 260f53cbd..8fa1554af 100644
  						`{__name__=~"seed:(.+):(.+)"}`,
 -						`{job="kube-state-metrics",namespace=~"garden|extension-.+"}`,
 -						`{job="kube-state-metrics",namespace=""}`,
-+						`{job=~"kube-state-metrics.*",namespace=~"garden|extension-.+"}`,
-+						`{job=~"kube-state-metrics.*",namespace=""}`,
++						`{job="kube-state-metrics-seed",namespace=~"garden|extension-.+"}`,
++						`{job="kube-state-metrics-seed",namespace=""}`,
  						`{job="cadvisor",namespace=~"garden|extension-.+"}`,
  						`{job="etcd-druid",namespace="garden"}`,
  					},
@@ -33,11 +38,10 @@ index 0949c5ae3..afae1a7a3 100644
  								`{__name__=~"seed:(.+):(.+)"}`,
 -								`{job="kube-state-metrics",namespace=~"garden|extension-.+"}`,
 -								`{job="kube-state-metrics",namespace=""}`,
-+								`{job=~"kube-state-metrics.*",namespace=~"garden|extension-.+"}`,
-+								`{job=~"kube-state-metrics.*",namespace=""}`,
++								`{job="kube-state-metrics-seed",namespace=~"garden|extension-.+"}`,
++								`{job="kube-state-metrics-seed",namespace=""}`,
  								`{job="cadvisor",namespace=~"garden|extension-.+"}`,
  								`{job="etcd-druid",namespace="garden"}`,
  							},
--- 
+--
 2.44.0
-

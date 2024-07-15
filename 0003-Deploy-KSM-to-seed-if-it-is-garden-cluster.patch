@@ -1,7 +1,34 @@
 From 846a389ecc1844c5276aa97b3e3f5460b98917da Mon Sep 17 00:00:00 2001
 From: Christoph Kleineweber <c.kleineweber@sap.com>
 Date: Fri, 5 Jul 2024 11:44:46 +0200
-Subject: [PATCH 3/7] Deploy KSM to seed if it is garden cluster
+Subject: [PATCH 3/7] Deploy KSM to the seed even if it is a garden cluster
+
+Previously, the gardenlet did not deploy the kube-state-metrics instance to the
+garden namespace of the seed, if the seed cluster was a garden cluster. This was
+done to avoid having two kube-state-metrics instances in the garden namespace:
+one deployed by the gardener operator and the other deployed by the gardenlet,
+because they used to be equivalent.
+
+The two kube-state-metrics instances are going to be different in the near
+future. Hence, both should be deployed to the garden namespace if the seed
+cluster is the Garden cluster.
+
+- The kube-state-metrics instance deployed by the gardener operator is going to
+  be used to monitor the Garden resource in the runtime-garden cluster in a
+  future PR, in addition to the pods in the runtime-garden cluster.
+
+- The kube-state-metrics instance deployed by the gardenlet is going to be used
+  to monitor the pods in the seed cluster, as before.
+
+So although there is an overlap in the 2 kube-state-metrics instances (both
+monitor the pods), only the runtime instance is going to monitor the Garden
+resource.
+
+In the local setup, the garden cluster is a seed cluster, so by deploying both
+instances we can try and test both configurations.
+
+Note that in real landscapes, the Garden cluster is typically not used as a seed
+cluster.
 
 ---
  pkg/gardenlet/controller/seed/seed/reconciler_delete.go    | 5 ++---
@@ -47,7 +74,7 @@ index 0bc512ac9..9997cee61 100644
  						MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("prometheus-aggregate")})}),
 +						MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("kube-state-metrics-seed")})}),
  					}
- 
+
  					if !seedIsGarden {
 @@ -651,7 +652,6 @@ var _ = Describe("Seed controller tests", func() {
  							MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("vpa")})}),
@@ -57,6 +84,5 @@ index 0bc512ac9..9997cee61 100644
  							MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("nginx-ingress")})}),
  							MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("plutono")})}),
  							MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("vali")})}),
--- 
+--
 2.44.0
-
