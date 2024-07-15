@@ -106,6 +106,56 @@ func (k *kubeStateMetrics) newShootAccessSecret() *gardenerutils.AccessSecret {
 	return gardenerutils.NewShootAccessSecret(v1beta1constants.DeploymentNameKubeStateMetrics, k.namespace)
 }
 
+func (k *kubeStateMetrics) clusterRole() *rbacv1.ClusterRole {
+	clusterRole := rbacv1.ClusterRole{ObjectMeta: metav1.ObjectMeta{Name: "gardener.cloud:monitoring:" + k.nameSuffix()}}
+	clusterRole.Labels = k.getLabels()
+	clusterRole.Rules = []rbacv1.PolicyRule{
+		{
+			APIGroups: []string{""},
+			Resources: []string{
+				"nodes",
+				"pods",
+				"services",
+				"resourcequotas",
+				"replicationcontrollers",
+				"limitranges",
+				"persistentvolumeclaims",
+				"namespaces",
+			},
+			Verbs: []string{"list", "watch"},
+		},
+		{
+			APIGroups: []string{"apps", "extensions"},
+			Resources: []string{"daemonsets", "deployments", "replicasets", "statefulsets"},
+			Verbs:     []string{"list", "watch"},
+		},
+		{
+			APIGroups: []string{"batch"},
+			Resources: []string{"cronjobs", "jobs"},
+			Verbs:     []string{"list", "watch"},
+		},
+		{
+			APIGroups: []string{"apiextensions.k8s.io"},
+			Resources: []string{"customresourcedefinitions"},
+			Verbs:     []string{"list", "watch"},
+		},
+		{
+			APIGroups: []string{"autoscaling.k8s.io"},
+			Resources: []string{"verticalpodautoscalers"},
+			Verbs:     []string{"list", "watch"},
+		},
+	}
+
+	if k.values.ClusterType == component.ClusterTypeSeed {
+		clusterRole.Rules = append(clusterRole.Rules, rbacv1.PolicyRule{
+			APIGroups: []string{"autoscaling"},
+			Resources: []string{"horizontalpodautoscalers"},
+			Verbs:     []string{"list", "watch"},
+		})
+	}
+	return &clusterRole
+}
+
 func (k *kubeStateMetrics) emptyClusterRole() *rbacv1.ClusterRole {
 	return &rbacv1.ClusterRole{ObjectMeta: metav1.ObjectMeta{Name: "gardener.cloud:monitoring:" + k.nameSuffix()}}
 }
