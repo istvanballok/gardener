@@ -86,6 +86,7 @@ func (k *kubeStateMetrics) Deploy(ctx context.Context) error {
 	registry2 := managedresources.NewRegistry(kubernetes.SeedScheme, kubernetes.SeedCodec, kubernetes.SeedSerializer)
 	resources2, err := registry2.AddAllAndSerialize(
 		k.clusterRole(),
+		k.customResourceStateConfigMap(string(customResourceStateConfig)),
 	)
 	if err != nil {
 		return err
