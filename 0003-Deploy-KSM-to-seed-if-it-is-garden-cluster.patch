@@ -1,0 +1,62 @@
+From 846a389ecc1844c5276aa97b3e3f5460b98917da Mon Sep 17 00:00:00 2001
+From: Christoph Kleineweber <c.kleineweber@sap.com>
+Date: Fri, 5 Jul 2024 11:44:46 +0200
+Subject: [PATCH 3/7] Deploy KSM to seed if it is garden cluster
+
+---
+ pkg/gardenlet/controller/seed/seed/reconciler_delete.go    | 5 ++---
+ pkg/gardenlet/controller/seed/seed/reconciler_reconcile.go | 1 -
+ test/integration/gardenlet/seed/seed/seed_test.go          | 2 +-
+ 3 files changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/pkg/gardenlet/controller/seed/seed/reconciler_delete.go b/pkg/gardenlet/controller/seed/seed/reconciler_delete.go
+index b119355da..a445f467b 100644
+--- a/pkg/gardenlet/controller/seed/seed/reconciler_delete.go
++++ b/pkg/gardenlet/controller/seed/seed/reconciler_delete.go
+@@ -235,9 +235,8 @@ func (r *Reconciler) runDeleteSeedFlow(
+ 			SkipIf: seedIsGarden,
+ 		})
+ 		destroyKubeStateMetrics = g.Add(flow.Task{
+-			Name:   "Destroy kube-state-metrics",
+-			Fn:     component.OpDestroyAndWait(c.kubeStateMetrics).Destroy,
+-			SkipIf: seedIsGarden,
++			Name: "Destroy kube-state-metrics",
++			Fn:   component.OpDestroyAndWait(c.kubeStateMetrics).Destroy,
+ 		})
+ 		destroyPrometheusOperator = g.Add(flow.Task{
+ 			Name:   "Destroy Prometheus Operator",
+diff --git a/pkg/gardenlet/controller/seed/seed/reconciler_reconcile.go b/pkg/gardenlet/controller/seed/seed/reconciler_reconcile.go
+index b07ece43c..b31f757e2 100644
+--- a/pkg/gardenlet/controller/seed/seed/reconciler_reconcile.go
++++ b/pkg/gardenlet/controller/seed/seed/reconciler_reconcile.go
+@@ -400,7 +400,6 @@ func (r *Reconciler) runReconcileSeedFlow(
+ 			Name:         "Deploying kube-state-metrics",
+ 			Fn:           c.kubeStateMetrics.Deploy,
+ 			Dependencies: flow.NewTaskIDs(syncPointReadyForSystemComponents),
+-			SkipIf:       seedIsGarden,
+ 		})
+ 		deployFluentOperator = g.Add(flow.Task{
+ 			Name:         "Deploying Fluent Operator",
+diff --git a/test/integration/gardenlet/seed/seed/seed_test.go b/test/integration/gardenlet/seed/seed/seed_test.go
+index 0bc512ac9..9997cee61 100644
+--- a/test/integration/gardenlet/seed/seed/seed_test.go
++++ b/test/integration/gardenlet/seed/seed/seed_test.go
+@@ -644,6 +644,7 @@ var _ = Describe("Seed controller tests", func() {
+ 						MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("prometheus-cache")})}),
+ 						MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("prometheus-seed")})}),
+ 						MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("prometheus-aggregate")})}),
++						MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("kube-state-metrics-seed")})}),
+ 					}
+ 
+ 					if !seedIsGarden {
+@@ -651,7 +652,6 @@ var _ = Describe("Seed controller tests", func() {
+ 							MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("vpa")})}),
+ 							MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("hvpa")})}),
+ 							MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("etcd-druid")})}),
+-							MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("kube-state-metrics-seed")})}),
+ 							MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("nginx-ingress")})}),
+ 							MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("plutono")})}),
+ 							MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("vali")})}),
+-- 
+2.44.0
+

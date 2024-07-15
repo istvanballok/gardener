@@ -1,0 +1,39 @@
+From 9453dc397ff346fe5e7b5c530211fd9639c8236c Mon Sep 17 00:00:00 2001
+From: Christoph Kleineweber <c.kleineweber@sap.com>
+Date: Wed, 3 Jul 2024 16:42:50 +0200
+Subject: [PATCH 2/7] Adapt integration tests
+
+---
+ test/integration/gardenlet/seed/seed/seed_test.go      | 2 +-
+ test/integration/operator/garden/garden/garden_test.go | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/test/integration/gardenlet/seed/seed/seed_test.go b/test/integration/gardenlet/seed/seed/seed_test.go
+index 286a5c753..0bc512ac9 100644
+--- a/test/integration/gardenlet/seed/seed/seed_test.go
++++ b/test/integration/gardenlet/seed/seed/seed_test.go
+@@ -651,7 +651,7 @@ var _ = Describe("Seed controller tests", func() {
+ 							MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("vpa")})}),
+ 							MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("hvpa")})}),
+ 							MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("etcd-druid")})}),
+-							MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("kube-state-metrics")})}),
++							MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("kube-state-metrics-seed")})}),
+ 							MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("nginx-ingress")})}),
+ 							MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("plutono")})}),
+ 							MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("vali")})}),
+diff --git a/test/integration/operator/garden/garden/garden_test.go b/test/integration/operator/garden/garden/garden_test.go
+index 31aeff939..ffcd4e5b8 100644
+--- a/test/integration/operator/garden/garden/garden_test.go
++++ b/test/integration/operator/garden/garden/garden_test.go
+@@ -723,7 +723,7 @@ var _ = Describe("Garden controller tests", func() {
+ 				MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("terminal-runtime")})}),
+ 				MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("terminal-virtual")})}),
+ 				MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("garden-system-virtual")})}),
+-				MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("kube-state-metrics")})}),
++				MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("kube-state-metrics-runtime")})}),
+ 				MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("gardener-metrics-exporter-runtime")})}),
+ 				MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("gardener-metrics-exporter-virtual")})}),
+ 				MatchFields(IgnoreExtras, Fields{"ObjectMeta": MatchFields(IgnoreExtras, Fields{"Name": Equal("prometheus-garden")})}),
+-- 
+2.44.0
+

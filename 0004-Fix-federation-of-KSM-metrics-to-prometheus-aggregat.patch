@@ -1,0 +1,43 @@
+From c3c06fc1e5d203827664cc06ce728e71e031ac9b Mon Sep 17 00:00:00 2001
+From: Christoph Kleineweber <c.kleineweber@sap.com>
+Date: Fri, 5 Jul 2024 11:45:47 +0200
+Subject: [PATCH 4/7] Fix federation of KSM metrics to prometheus-aggregate
+
+---
+ .../monitoring/prometheus/aggregate/scrapeconfigs.go          | 4 ++--
+ .../monitoring/prometheus/aggregate/scrapeconfigs_test.go     | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/pkg/component/observability/monitoring/prometheus/aggregate/scrapeconfigs.go b/pkg/component/observability/monitoring/prometheus/aggregate/scrapeconfigs.go
+index 260f53cbd..8fa1554af 100644
+--- a/pkg/component/observability/monitoring/prometheus/aggregate/scrapeconfigs.go
++++ b/pkg/component/observability/monitoring/prometheus/aggregate/scrapeconfigs.go
+@@ -28,8 +28,8 @@ func CentralScrapeConfigs() []*monitoringv1alpha1.ScrapeConfig {
+ 					"match[]": {
+ 						`{__name__=~"metering:.+", __name__!~"metering:.+(over_time|_seconds|:this_month)"}`,
+ 						`{__name__=~"seed:(.+):(.+)"}`,
+-						`{job="kube-state-metrics",namespace=~"garden|extension-.+"}`,
+-						`{job="kube-state-metrics",namespace=""}`,
++						`{job=~"kube-state-metrics.*",namespace=~"garden|extension-.+"}`,
++						`{job=~"kube-state-metrics.*",namespace=""}`,
+ 						`{job="cadvisor",namespace=~"garden|extension-.+"}`,
+ 						`{job="etcd-druid",namespace="garden"}`,
+ 					},
+diff --git a/pkg/component/observability/monitoring/prometheus/aggregate/scrapeconfigs_test.go b/pkg/component/observability/monitoring/prometheus/aggregate/scrapeconfigs_test.go
+index 0949c5ae3..afae1a7a3 100644
+--- a/pkg/component/observability/monitoring/prometheus/aggregate/scrapeconfigs_test.go
++++ b/pkg/component/observability/monitoring/prometheus/aggregate/scrapeconfigs_test.go
+@@ -28,8 +28,8 @@ var _ = Describe("ScrapeConfigs", func() {
+ 							"match[]": {
+ 								`{__name__=~"metering:.+", __name__!~"metering:.+(over_time|_seconds|:this_month)"}`,
+ 								`{__name__=~"seed:(.+):(.+)"}`,
+-								`{job="kube-state-metrics",namespace=~"garden|extension-.+"}`,
+-								`{job="kube-state-metrics",namespace=""}`,
++								`{job=~"kube-state-metrics.*",namespace=~"garden|extension-.+"}`,
++								`{job=~"kube-state-metrics.*",namespace=""}`,
+ 								`{job="cadvisor",namespace=~"garden|extension-.+"}`,
+ 								`{job="etcd-druid",namespace="garden"}`,
+ 							},
+-- 
+2.44.0
+

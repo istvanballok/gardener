@@ -1,0 +1,46 @@
+From 282167c9ab7eed20979bdf933eac6587b3f56e90 Mon Sep 17 00:00:00 2001
+From: Christoph Kleineweber <c.kleineweber@sap.com>
+Date: Fri, 5 Jul 2024 14:27:09 +0200
+Subject: [PATCH 5/7] Use separate ClusterRole and ClusterRoleBinding
+
+---
+ .../monitoring/kubestatemetrics/kubestatemetrics_test.go      | 4 ++--
+ .../observability/monitoring/kubestatemetrics/resources.go    | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/pkg/component/observability/monitoring/kubestatemetrics/kubestatemetrics_test.go b/pkg/component/observability/monitoring/kubestatemetrics/kubestatemetrics_test.go
+index 29c6bf983..9bd908454 100644
+--- a/pkg/component/observability/monitoring/kubestatemetrics/kubestatemetrics_test.go
++++ b/pkg/component/observability/monitoring/kubestatemetrics/kubestatemetrics_test.go
+@@ -70,7 +70,7 @@ var _ = Describe("KubeStateMetrics", func() {
+ 		clusterRoleFor    = func(clusterType component.ClusterType) *rbacv1.ClusterRole {
+ 			name := "gardener.cloud:monitoring:kube-state-metrics"
+ 			if clusterType == component.ClusterTypeSeed {
+-				name += "-seed"
++				name += values.NameSuffix
+ 			}
+ 
+ 			obj := &rbacv1.ClusterRole{
+@@ -127,7 +127,7 @@ var _ = Describe("KubeStateMetrics", func() {
+ 		clusterRoleBindingFor = func(clusterType component.ClusterType) *rbacv1.ClusterRoleBinding {
+ 			name := "gardener.cloud:monitoring:kube-state-metrics"
+ 			if clusterType == component.ClusterTypeSeed {
+-				name += "-seed"
++				name += values.NameSuffix
+ 			}
+ 
+ 			obj := &rbacv1.ClusterRoleBinding{
+diff --git a/pkg/component/observability/monitoring/kubestatemetrics/resources.go b/pkg/component/observability/monitoring/kubestatemetrics/resources.go
+index 16d4d2e06..3cdde7eff 100644
+--- a/pkg/component/observability/monitoring/kubestatemetrics/resources.go
++++ b/pkg/component/observability/monitoring/kubestatemetrics/resources.go
+@@ -724,5 +724,5 @@ func (k *kubeStateMetrics) nameSuffix() string {
+ 	if k.values.ClusterType == component.ClusterTypeShoot {
+ 		return suffix
+ 	}
+-	return suffix + "-seed"
++	return suffix + k.values.NameSuffix
+ }
+-- 
+2.44.0
+
