@@ -78,6 +78,11 @@ type Values struct {
 }
 
 func (k *kubeStateMetrics) Deploy(ctx context.Context) error {
+	customResourceStateConfig, err := yaml.Marshal(NewCustomResourceStateConfig())
+	if err != nil {
+		return err
+	}
+
 	registry2 := managedresources.NewRegistry(kubernetes.SeedScheme, kubernetes.SeedCodec, kubernetes.SeedSerializer)
 	resources2, err := registry2.AddAllAndSerialize(
 		k.clusterRole(),
@@ -99,11 +104,6 @@ func (k *kubeStateMetrics) Deploy(ctx context.Context) error {
 		genericTokenKubeconfigSecretName string
 		shootAccessSecret                *gardenerutils.AccessSecret
 	)
-
-	customResourceStateConfig, err := yaml.Marshal(NewCustomResourceStateConfig())
-	if err != nil {
-		return err
-	}
 
 	if k.values.ClusterType == component.ClusterTypeShoot {
 		genericTokenKubeconfigSecret, found := k.secretsManager.Get(v1beta1constants.SecretNameGenericTokenKubeconfig)
