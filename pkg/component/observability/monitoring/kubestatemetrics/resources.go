@@ -67,19 +67,9 @@ func (k *kubeStateMetrics) getResourceConfigs(genericTokenKubeconfigSecretName s
 			component.ResourceConfig{Obj: deployment, Class: component.Runtime, MutateFn: func() { k.reconcileDeployment(deployment, serviceAccount, "", nil) }},
 			component.ResourceConfig{Obj: pdb, Class: component.Runtime, MutateFn: func() { k.reconcilePodDisruptionBudget(pdb, deployment) }},
 			component.ResourceConfig{Obj: scrapeConfigCache, Class: component.Runtime, MutateFn: func() { k.reconcileScrapeConfigCache(scrapeConfigCache) }},
+			component.ResourceConfig{Obj: scrapeConfigSeed, Class: component.Runtime, MutateFn: func() { k.reconcileScrapeConfigSeed(scrapeConfigSeed) }},
+			component.ResourceConfig{Obj: scrapeConfigGarden, Class: component.Runtime, MutateFn: func() { k.reconcileScrapeConfigGarden(scrapeConfigGarden) }},
 		)
-
-		if k.values.NameSuffix == suffixSeed {
-			configs = append(configs,
-				component.ResourceConfig{Obj: scrapeConfigSeed, Class: component.Runtime, MutateFn: func() { k.reconcileScrapeConfigSeed(scrapeConfigSeed) }},
-			)
-		}
-
-		if k.values.NameSuffix == suffixRuntime {
-			configs = append(configs,
-				component.ResourceConfig{Obj: scrapeConfigGarden, Class: component.Runtime, MutateFn: func() { k.reconcileScrapeConfigGarden(scrapeConfigGarden) }},
-			)
-		}
 	}
 
 	if k.values.ClusterType == component.ClusterTypeShoot {
@@ -100,7 +90,7 @@ func (k *kubeStateMetrics) getResourceConfigs(genericTokenKubeconfigSecretName s
 }
 
 func (k *kubeStateMetrics) emptyServiceAccount() *corev1.ServiceAccount {
-	return &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: "kube-state-metrics" + k.values.NameSuffix, Namespace: k.namespace}}
+	return &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: "kube-state-metrics", Namespace: k.namespace}}
 }
 
 func (k *kubeStateMetrics) reconcileServiceAccount(serviceAccount *corev1.ServiceAccount) {
@@ -179,7 +169,7 @@ func (k *kubeStateMetrics) reconcileClusterRoleBinding(clusterRoleBinding *rbacv
 }
 
 func (k *kubeStateMetrics) emptyService() *corev1.Service {
-	return &corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: "kube-state-metrics" + k.values.NameSuffix, Namespace: k.namespace}}
+	return &corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: "kube-state-metrics", Namespace: k.namespace}}
 }
 
 func (k *kubeStateMetrics) reconcileService(service *corev1.Service) {
@@ -211,7 +201,7 @@ func (k *kubeStateMetrics) reconcileService(service *corev1.Service) {
 }
 
 func (k *kubeStateMetrics) emptyDeployment() *appsv1.Deployment {
-	return &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "kube-state-metrics" + k.values.NameSuffix, Namespace: k.namespace}}
+	return &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "kube-state-metrics", Namespace: k.namespace}}
 }
 
 func (k *kubeStateMetrics) reconcileDeployment(
@@ -328,7 +318,7 @@ func (k *kubeStateMetrics) reconcileDeployment(
 }
 
 func (k *kubeStateMetrics) emptyVerticalPodAutoscaler() *vpaautoscalingv1.VerticalPodAutoscaler {
-	return &vpaautoscalingv1.VerticalPodAutoscaler{ObjectMeta: metav1.ObjectMeta{Name: "kube-state-metrics-vpa" + k.values.NameSuffix, Namespace: k.namespace}}
+	return &vpaautoscalingv1.VerticalPodAutoscaler{ObjectMeta: metav1.ObjectMeta{Name: "kube-state-metrics-vpa", Namespace: k.namespace}}
 }
 
 func (k *kubeStateMetrics) reconcileVerticalPodAutoscaler(vpa *vpaautoscalingv1.VerticalPodAutoscaler, deployment *appsv1.Deployment) {
@@ -359,7 +349,7 @@ func (k *kubeStateMetrics) reconcileVerticalPodAutoscaler(vpa *vpaautoscalingv1.
 }
 
 func (k *kubeStateMetrics) emptyPodDisruptionBudget() *policyv1.PodDisruptionBudget {
-	return &policyv1.PodDisruptionBudget{ObjectMeta: metav1.ObjectMeta{Name: "kube-state-metrics-pdb" + k.values.NameSuffix, Namespace: k.namespace}}
+	return &policyv1.PodDisruptionBudget{ObjectMeta: metav1.ObjectMeta{Name: "kube-state-metrics-pdb", Namespace: k.namespace}}
 }
 
 func (k *kubeStateMetrics) reconcilePodDisruptionBudget(podDisruptionBudget *policyv1.PodDisruptionBudget, deployment *appsv1.Deployment) {
@@ -397,12 +387,12 @@ func (k *kubeStateMetrics) standardScrapeConfigSpec(allowedMetrics ...string) mo
 			},
 			{
 				Action:      "replace",
-				Replacement: ptr.To("kube-state-metrics" + k.values.NameSuffix),
+				Replacement: ptr.To("kube-state-metrics"),
 				TargetLabel: "job",
 			},
 			{
 				TargetLabel: "instance",
-				Replacement: ptr.To("kube-state-metrics" + k.values.NameSuffix),
+				Replacement: ptr.To("kube-state-metrics"),
 			},
 		},
 		MetricRelabelConfigs: append([]monitoringv1.RelabelConfig{{
@@ -468,7 +458,7 @@ var cachePrometheusAllowedMetrics = []string{
 }
 
 func (k *kubeStateMetrics) emptyScrapeConfigCache() *monitoringv1alpha1.ScrapeConfig {
-	return &monitoringv1alpha1.ScrapeConfig{ObjectMeta: monitoringutils.ConfigObjectMeta("kube-state-metrics"+k.values.NameSuffix, k.namespace, cache.Label)}
+	return &monitoringv1alpha1.ScrapeConfig{ObjectMeta: monitoringutils.ConfigObjectMeta("kube-state-metrics", k.namespace, cache.Label)}
 }
 
 func (k *kubeStateMetrics) reconcileScrapeConfigCache(scrapeConfig *monitoringv1alpha1.ScrapeConfig) {
@@ -477,7 +467,7 @@ func (k *kubeStateMetrics) reconcileScrapeConfigCache(scrapeConfig *monitoringv1
 }
 
 func (k *kubeStateMetrics) emptyScrapeConfigSeed() *monitoringv1alpha1.ScrapeConfig {
-	return &monitoringv1alpha1.ScrapeConfig{ObjectMeta: monitoringutils.ConfigObjectMeta("kube-state-metrics"+k.values.NameSuffix, k.namespace, seed.Label)}
+	return &monitoringv1alpha1.ScrapeConfig{ObjectMeta: monitoringutils.ConfigObjectMeta("kube-state-metrics", k.namespace, seed.Label)}
 }
 
 func (k *kubeStateMetrics) reconcileScrapeConfigSeed(scrapeConfig *monitoringv1alpha1.ScrapeConfig) {
@@ -493,17 +483,17 @@ func (k *kubeStateMetrics) reconcileScrapeConfigSeed(scrapeConfig *monitoringv1a
 					"__meta_kubernetes_service_label_component",
 					"__meta_kubernetes_service_port_name",
 				},
-				Regex:  "kube-state-metrics" + k.values.NameSuffix + ";" + portNameMetrics,
+				Regex:  "kube-state-metrics;" + portNameMetrics,
 				Action: "keep",
 			},
 			{
 				Action:      "replace",
-				Replacement: ptr.To("kube-state-metrics" + k.values.NameSuffix),
+				Replacement: ptr.To("kube-state-metrics"),
 				TargetLabel: "job",
 			},
 			{
 				TargetLabel: "instance",
-				Replacement: ptr.To("kube-state-metrics" + k.values.NameSuffix),
+				Replacement: ptr.To("kube-state-metrics"),
 			},
 		},
 		MetricRelabelConfigs: []monitoringv1.RelabelConfig{{
@@ -515,7 +505,7 @@ func (k *kubeStateMetrics) reconcileScrapeConfigSeed(scrapeConfig *monitoringv1a
 }
 
 func (k *kubeStateMetrics) emptyScrapeConfigGarden() *monitoringv1alpha1.ScrapeConfig {
-	return &monitoringv1alpha1.ScrapeConfig{ObjectMeta: monitoringutils.ConfigObjectMeta("kube-state-metrics"+k.values.NameSuffix, k.namespace, garden.Label)}
+	return &monitoringv1alpha1.ScrapeConfig{ObjectMeta: monitoringutils.ConfigObjectMeta("kube-state-metrics", k.namespace, garden.Label)}
 }
 
 func (k *kubeStateMetrics) reconcileScrapeConfigGarden(scrapeConfig *monitoringv1alpha1.ScrapeConfig) {
@@ -531,17 +521,17 @@ func (k *kubeStateMetrics) reconcileScrapeConfigGarden(scrapeConfig *monitoringv
 					"__meta_kubernetes_service_label_component",
 					"__meta_kubernetes_service_port_name",
 				},
-				Regex:  "kube-state-metrics" + k.values.NameSuffix + ";" + portNameMetrics,
+				Regex:  "kube-state-metrics;" + portNameMetrics,
 				Action: "keep",
 			},
 			{
 				Action:      "replace",
-				Replacement: ptr.To("kube-state-metrics" + k.values.NameSuffix),
+				Replacement: ptr.To("kube-state-metrics"),
 				TargetLabel: "job",
 			},
 			{
 				TargetLabel: "instance",
-				Replacement: ptr.To("kube-state-metrics" + k.values.NameSuffix),
+				Replacement: ptr.To("kube-state-metrics"),
 			},
 		},
 		MetricRelabelConfigs: append([]monitoringv1.RelabelConfig{
@@ -563,7 +553,7 @@ func (k *kubeStateMetrics) reconcileScrapeConfigGarden(scrapeConfig *monitoringv
 }
 
 func (k *kubeStateMetrics) emptyScrapeConfigShoot() *monitoringv1alpha1.ScrapeConfig {
-	return &monitoringv1alpha1.ScrapeConfig{ObjectMeta: monitoringutils.ConfigObjectMeta("kube-state-metrics"+k.values.NameSuffix, k.namespace, shoot.Label)}
+	return &monitoringv1alpha1.ScrapeConfig{ObjectMeta: monitoringutils.ConfigObjectMeta("kube-state-metrics", k.namespace, shoot.Label)}
 }
 
 func (k *kubeStateMetrics) reconcileScrapeConfigShoot(scrapeConfig *monitoringv1alpha1.ScrapeConfig) {
@@ -620,13 +610,13 @@ func (k *kubeStateMetrics) reconcileScrapeConfigShoot(scrapeConfig *monitoringv1
 }
 
 func (k *kubeStateMetrics) emptyPrometheusRuleShoot() *monitoringv1.PrometheusRule {
-	return &monitoringv1.PrometheusRule{ObjectMeta: monitoringutils.ConfigObjectMeta("kube-state-metrics"+k.values.NameSuffix, k.namespace, shoot.Label)}
+	return &monitoringv1.PrometheusRule{ObjectMeta: monitoringutils.ConfigObjectMeta("kube-state-metrics", k.namespace, shoot.Label)}
 }
 
 func (k *kubeStateMetrics) reconcilePrometheusRuleShoot(prometheusRule *monitoringv1.PrometheusRule) {
 	rules := []monitoringv1.Rule{{
 		Alert: "KubeStateMetricsSeedDown",
-		Expr:  intstr.FromString(`absent(count({exported_job="kube-state-metrics` + k.values.NameSuffix + `"}))`),
+		Expr:  intstr.FromString(`absent(count({exported_job="kube-state-metrics"}))`),
 		For:   ptr.To(monitoringv1.Duration("15m")),
 		Labels: map[string]string{
 			"service":    "kube-state-metrics-seed",
@@ -644,7 +634,7 @@ func (k *kubeStateMetrics) reconcilePrometheusRuleShoot(prometheusRule *monitori
 		rules = append(rules,
 			monitoringv1.Rule{
 				Alert: "KubeStateMetricsShootDown",
-				Expr:  intstr.FromString(`absent(up{job="kube-state-metrics"` + k.values.NameSuffix + `, type="shoot"} == 1)`),
+				Expr:  intstr.FromString(`absent(up{job="kube-state-metrics", type="shoot"} == 1)`),
 				For:   ptr.To(monitoringv1.Duration("15m")),
 				Labels: map[string]string{
 					"service":    "kube-state-metrics-shoot",
@@ -724,7 +714,7 @@ func (k *kubeStateMetrics) getLabels() map[string]string {
 	}
 
 	return map[string]string{
-		labelKeyComponent: labelValueComponent + k.values.NameSuffix,
+		labelKeyComponent: labelValueComponent,
 		labelKeyType:      t,
 	}
 }
@@ -734,5 +724,5 @@ func (k *kubeStateMetrics) nameSuffix() string {
 	if k.values.ClusterType == component.ClusterTypeShoot {
 		return suffix
 	}
-	return suffix + k.values.NameSuffix
+	return suffix + "-seed"
 }
