@@ -38,7 +38,7 @@ index 0d74c400c..47fac0340 100644
 --- a/pkg/component/observability/monitoring/kubestatemetrics/resources.go
 +++ b/pkg/component/observability/monitoring/kubestatemetrics/resources.go
 @@ -242,7 +242,7 @@ func (k *kubeStateMetrics) reconcileDeployment(
- 
+
  		args = append(args,
  			"--resources=deployments,pods,statefulsets,nodes,horizontalpodautoscalers,persistentvolumeclaims,replicasets,namespaces",
 -			"--metric-labels-allowlist=nodes=[*]",
@@ -55,6 +55,5 @@ index 0d74c400c..47fac0340 100644
  			"--custom-resource-state-config-file="+customResourceStateConfigFile,
  		)
  	}
--- 
+--
 2.44.0
-

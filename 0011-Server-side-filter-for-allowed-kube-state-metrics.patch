@@ -246,7 +246,7 @@ index 2b1a12cdc..c20c86563 100644
 @@ -391,7 +392,7 @@ func (k *kubeStateMetrics) reconcilePodDisruptionBudget(podDisruptionBudget *pol
  	kubernetesutils.SetAlwaysAllowEviction(podDisruptionBudget, k.values.KubernetesVersion)
  }
- 
+
 -func (k *kubeStateMetrics) standardScrapeConfigSpec(allowedMetrics ...string) monitoringv1alpha1.ScrapeConfigSpec {
 +func (k *kubeStateMetrics) standardScrapeConfigSpec() monitoringv1alpha1.ScrapeConfigSpec {
  	return monitoringv1alpha1.ScrapeConfigSpec{
@@ -265,7 +265,7 @@ index 2b1a12cdc..c20c86563 100644
 +		}},
  	}
  }
- 
+
 -var cachePrometheusAllowedMetrics = []string{
 -	"kube_daemonset_metadata_generation",
 -	"kube_daemonset_status_current_number_scheduled",
@@ -442,19 +442,19 @@ index 2b1a12cdc..c20c86563 100644
 +	"^kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_maxallowed_memory$",
 +	"^kube_customresource_verticalpodautoscaler_spec_updatepolicy_updatemode$",
  }
- 
+
  func (k *kubeStateMetrics) emptyScrapeConfigCache() *monitoringv1alpha1.ScrapeConfig {
 @@ -499,7 +557,7 @@ func (k *kubeStateMetrics) emptyScrapeConfigCache() *monitoringv1alpha1.ScrapeCo
- 
+
  func (k *kubeStateMetrics) reconcileScrapeConfigCache(scrapeConfig *monitoringv1alpha1.ScrapeConfig) {
  	scrapeConfig.Labels = monitoringutils.Labels(cache.Label)
 -	scrapeConfig.Spec = k.standardScrapeConfigSpec(cachePrometheusAllowedMetrics...)
 +	scrapeConfig.Spec = k.standardScrapeConfigSpec()
  }
- 
+
  func (k *kubeStateMetrics) emptyScrapeConfigSeed() *monitoringv1alpha1.ScrapeConfig {
 @@ -594,62 +652,7 @@ func (k *kubeStateMetrics) emptyScrapeConfigShoot() *monitoringv1alpha1.ScrapeCo
- 
+
  func (k *kubeStateMetrics) reconcileScrapeConfigShoot(scrapeConfig *monitoringv1alpha1.ScrapeConfig) {
  	scrapeConfig.Labels = monitoringutils.Labels(shoot.Label)
 -	scrapeConfig.Spec = k.standardScrapeConfigSpec(
@@ -515,8 +515,7 @@ index 2b1a12cdc..c20c86563 100644
 -	)
 +	scrapeConfig.Spec = k.standardScrapeConfigSpec()
  }
- 
- func (k *kubeStateMetrics) emptyPrometheusRuleShoot() *monitoringv1.PrometheusRule {
--- 
-2.44.0
 
+ func (k *kubeStateMetrics) emptyPrometheusRuleShoot() *monitoringv1.PrometheusRule {
+--
+2.44.0

@@ -391,12 +391,12 @@ index 26d2fbcce..0820aff30 100644
  	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
 +	"github.com/gardener/gardener/third_party/gopkg.in/yaml.v2"
  )
- 
+
  const (
 @@ -82,6 +83,11 @@ func (k *kubeStateMetrics) Deploy(ctx context.Context) error {
  		shootAccessSecret                *gardenerutils.AccessSecret
  	)
- 
+
 +	customResourceStateConfig, err := yaml.Marshal(NewCustomResourceStateConfig())
 +	if err != nil {
 +		return err
@@ -408,17 +408,17 @@ index 26d2fbcce..0820aff30 100644
 @@ -102,11 +108,11 @@ func (k *kubeStateMetrics) Deploy(ctx context.Context) error {
  		registry = managedresources.NewRegistry(kubernetes.ShootScheme, kubernetes.ShootCodec, kubernetes.ShootSerializer)
  	}
- 
+
 -	return component.DeployResourceConfigs(ctx, k.client, k.namespace, k.values.ClusterType, k.managedResourceName(), map[string]string{v1beta1constants.LabelCareConditionType: v1beta1constants.ObservabilityComponentsHealthy}, registry, k.getResourceConfigs(genericTokenKubeconfigSecretName, shootAccessSecret))
 +	return component.DeployResourceConfigs(ctx, k.client, k.namespace, k.values.ClusterType, k.managedResourceName(), map[string]string{v1beta1constants.LabelCareConditionType: v1beta1constants.ObservabilityComponentsHealthy}, registry, k.getResourceConfigs(genericTokenKubeconfigSecretName, shootAccessSecret, string(customResourceStateConfig)))
  }
- 
+
  func (k *kubeStateMetrics) Destroy(ctx context.Context) error {
 -	if err := component.DestroyResourceConfigs(ctx, k.client, k.namespace, k.values.ClusterType, k.managedResourceName(), k.getResourceConfigs("", nil)); err != nil {
 +	if err := component.DestroyResourceConfigs(ctx, k.client, k.namespace, k.values.ClusterType, k.managedResourceName(), k.getResourceConfigs("", nil, "")); err != nil {
  		return err
  	}
- 
+
 diff --git a/pkg/component/observability/monitoring/kubestatemetrics/kubestatemetrics_test.go b/pkg/component/observability/monitoring/kubestatemetrics/kubestatemetrics_test.go
 index 29c6bf983..567030a29 100644
 --- a/pkg/component/observability/monitoring/kubestatemetrics/kubestatemetrics_test.go
@@ -426,7 +426,7 @@ index 29c6bf983..567030a29 100644
 @@ -63,11 +63,13 @@ var _ = Describe("KubeStateMetrics", func() {
  		vpaUpdateMode       = vpaautoscalingv1.UpdateModeAuto
  		vpaControlledValues = vpaautoscalingv1.ContainerControlledValuesRequestsOnly
- 
+
 -		serviceAccount    *corev1.ServiceAccount
 -		secretShootAccess *corev1.Secret
 -		vpa               *vpaautoscalingv1.VerticalPodAutoscaler
@@ -493,7 +493,7 @@ index 29c6bf983..567030a29 100644
  				}
  				serviceAccountName = "kube-state-metrics"
  			}
- 
+
 +			volumes = []corev1.Volume{{
 +				Name: "custom-resource-state-config",
 +				VolumeSource: corev1.VolumeSource{
@@ -545,7 +545,7 @@ index 29c6bf983..567030a29 100644
 -				}}
 +				})
  			}
- 
+
  			return &appsv1.Deployment{
 @@ -469,7 +500,7 @@ var _ = Describe("KubeStateMetrics", func() {
  					{
@@ -568,7 +568,7 @@ index 29c6bf983..567030a29 100644
 @@ -725,6 +756,15 @@ var _ = Describe("KubeStateMetrics", func() {
  		By("Create secrets managed outside of this package for whose secretsmanager.Get() will be called")
  		Expect(c.Create(ctx, &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "generic-token-kubeconfig", Namespace: namespace}})).To(Succeed())
- 
+
 +		customResourceStateConfigMap = &corev1.ConfigMap{
 +			ObjectMeta: metav1.ObjectMeta{
 +				Name:      "custom-resource-state-config",
@@ -587,7 +587,7 @@ index 29c6bf983..567030a29 100644
  					scrapeConfigGarden,
 +					customResourceStateConfigMap,
  				}
- 
+
  				managedResourceSecret.Name = managedResource.Spec.SecretRefs[0].Name
 diff --git a/pkg/component/observability/monitoring/kubestatemetrics/resources.go b/pkg/component/observability/monitoring/kubestatemetrics/resources.go
 index c999d4050..0d74c400c 100644
@@ -596,7 +596,7 @@ index c999d4050..0d74c400c 100644
 @@ -37,24 +37,28 @@ import (
  	kubernetesutils "github.com/gardener/gardener/pkg/utils/kubernetes"
  )
- 
+
 -func (k *kubeStateMetrics) getResourceConfigs(genericTokenKubeconfigSecretName string, shootAccessSecret *gardenerutils.AccessSecret) component.ResourceConfigs {
 +func (k *kubeStateMetrics) getResourceConfigs(genericTokenKubeconfigSecretName string, shootAccessSecret *gardenerutils.AccessSecret, customResourceStateConfig string) component.ResourceConfigs {
  	var (
@@ -623,7 +623,7 @@ index c999d4050..0d74c400c 100644
 +		scrapeConfigShoot            = k.emptyScrapeConfigShoot()
 +		prometheusRuleShoot          = k.emptyPrometheusRuleShoot()
 +		customResourceStateConfigMap = k.emptyCustomResourceStateConfigMap()
- 
+
  		configs = component.ResourceConfigs{
  			{Obj: clusterRole, Class: component.Application, MutateFn: func() { k.reconcileClusterRole(clusterRole) }},
  			{Obj: service, Class: component.Runtime, MutateFn: func() { k.reconcileService(service) }},
@@ -633,7 +633,7 @@ index c999d4050..0d74c400c 100644
 +			}},
  		}
  	)
- 
+
 @@ -133,10 +137,15 @@ func (k *kubeStateMetrics) reconcileClusterRole(clusterRole *rbacv1.ClusterRole)
  			Resources: []string{"cronjobs", "jobs"},
  			Verbs:     []string{"list", "watch"},
@@ -650,11 +650,11 @@ index c999d4050..0d74c400c 100644
 +			Verbs:     []string{"list", "watch"},
  		},
  	}
- 
+
 @@ -223,16 +232,20 @@ func (k *kubeStateMetrics) reconcileDeployment(
  		}
  	)
- 
+
 +	customResourceStateConfigFile := customResourceStateConfigMountDir + "/" + customResourceStateConfigMountFile
 +
  	if k.values.ClusterType == component.ClusterTypeSeed {
@@ -672,7 +672,7 @@ index c999d4050..0d74c400c 100644
 +			"--custom-resource-state-config-file="+customResourceStateConfigFile,
  		)
  	}
- 
+
 @@ -242,10 +255,11 @@ func (k *kubeStateMetrics) reconcileDeployment(
  			gardenerutils.NetworkPolicyLabel(v1beta1constants.DeploymentNameKubeAPIServer, kubeapiserverconstants.Port): v1beta1constants.LabelNetworkPolicyAllowed,
  		})
@@ -685,7 +685,7 @@ index c999d4050..0d74c400c 100644
 +			"--custom-resource-state-config-file="+customResourceStateConfigFile,
  		)
  	}
- 
+
 @@ -303,8 +317,23 @@ func (k *kubeStateMetrics) reconcileDeployment(
  						corev1.ResourceMemory: resource.MustParse("32Mi"),
  					},
@@ -709,7 +709,7 @@ index c999d4050..0d74c400c 100644
 +			}},
  		},
  	}
- 
+
 @@ -449,12 +478,17 @@ var cachePrometheusAllowedMetrics = []string{
  	"kube_statefulset_status_replicas_current",
  	"kube_statefulset_status_replicas_ready",
@@ -732,7 +732,7 @@ index c999d4050..0d74c400c 100644
 +	"kube_customresource_verticalpodautoscaler_spec_resourcepolicy_containerpolicies_maxallowed_memory",
 +	"kube_customresource_verticalpodautoscaler_spec_updatepolicy_updatemode",
  }
- 
+
  func (k *kubeStateMetrics) emptyScrapeConfigCache() *monitoringv1alpha1.ScrapeConfig {
 @@ -600,12 +634,17 @@ func (k *kubeStateMetrics) reconcileScrapeConfigShoot(scrapeConfig *monitoringv1
  		"kube_statefulset_status_replicas_current",
@@ -757,7 +757,7 @@ index c999d4050..0d74c400c 100644
 +		"kube_customresource_verticalpodautoscaler_spec_updatepolicy_updatemode",
  	)
  }
- 
+
 @@ -726,3 +765,13 @@ func (k *kubeStateMetrics) nameSuffix() string {
  	}
  	return suffix + "-seed"
@@ -1068,6 +1068,5 @@ index 000000000..a335c3014
 +      errorLogV: 0
 +    errorLogV: 0
 +    resourcePlural: ""
--- 
+--
 2.44.0
-

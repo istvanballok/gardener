@@ -20,7 +20,7 @@ index 80e9fb4cc..6cc79a9f8 100644
 +++ b/pkg/component/observability/monitoring/kubestatemetrics/customresourcestate.go
 @@ -75,15 +75,16 @@ func newCustomResourceStateMetricsForVPA() customresourcestate.Resource {
  	}
- 
+
  	helpMessages := map[string]string{
 -		"target":     "Target %s the VerticalPodAutoscaler recommends for the container.",
 -		"upperBound": "Maximum %s the container can use before the VerticalPodAutoscaler updater evicts it.",
@@ -34,7 +34,7 @@ index 80e9fb4cc..6cc79a9f8 100644
 +		"minAllowed":     "Minimum %s the VerticalPodAutoscaler can set for containers matching the name.",
 +		"maxAllowed":     "Maximum %s the VerticalPodAutoscaler can set for containers matching the name.",
  	}
- 
+
  	for _, res := range []string{"cpu", "memory"} {
 -		for _, attr := range []string{"target", "upperBound", "lowerBound"} {
 +		for _, attr := range []string{"target", "upperBound", "lowerBound", "uncappedTarget"} {
@@ -160,6 +160,5 @@ index a335c3014..adf7b4c42 100644
      - name: verticalpodautoscaler_spec_resourcepolicy_containerpolicies_minallowed_memory
        help: Minimum memory the VerticalPodAutoscaler can set for containers matching
          the name.
--- 
+--
 2.44.0
-

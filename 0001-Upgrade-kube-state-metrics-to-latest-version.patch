@@ -20,6 +20,5 @@ index 9854a10e0..6f85b02d5 100644
    labels:
    - name: gardener.cloud/cve-categorisation
      value:
--- 
+--
 2.44.0
-

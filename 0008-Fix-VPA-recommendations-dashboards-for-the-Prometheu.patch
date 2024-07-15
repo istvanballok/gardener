@@ -73,6 +73,5 @@ index 5b2f805a9..dbfbb7568 100644
            "format": "time_series",
            "interval": "",
            "intervalFactor": 1,
--- 
+--
 2.44.0
-
