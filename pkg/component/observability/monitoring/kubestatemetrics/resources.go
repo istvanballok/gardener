@@ -823,6 +823,15 @@ func (k *kubeStateMetrics) nameSuffix() string {
 	return suffix + "-seed"
 }
 
+func (k *kubeStateMetrics) customResourceStateConfigMap(customResourceStateConfig string) *corev1.ConfigMap {
+	cm := corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: customResourceStateConfigMapName, Namespace: k.namespace}}
+	cm.Data = map[string]string{
+		customResourceStateConfigMountFile: customResourceStateConfig,
+	}
+	kubernetesutils.MakeUnique(&cm)
+	return &cm
+}
+
 func (k *kubeStateMetrics) emptyCustomResourceStateConfigMap() *corev1.ConfigMap {
 	return &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: customResourceStateConfigMapName, Namespace: k.namespace}}
 }
