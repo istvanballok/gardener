@@ -2,7 +2,7 @@ From b731c3c48d1c722b6a6c627f1d45c6208e2ee8c8 Mon Sep 17 00:00:00 2001
 From: Victor Herrero Otal <victor.herrero.otal@sap.com>
 Date: Wed, 19 Jun 2024 16:38:32 +0200
 Subject: [PATCH 03/11] Extract dependencies with commented versions to their
- own require block
+ own require block or even to the title
 
 The next commits will use the new dependency kube-state-metrics, and
 `go mod tidy` will convert it to a direct one.

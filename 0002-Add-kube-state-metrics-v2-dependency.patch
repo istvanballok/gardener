@@ -12,6 +12,9 @@ Execute:
 ```
 go get k8s.io/kube-state-metrics/v2
 ```
+
+Make changes to the git commit message.
+
 ---
  go.mod |  9 +++++++--
  go.sum | 14 ++++++++++++++
