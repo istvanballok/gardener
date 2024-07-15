@@ -78,6 +78,23 @@ type Values struct {
 }
 
 func (k *kubeStateMetrics) Deploy(ctx context.Context) error {
+	registry2 := managedresources.NewRegistry(kubernetes.SeedScheme, kubernetes.SeedCodec, kubernetes.SeedSerializer)
+	resources2, err := registry2.AddAllAndSerialize(
+		k.clusterRole(),
+	)
+	if err != nil {
+		return err
+	}
+	if err := managedresources.CreateForSeedWithLabels(ctx,
+		k.client,
+		k.namespace,
+		"kube-state-metrics2",
+		false,
+		map[string]string{v1beta1constants.LabelCareConditionType: v1beta1constants.ObservabilityComponentsHealthy},
+		resources2); err != nil {
+		return err
+	}
+
 	var (
 		genericTokenKubeconfigSecretName string
 		shootAccessSecret                *gardenerutils.AccessSecret
