@@ -333,7 +333,7 @@ make kind-down
 
 ## Alternative way to set up Garden and Seed leveraging `gardener-operator`
 
-Instead of starting Garden and Seed via `make kind-up gardener-up`, you can also use `gardener-operator` to create your local dev landscape.  
+Instead of starting Garden and Seed via `make kind-up gardener-up`, you can also use `gardener-operator` to create your local dev landscape.
 In this setup virtual garden cluster has its own loadbalancer, so you have to create an own DNS entry in your `/etc/hosts`.
 
 ```shell
@@ -400,23 +400,24 @@ The port forward in the remote-local-setup pod to the respective component:
 k port-forward -n shoot--local--local deployment/plutono 3000
 ```
 
-## Remote Local Setup with a locked down "jail" environment
+## Remote Local Setup with a locked-down "jail" environment
 
 A variant of the remote local setup provides a locked down "jail" environment to
-try out Gardener in a safe way.
+allow to try out Gardener in a safe way.
 
 ```shell
 k apply -f docs/deployment/content/remote-local-setup-with-jail.yaml
 ```
 
-To enter the jail:
+To enter the jail: (please try to break out and then open an issue to collect
+your bounty :))
 
 ```shell
 k exec -it remote-local-setup-with-jail-0 -- docker exec -it prison "docker exec -it jail 'tmux a'"
 ```
 
-You can also enter this environment as a citizen, check the prison from outside
-and see what is happening inside the jail.
+You can also enter this environment as a citizen, to see what is happening
+inside and outside the jail.
 
 ```shell
 k exec -it remote-local-setup-with-jail-0 -- sh

@@ -1,4 +1,4 @@
-An environment to try out Gardener in a safe way
+Support a remote environment to try out Gardener in a safe way
 
 **How to categorize this PR?**
 /area dev-productivity
@@ -6,50 +6,84 @@ An environment to try out Gardener in a safe way
 
 **What this PR does / why we need it**:
 
-This PR allows to deploy the local setup of Gardener to a pod in a Kubernetes
-cluster. It is similar to the remote local setup, and in addition, it provides a
-locked down "jail" environment.
+This PR allows to deploy the [local setup][] of Gardener to a pod in a
+Kubernetes cluster: the `gardener-operator` based local setup is a complete
+landscape that contains all the layers of Gardener.
 
-A web application that is not part of this PR could open a web terminal that
-exec-s right into the jail to allow untrusted users to interact with the local
-setup of Gardener.
+[local setup]: https://github.com/gardener/gardener/blob/master/docs/deployment/getting_started_locally.md#alternative-way-to-set-up-garden-and-seed-leveraging-gardener-operator
 
-The jail contains useful tools like `kubectl`, `gardenctl`, `kubens`, `kubectx`,
-`jq`, ... to interact with Gardener. The untrusted user enters a tmux session
-that is prepared with useful commands to create a shoot cluster, upgrade it to a
-managed seed cluster, or just list the pods on the various levels of the
-Gardener hierarchy (Garden, Seed, Shoot).
+This setup is based on the "[remote local setup][]" and it provides a
+locked-down, "jail" environment in addition where _untrusted_ users could be
+allowed to interact with Gardener in a restricted and safe way.
 
-The jail is locked down: the CPU and memory usage is limited, the file system is
-backed by a small tempfs, there is no Internet access: only the Gardener
-endpoints are accessible.
+[remote local setup]: https://github.com/gardener/gardener/blob/master/docs/deployment/getting_started_locally.md#remote-local-setup
 
-To prevent breaking out of this jail via a Gardener shoot, a modified version of
-Gardener is used such that the admin kubeconfig of the shoot will not allow the
-untrusted user to start, exec into or attach to executable artifacts. So the
-user is able to create a shoot, list the pods of the shoot and the control
-plane, but it can't run or exec into those pods.
+A web application (that is not part of this PR) could show a web terminal that
+exec-s right into the locked-down, "jail" environment to allow untrusted users
+to interact with Gardener in a Browser session, without the need to install or
+configure anything. Note that to try out Gardener without the restrictions of
+this jail environment, untrusted users are welcome to run the "local setup"
+directly on their laptops or deploy the "remote local setup" to a Kubernetes
+cluster of their choice.
 
-To prevent breaking out of this jail via the KinD cluster, a kubeconfig with a
-service account is injected into the jail, that allows to create shoots, list
-pods, but does not allow to exec into or attach to pods.
+Having a "jail" environment where even untrusted users could be allowed to try
+out Gardener even in a browser session, without the need to install or configure
+anything, could be useful for KubeCon conference booths, to allow
+some hands on experience with Gardener without any hurdles.
 
-Nvim is provided to allow browsing the Gardener source code or to edit the
-example artifacts like the shoot and managed seed yamls in a colorful way.
+Although the jail environment is restricted, it is well equipped to make the
+first experience of the untrusted user as pleasant as possible. Useful tools
+like `kubectl`, `gardenctl`, `jq`, ... allow to interact with Gardener
+efficiently in the command line. A `tmux` session is prepared with commands to
+walk through the main features of Gardener: create a shoot cluster, access the
+shoot cluster and also its control plane in the seed. Even the scenario of
+upgrading a vanilla shoot cluster to a managed seed is supported. The untrusted
+user can use tools like `k9s` in vivid colors and with mouse support to inspect
+that state of Gardener during its lifecycle.
 
-If the untrusted user creates a port-forward to a component like Plutono, the
-web application that is managing these environments could establish (even
-beforehand) an ingress to some defined port like 8080, 3000, ..., such that a
-link can be opened in the Browser that will be forwarded to this deeply nested
-environment.
+The jail environment is locked down: the CPU and memory usage is limited, the
+file system of the container is backed by a small tempfs to avoid writing to the
+root disk of the node. Creating PID or file descriptors is restricted to prevent
+abuse. There is no Internet access but the Gardener endpoints are accessible.
 
-The endpoints of the local setup could be also exposed publicly, so that the
-user can interact with the Gardener API directly on his laptop, but accessing it
-via the jailed tmux session in the web terminal that supports true color will
-probably be more convenient.
+To prevent breaking out of the jail via the KinD cluster that hosts the local
+setup, a kubeconfig is provided that does not allow to create create or
+attach/exec into executable artifacts like pods. The permissions allow to create
+shoots, list pods and configmaps. Secrets are not allowed to be listed, to avoid
+gaining access to the shoot cluster.
 
-A key logger is tracking all the activity inside the jail for auditing purposes.
-The input is limited to 1MB of characters, to avoid typing in a huge file.
+To prevent breaking out of the jail via a Gardener shoot, a slightly modified
+version of Gardener should be used such that the admin kubeconfig of the shoot
+should not be an admin kubeconfig: it should not be possible for the untrusted
+user to create, exec into or attach to pods in the shoot cluster. The
+permissions allow to inspect the components of the shoot cluster.
+
+Nvim is configured to allow browsing the Gardener source code or to edit the
+example artifacts like the shoot and managed seed resources efficiently and in a
+colorful way. The [OpenVSCode Server][] is also available to open the source
+code in a Browser.
+
+[OpenVSCode Server]: https://github.com/gitpod-io/openvscode-server
+
+The web application that is managing these demo environments could prepare up
+front a public ingress to a list of well defined ports like 3000, 9090, ... to
+the remote local setup pod. If the untrusted user creates a port-forward to one
+of these ports, indirectly that port will be exposed publicly such that a the
+Prometheus or Plutono dashboards of this deeply nested and locked down
+environment can be even opened in the Browser.
+
+The Kubernetes endpoints of the local setup could be also exposed via an
+ingress, so that the untrusted user could also interact with the Gardener API
+directly on his laptop. Although accessing Gardener in the jailed tmux session
+in the web terminal in true color and with mouse support will probably be more
+convenient.
+
+Note that a key logger is tracking all the activity inside the jail environment
+for auditing purposes. The total input is limited to 1 MB of characters, to avoid
+typing in malicious files in hexadecimal format.
+
+Note that trusted users can also access the remote local setup directly, to see
+what is happening inside and outside the jail.
 
 **Which issue(s) this PR fixes**:
 Fixes #
@@ -58,6 +92,7 @@ Fixes #
 /cc @vicwicker @rfranzke
 
 **Release note**:
+
 ```other developer
-Add an environment to try out Gardener in a safe way
+Support a remote environment to try out Gardener in a safe way
 ```
