@@ -1,14 +1,14 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: remote-local-setup
-  labels: {component: remote-local-setup}
+  name: remote-local-setup-with-jail
+  labels: {component: remote-local-setup-with-jail}
 spec:
   selector:
-    matchLabels: {component: remote-local-setup}
+    matchLabels: {component: remote-local-setup-with-jail}
   template:
     metadata:
-      labels: {component: remote-local-setup}
+      labels: {component: remote-local-setup-with-jail}
     spec:
       terminationGracePeriodSeconds: 1
       containers:
@@ -73,7 +73,7 @@ spec:
           ${c}Welcome${y} to the remote local setup pod of ${c}Gardener${y}!${n}
 
           ${c}Documentation:${n} https://github.com/gardener/gardener/blob/master/docs/deployment/getting_started_locally.md
-          ${y}To ${c}exec${y} into this pod, run '${g}kubectl exec -it remote-local-setup-0 -- sh${y}'${n}
+          ${y}To ${c}exec${y} into this pod, run '${g}kubectl exec -it remote-local-setup-with-jail-0 -- sh${y}'${n}
 
           There are multiple variants of the local setup of Gardener
           that can be prepared in a tmux session for convenience:
@@ -116,18 +116,18 @@ spec:
 
           ${y}When this remote local setup pod is not needed, consider ${c}stopping${y} it
           by scaling the StatefulSet to zero replicas:${n}
-            kubectl scale statefulset remote-local-setup --replicas 0
+            kubectl scale statefulset remote-local-setup-with-jail --replicas 0
 
           ${y}To ${c}start${y} it, simply scale it to 1 replica:${n}
-            kubectl scale statefulset remote-local-setup --replicas 1
+            kubectl scale statefulset remote-local-setup-with-jail --replicas 1
 
           Note that the persistent disk with the home folder,
           the Gardener git repository, the go build cache and
           the local container registry is retained between restarts.
 
           ${y}The purge this environment, delete both the StatefulSet and the pvc:${n}
-            kubectl delete statefulset remote-local-setup
-            kubectl delete pvc    home-remote-local-setup-0
+            kubectl delete statefulset remote-local-setup-with-jail
+            kubectl delete pvc    home-remote-local-setup-with-jail-0
           GREETING_EOF
           )"
           if grep -q server ~/.kube/config 2>/dev/null; then
@@ -135,8 +135,8 @@ spec:
             echo -e "$(
           cat <<GREETING_EOF
           ${y}To connect to the ${c}KinD${y} cluster from your ${c}laptop${y} with kubectl, run:${n}
-            kubectl exec remote-local-setup-0 -- sh -c 'cat ~/.kube/config' > kubeconfig
-            kubectl port-forward remote-local-setup-0 $(< ~/.kube/config grep server | awk -F : '{print $4}')
+            kubectl exec remote-local-setup-with-jail-0 -- sh -c 'cat ~/.kube/config' > kubeconfig
+            kubectl port-forward remote-local-setup-with-jail-0 $(< ~/.kube/config grep server | awk -F : '{print $4}')
             # in another terminal:
             export KUBECONFIG=\$PWD/kubeconfig
           GREETING_EOF
@@ -583,7 +583,7 @@ spec:
         # Due to bind mounting `/sys/fs/cgroup` from the host, the docker containers in this DinD pod (i.e. the KinD cluster)
         # use a top level cgroup and hence are not constrained by the resource limits of this pod.
         # The host cgroups might leak until the nodes are recreated e.g. when the hosting Gardener dev shoot cluster is hibernated.
-        # To avoid conflicts on the top level docker cgroup, only one remote-local-setup pod per node is recommended which is enforced by the high resource requests.
+        # To avoid conflicts on the top level docker cgroup, only one remote-local-setup-with-jail pod per node is recommended which is enforced by the high resource requests.
         # See
         # https://github.com/kubernetes-sigs/kind/issues/303
         # https://github.com/kubernetes/test-infra/blob/dcf27e157932c3e8680be4ae6cb8a4e2c7acf8cf/config/prow/config.yaml#L978-L988
