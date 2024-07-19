@@ -386,7 +386,7 @@ spec:
           wait
         startupProbe:
           exec: {command: [cat, /tmp/ready]}
-          failureThreshold: 18
+          failureThreshold: 36
         env: [{name: ENV, value: /root/greeting.sh}] # ash sources the ENV file
         resources:
           requests: {cpu: 14, memory: 28G}
