@@ -400,6 +400,29 @@ The port forward in the remote-local-setup pod to the respective component:
 k port-forward -n shoot--local--local deployment/plutono 3000
 ```
 
+## Remote Local Setup with a locked down "jail" environment
+
+A variant of the remote local setup provides a locked down "jail" environment to
+try out Gardener in a safe way.
+
+```shell
+k apply -f docs/deployment/content/remote-local-setup-with-jail.yaml
+```
+
+To enter the jail:
+
+```shell
+k exec -it remote-local-setup-with-jail-0 -- docker exec -it prison "docker exec -it jail 'tmux a'"
+```
+
+You can also enter this environment as a citizen, check the prison from outside
+and see what is happening inside the jail.
+
+```shell
+k exec -it remote-local-setup-with-jail-0 -- sh
+tmux a
+```
+
 ## Related Links
 
 - [Local Provider Extension](../extensions/provider-local.md)
