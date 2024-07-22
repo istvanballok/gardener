@@ -636,6 +636,7 @@ spec:
           new_pane "create cell image" Enter <<"EOF"
             docker exec jail docker rmi cell
             cat <<"JAIL" | xargs -d '\0' docker exec jail sh -c
+              until docker ps >/dev/null 2>&1; do sleep 1; done
               cd /root/go/src/github.com/gardener/gardener/cell
               docker build . -t cell
           JAIL
