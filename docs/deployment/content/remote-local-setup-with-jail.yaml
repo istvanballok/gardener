@@ -362,7 +362,6 @@ spec:
           EOF
 
           RUN mkdir -p ~/go/src/github.com/gardener/gardener
-          COPY gardener /root/go/src/github.com/gardener/gardener
 
           RUN cat > /usr/local/bin/tmux_functions.sh <<"SCRIPT_EOF"
           function wait_for_prompt {
@@ -502,6 +501,9 @@ spec:
           SCRIPT_EOF
 
           RUN chmod +x /usr/local/bin/prepare-cell.sh
+
+          COPY gardener /root/go/src/github.com/gardener/gardener
+
           DOCKERFILE
           cd -
 
