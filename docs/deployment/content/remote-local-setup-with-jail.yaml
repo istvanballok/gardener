@@ -615,7 +615,10 @@ spec:
           EOF
 
           new_window "jail" "jail" Enter <<"EOF"
-            if [ ! -f ~/inner.disk ]; then dd if=/dev/zero of=~/inner.disk bs=1M count=1024; mkfs.ext4 ~/inner.disk; fi
+            if [ ! -f ~/inner.disk ]; then
+              dd if=/dev/zero of=~/inner.disk bs=1M count=4096
+              mkfs.ext4 ~/inner.disk
+            fi
             mkdir /mnt/inner.disk
             mount ~/inner.disk /mnt/inner.disk
             docker run -d --privileged --name jail -v /mnt/inner.disk:/var/lib/docker -v /root/go/src/github.com/gardener/gardener/cell:/root/go/src/github.com/gardener/gardener/cell:ro docker:26-dind
