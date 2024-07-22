@@ -625,7 +625,7 @@ spec:
 
           new_window "jail" "jail" Enter <<"EOF"
             if [ ! -f ~/inner.disk ]; then
-              dd if=/dev/zero of=~/inner.disk bs=1M count=4096
+              dd if=/dev/zero of=~/inner.disk bs=1M count=5120
               mkfs.ext4 ~/inner.disk
             fi
             mkdir /mnt/inner.disk
