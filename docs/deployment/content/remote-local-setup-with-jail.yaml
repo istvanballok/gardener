@@ -648,7 +648,8 @@ spec:
               docker run -d --rm --cpus=0.5 --memory=1g --name cell cell sh /usr/local/bin/prepare-cell.sh
           JAIL
           EOF
-          new_pane "peak into the cell" Enter <<"EOF"
+          new_window "cell" "cell" Enter <<"EOF"
+            until docker exec -it jail sh -c "docker exec -it cell ls /tmp/ready" >/dev/null 2>&1; do sleep 1; done &&
             docker exec -it jail sh -c "docker exec -it cell tmux a"
           EOF
           # tmux select-window -t 0
