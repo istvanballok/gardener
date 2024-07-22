@@ -630,7 +630,8 @@ spec:
             fi
             mkdir /mnt/inner.disk
             mount ~/inner.disk /mnt/inner.disk
-            docker run -d --privileged --name jail -v /mnt/inner.disk:/var/lib/docker -v /root/go/src/github.com/gardener/gardener/cell:/root/go/src/github.com/gardener/gardener/cell:ro docker:26-dind
+            docker rm jail
+            docker run -d --rm --privileged --name jail -v /mnt/inner.disk:/var/lib/docker -v /root/go/src/github.com/gardener/gardener/cell:/root/go/src/github.com/gardener/gardener/cell:ro docker:26-dind
           EOF
           new_pane "create cell image" Enter <<"EOF"
             docker exec jail docker rmi cell
