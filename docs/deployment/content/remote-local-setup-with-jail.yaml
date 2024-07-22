@@ -223,8 +223,8 @@ spec:
 
           cat > /usr/local/bin/tmux_functions.sh <<"SCRIPT_EOF"
           function wait_for_prompt {
-            # wait for the character '#' to appear in the last non empty line of the tmux pane indicating that the bash prompt is ready
-            while ! tmux capture-pane -p | grep -v ^$ | tail -n 1 | grep '#$' >/dev/null; do sleep .3; done
+            # wait for the character '#' or '>' to appear in the last non empty line of the tmux pane indicating that the bash prompt is ready
+            while ! tmux capture-pane -p | grep -v ^$ | tail -n 1 | grep -E '#$|>$' >/dev/null; do sleep .3; done
           }
 
           function wait_for_line {
@@ -365,8 +365,8 @@ spec:
 
           RUN cat > /usr/local/bin/tmux_functions.sh <<"SCRIPT_EOF"
           function wait_for_prompt {
-            # wait for the character '#' to appear in the last non empty line of the tmux pane indicating that the bash prompt is ready
-            while ! tmux capture-pane -p | grep -v ^$ | tail -n 1 | grep '#$' >/dev/null; do sleep .3; done
+            # wait for the character '#' or '>' to appear in the last non empty line of the tmux pane indicating that the bash prompt is ready
+            while ! tmux capture-pane -p | grep -v ^$ | tail -n 1 | grep -E '#$|>$' >/dev/null; do sleep .3; done
           }
 
           function wait_for_line {
