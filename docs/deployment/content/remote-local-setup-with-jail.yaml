@@ -643,7 +643,9 @@ spec:
           EOF
           new_pane "start cell container" Enter <<"EOF"
             cat <<"JAIL" | xargs -d '\0' docker exec jail sh -c
-              docker run -d --rm --name cell cell /usr/local/bin/prepare-cell.sh
+              until docker image history cell >/dev/null 2>&1; do sleep 1; done
+              # https://docs.docker.com/engine/reference/run/#runtime-constraints-on-resources
+              docker run -d --rm --cpus=0.5 --memory=1g --name cell cell sh /usr/local/bin/prepare-cell.sh
           JAIL
           EOF
           new_pane "peak into the cell" Enter <<"EOF"
