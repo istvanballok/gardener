@@ -624,6 +624,7 @@ spec:
             docker run -d --privileged --name jail -v /mnt/inner.disk:/var/lib/docker -v /root/go/src/github.com/gardener/gardener/cell:/root/go/src/github.com/gardener/gardener/cell:ro docker:26-dind
           EOF
           new_pane "create cell image" Enter <<"EOF"
+            docker exec jail docker rmi cell
             cat <<"JAIL" | xargs -d '\0' docker exec jail sh -c
               cd /root/go/src/github.com/gardener/gardener/cell
               docker build . -t cell
