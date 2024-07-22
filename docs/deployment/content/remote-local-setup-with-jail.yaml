@@ -413,9 +413,12 @@ spec:
 
           RUN cat > /usr/local/bin/prepare-cell.sh <<"SCRIPT_EOF"
           source /usr/local/bin/tmux_functions.sh
-          tmux new -d -s jail -n make -x 2000 -y 2000
+          tmux new -d -s jail -n top -x 2000 -y 2000
           tmux select-pane -T top; rm -f ~/.config/procps/toprc
           for k in top Enter z C c t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
+          new_pane "CPU limit" Enter <<"EOF"
+            nice dd if=/dev/zero of=/dev/null
+          EOF
           new_window "garden" "garden" Enter <<"EOF"
             watch k get garden
           EOF
