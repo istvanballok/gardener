@@ -419,6 +419,12 @@ spec:
           new_pane "CPU limit" Enter <<"EOF"
             nice dd if=/dev/zero of=/dev/null
           EOF
+          new_window "disk" "df" Enter <<"EOF"
+            df -h
+          EOF
+          new_pane "findmnt" Enter <<"EOF"
+            findmnt
+          EOF
           new_window "garden" "garden" Enter <<"EOF"
             watch k get garden
           EOF
