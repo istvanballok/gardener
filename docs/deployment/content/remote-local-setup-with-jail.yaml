@@ -787,7 +787,7 @@ subjects:
   name: cell-exec
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: cell-exec
 spec:
@@ -835,28 +835,64 @@ spec:
                 echo \\\"Enter the tmux session\\\"
                 tmux ls\"'"
           (sleep 3 && touch /tmp/ready) &
-          kubectl exec -it remote-local-setup-with-jail-0 -- sh -c "
-            echo \"Check the jail\"
-            while ! docker inspect jail >/dev/null 2>&1; do
-              echo -n .
-              sleep 1
-            done
-            echo \"Enter the jail\"
-            docker exec -it jail sh -c '
-              echo \"Check the cell\"
-              while ! docker inspect cell >/dev/null 2>&1; do
+          while true; do
+            kubectl exec -it remote-local-setup-with-jail-0 -- sh -c "
+              echo \"Check the jail\"
+              while ! docker inspect jail >/dev/null 2>&1; do
                 echo -n .
                 sleep 1
               done
-              echo \"Enter the cell\"
-              docker exec -it cell sh -c \"
-                echo \\\"Check the tmux session\\\"
-                while [ ! -e /tmp/ready ]; do
+              echo \"Enter the jail\"
+              script --log-timing timing.log --log-out out.log --log-in input.log --output-limit 1MB -c \
+              \"docker exec -it jail sh -c '
+                echo \\\"Check the cell\\\"
+                while ! docker inspect cell >/dev/null 2>&1; do
                   echo -n .
                   sleep 1
                 done
-                echo \\\"Enter the tmux session\\\"
-                tmux a\"'"
+                echo \\\"Enter the cell\\\"
+                docker exec -it cell sh -c \\\"
+                  echo \\\\\"Check the tmux session\\\\\"
+                  while [ ! -e /tmp/ready ]; do
+                    echo -n .
+                    sleep 1
+                  done
+                  echo \\\\\"Enter the tmux session\\\\\"
+                  tmux a\\\"\"'"
+          done
         startupProbe:
           exec: {command: [cat, /tmp/ready]}
           failureThreshold: 36
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cell-attach
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cell-attach
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  resourceNames: ["cell-exec-0"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["pods/attach"]
+  resourceNames: ["cell-exec-0"]
+  verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cell-attach
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cell-attach
+subjects:
+- kind: ServiceAccount
+  name: cell-attach
+---
+# k --as system:serviceaccount:istvan:cell-attach attach -it cell-exec-0
