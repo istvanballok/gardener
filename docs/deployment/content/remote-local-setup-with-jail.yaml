@@ -281,7 +281,7 @@ spec:
             git clone ~/go/src/github.com/gardener/gardener gardener
           fi
           cat > ~/go/src/github.com/gardener/gardener/cell/Dockerfile <<"DOCKERFILE"
-          FROM alpine:3.21
+          FROM alpine:3.20
           RUN apk add apache2-utils bash bash-completion bat bind-tools conntrack-tools coreutils curl \
               diffutils dnsmasq docker-bash-completion findutils fzf g++ gawk gcompat git      \
               git-prompt go grep helm inotify-tools jq k9s less lsof make mandoc mc moreutils  \
