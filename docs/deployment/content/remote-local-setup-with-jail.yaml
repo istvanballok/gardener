@@ -25,8 +25,8 @@ spec:
           apk add apache2-utils bash bash-completion bat bind-tools conntrack-tools coreutils curl \
                   diffutils dnsmasq docker-bash-completion findutils fzf g++ gawk gcompat git      \
                   git-prompt go grep helm inotify-tools jq k9s less lsof make mandoc mc moreutils  \
-                  mount ncurses neovim parallel procps sed strace tar tcpdump tmux tmux-doc tzdata \
-                  util-linux vim wget yq
+                  mount ncurses neovim parallel procps sed socat strace tar tcpdump tmux tmux-doc  \
+                  tzdata util-linux vim wget yq
           mkdir -p ~/.cache/wget
           cd ~/.cache/wget
           echo gardenlogin     && wget -N "https://github.com/gardener/gardenlogin/releases/download/$(curl -sL https://raw.githubusercontent.com/gardener/gardenlogin/master/LATEST)/gardenlogin_linux_amd64" && mv gardenlogin_linux_amd64 /usr/local/bin/gardenlogin && chmod +x /usr/local/bin/gardenlogin \
