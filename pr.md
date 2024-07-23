@@ -78,9 +78,24 @@ directly on his laptop. Although accessing Gardener in the jailed tmux session
 in the web terminal in true color and with mouse support will probably be more
 convenient.
 
-Note that a key logger is tracking all the activity inside the jail environment
-for auditing purposes. The total input is limited to 1 MB of characters, to avoid
-typing in malicious files in hexadecimal format.
+All the activity inside the jail environment is captured with the `script`
+utility for auditing purposes. A hint is shown that untrusted users should not
+enter sensitive information in the jail environment. The total input and output
+is limited to 1 MB of characters that should be sufficient to interactively
+explore the demo environment but it should help to avoid typing in malicious
+executable files in hexadecimal format.
+
+The interaction with the jail environment is logged using the `script` utility:
+
+TODO: the idea of combine `script` with `pv -q -L 1` to apply rate limiting to
+the input and maybe the output of `script` is not straightforward.
+
+```bash
+script --log-timing timing.log --log-out out.log --log-in input.log --output-limit 1MB
+
+# To replay the session:
+scriptreplay --log-timing timing.log --log-out out.log
+```
 
 Note that trusted users can also access the remote local setup directly, to see
 what is happening inside and outside the jail.
@@ -95,4 +110,36 @@ Fixes #
 
 ```other developer
 Support a remote environment to try out Gardener in a safe way
+```
+
+TODO: a deployment and roles to exec into the jail environment so that the web terminal can attach to that pod.
+
+The logs should be written to the persistent volume of the remote local setup
+pod. So the exec command could call script, and then exec into the containers.
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alpine-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alpine
+  template:
+    metadata:
+      labels:
+        app: alpine
+    spec:
+      containers:
+      - name: alpine
+        image: alpine
+        command:
+        - /bin/sh
+        - -c
+        - |
+          tee input.log | sh -i | tee output.log
+        stdin: true
+        tty: true
 ```

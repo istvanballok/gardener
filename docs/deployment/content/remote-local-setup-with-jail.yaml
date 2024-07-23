@@ -670,20 +670,21 @@ spec:
             kubectl apply -f ~/.kube/readonly/resources.yaml
             mkdir -p ~/.kube/readonly/export
             yq ~/.kube/config -o json \
-            | jq --arg token "$(kubectl -n default create token readonly)" '
-              .clusters[0].cluster.server = "https://$DOCKER_IP:44444" |
+            | jq --arg token "$(kubectl -n default create token readonly)" --arg SAN "$SAN" '
+              .clusters[0].cluster.server = "https://\($SAN):44444" |
               .users[0].user={token: $token}
               ' > ~/.kube/readonly/export/kubeconfig
             echo "$DOCKER_IP $SAN" > ~/.kube/readonly/export/hosts.entry
             socat TCP-LISTEN:44444,fork,reuseaddr TCP:"$endpoint"
           EOF
           new_pane "test" Enter <<"EOF"
+            cat ~/.kube/readonly/export/hosts.entry >> /etc/hosts
             k --kubeconfig ~/.kube/readonly/export/kubeconfig auth can-i get pods
             k --kubeconfig ~/.kube/readonly/export/kubeconfig auth can-i create pods
           EOF
           new_window "jail" "jail" Enter <<"EOF"
             if [ ! -f ~/inner.disk ]; then
-              dd if=/dev/zero of=~/inner.disk bs=1M count=5120
+              dd if=/dev/zero of=~/inner.disk bs=1M count=8192
               mkfs.ext4 ~/inner.disk
             fi
             mkdir /mnt/inner.disk
@@ -692,18 +693,18 @@ spec:
             docker run -d --rm --privileged --name jail -v /mnt/inner.disk:/var/lib/docker -v /root/go/src/github.com/gardener/gardener/cell:/root/go/src/github.com/gardener/gardener/cell:ro docker:26-dind
           EOF
           new_pane "create cell image" Enter <<"EOF"
-            docker exec jail docker rmi cell
+            docker exec jail docker rmi cell-image
             cat <<"JAIL" | xargs -d '\0' docker exec jail sh -c
               until docker ps >/dev/null 2>&1; do sleep 1; done
               cd /root/go/src/github.com/gardener/gardener/cell
-              docker build . -t cell
+              docker build . -t cell-image
           JAIL
           EOF
           new_pane "start cell container" Enter <<"EOF"
             cat <<"JAIL" | xargs -d '\0' docker exec jail sh -c
-              until docker image history cell >/dev/null 2>&1; do sleep 1; done
+              until docker image history cell-image >/dev/null 2>&1; do sleep 1; done
               # https://docs.docker.com/engine/reference/run/#runtime-constraints-on-resources
-              docker run -d --rm --cpus=0.5 --memory=1g --name cell cell sh /usr/local/bin/prepare-cell.sh
+              docker run -d --rm --cpus=0.5 --memory=1g --name cell cell-image sh /usr/local/bin/prepare-cell.sh
           JAIL
           EOF
           new_window "cell" "cell" Enter <<"EOF"
@@ -753,3 +754,109 @@ spec:
       accessModes: [ReadWriteOnce]
       resources: {requests: {storage: 80Gi}}
       volumeMode: Filesystem
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cell-exec
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cell-exec
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  resourceNames: ["remote-local-setup-with-jail-0"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["pods/exec"]
+  resourceNames: ["remote-local-setup-with-jail-0"]
+  verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cell-exec
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cell-exec
+subjects:
+- kind: ServiceAccount
+  name: cell-exec
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cell-exec
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: cell-exec}}
+  template:
+    metadata: {labels: {app: cell-exec}}
+    spec:
+      serviceAccountName: cell-exec
+      terminationGracePeriodSeconds: 1
+      containers:
+      - name: alpine
+        image: alpine:3.20
+        stdin: true
+        tty: true
+        command:
+        - /bin/sh
+        - -c
+        - |
+          set -e
+          apk add curl wget
+          wget -nv -N "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && cp kubectl /usr/local/bin/kubectl
+          chmod +x /usr/local/bin/kubectl
+          while ! kubectl wait --for=condition=ready pod/remote-local-setup-with-jail-0 --timeout=-1s; do sleep 1; done
+          kubectl exec -it remote-local-setup-with-jail-0 -- sh -c "
+            echo \"Check the jail\"
+            while ! docker inspect jail >/dev/null 2>&1; do
+              echo -n .
+              sleep 1
+            done
+            echo \"Enter the jail\"
+            docker exec -it jail sh -c '
+              echo \"Check the cell\"
+              while ! docker inspect cell >/dev/null 2>&1; do
+                echo -n .
+                sleep 1
+              done
+              echo \"Enter the cell\"
+              docker exec -it cell sh -c \"
+                echo \\\"Check the tmux session\\\"
+                while [ ! -e /tmp/ready ]; do
+                  echo -n .
+                  sleep 1
+                done
+                echo \\\"Enter the tmux session\\\"
+                tmux ls\"'"
+          (sleep 3 && touch /tmp/ready) &
+          kubectl exec -it remote-local-setup-with-jail-0 -- sh -c "
+            echo \"Check the jail\"
+            while ! docker inspect jail >/dev/null 2>&1; do
+              echo -n .
+              sleep 1
+            done
+            echo \"Enter the jail\"
+            docker exec -it jail sh -c '
+              echo \"Check the cell\"
+              while ! docker inspect cell >/dev/null 2>&1; do
+                echo -n .
+                sleep 1
+              done
+              echo \"Enter the cell\"
+              docker exec -it cell sh -c \"
+                echo \\\"Check the tmux session\\\"
+                while [ ! -e /tmp/ready ]; do
+                  echo -n .
+                  sleep 1
+                done
+                echo \\\"Enter the tmux session\\\"
+                tmux a\"'"
+        startupProbe:
+          exec: {command: [cat, /tmp/ready]}
+          failureThreshold: 36
