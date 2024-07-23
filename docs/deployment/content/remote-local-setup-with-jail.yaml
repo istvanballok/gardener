@@ -517,6 +517,37 @@ spec:
           DOCKERFILE
           cd -
 
+          mkdir -p ~/.kube/readonly
+          cat > ~/.kube/readonly/resources.yaml <<"EOF"
+          apiVersion: v1
+          kind: ServiceAccount
+          metadata:
+            name: readonly
+            namespace: default
+          ---
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: ClusterRole
+          metadata:
+            name: readonly
+          rules:
+          - apiGroups: ["*"]
+            resources: ["*"]
+            verbs: ["get", "list", "watch"]
+          ---
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: ClusterRoleBinding
+          metadata:
+            name: readonly
+          roleRef:
+            apiGroup: rbac.authorization.k8s.io
+            kind: ClusterRole
+            name: readonly
+          subjects:
+          - kind: ServiceAccount
+            name: readonly
+            namespace: default
+          EOF
+
           cat > /usr/local/bin/prepare-operator-complete.sh <<"SCRIPT_EOF"
           tmux kill-session 2>/dev/null || true
           cd ~/go/src/github.com/gardener/gardener
@@ -624,6 +655,32 @@ spec:
             # Use this pane for ad-hoc commands
           EOF
 
+          new_window "readonly" "readonly" Enter <<"EOF"
+            until k cluster-info; do sleep 10; done
+            endpoint=$(yq ~/.kube/config -o json | jq -r '.clusters[0].cluster.server' | sed 's#^https://##')
+            echo "KinD cluster endpoint: $endpoint"
+            SAN=$(openssl s_client -connect "$endpoint" </dev/null 2>/dev/null \
+                  | openssl x509 -noout -ext subjectAltName \
+                  | grep DNS: | sed 's/,/\n/g' | grep DNS: \
+                  | awk -F : '{print $2}' \
+                  | grep -v -E 'localhost|kubernetes')
+            echo "KinD cluster certificate SAN: $SAN"
+            DOCKER_IP=$(ip addr show docker0 | awk '/inet /{print $2}' | cut -d '/' -f 1)
+            echo "Docker IP: $DOCKER_IP"
+            kubectl apply -f ~/.kube/readonly/resources.yaml
+            mkdir -p ~/.kube/readonly/export
+            yq ~/.kube/config -o json \
+            | jq --arg token "$(kubectl -n default create token readonly)" '
+              .clusters[0].cluster.server = "https://$DOCKER_IP:44444" |
+              .users[0].user={token: $token}
+              ' > ~/.kube/readonly/export/kubeconfig
+            echo "$DOCKER_IP $SAN" > ~/.kube/readonly/export/hosts.entry
+            socat TCP-LISTEN:44444,fork,reuseaddr TCP:"$endpoint"
+          EOF
+          new_pane "test" Enter <<"EOF"
+            k --kubeconfig ~/.kube/readonly/export/kubeconfig auth can-i get pods
+            k --kubeconfig ~/.kube/readonly/export/kubeconfig auth can-i create pods
+          EOF
           new_window "jail" "jail" Enter <<"EOF"
             if [ ! -f ~/inner.disk ]; then
               dd if=/dev/zero of=~/inner.disk bs=1M count=5120
