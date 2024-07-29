@@ -852,12 +852,12 @@ spec:
                 done
                 echo \\\"Enter the cell\\\"
                 docker exec -it cell sh -c \\\"
-                  echo \\\\\"Check the tmux session\\\\\"
+                  echo \\\\\\\"Check the tmux session\\\\\\\"
                   while [ ! -e /tmp/ready ]; do
                     echo -n .
                     sleep 1
                   done
-                  echo \\\\\"Enter the tmux session\\\\\"
+                  echo \\\\\\\"Enter the tmux session\\\\\\\"
                   tmux a\\\"\"'"
           done
         startupProbe:
