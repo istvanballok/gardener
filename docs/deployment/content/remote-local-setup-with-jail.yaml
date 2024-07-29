@@ -838,7 +838,10 @@ spec:
                   sleep 1
                 done
                 echo \\\"Enter the tmux session\\\"
-                tmux ls\"'"
+                tmux ls
+              \"
+            '
+          "
           (sleep 3 && touch /tmp/ready) &
           while true; do
             kubectl exec -it remote-local-setup-with-jail-0 -- sh -c "
@@ -848,22 +851,26 @@ spec:
                 sleep 1
               done
               echo \"Enter the jail\"
-              script --log-timing timing.log --log-out out.log --log-in input.log --output-limit 1MB -c \
-              \"docker exec -it jail sh -c '
-                echo \\\"Check the cell\\\"
-                while ! docker inspect cell >/dev/null 2>&1; do
-                  echo -n .
-                  sleep 1
-                done
-                echo \\\"Enter the cell\\\"
-                docker exec -it cell sh -c \\\"
-                  echo \\\\\\\"Check the tmux session\\\\\\\"
-                  while [ ! -e /tmp/ready ]; do
+              script --log-timing timing.log --log-out out.log --log-in input.log --output-limit 1MB -c \"
+                docker exec -it jail sh -c '
+                  echo \\\"Check the cell\\\"
+                  while ! docker inspect cell >/dev/null 2>&1; do
                     echo -n .
                     sleep 1
                   done
-                  echo \\\\\\\"Enter the tmux session\\\\\\\"
-                  tmux a\\\"\"'"
+                  echo \\\"Enter the cell\\\"
+                  docker exec -it cell sh -c \\\"
+                    echo \\\\\\\"Check the tmux session\\\\\\\"
+                    while [ ! -e /tmp/ready ]; do
+                      echo -n .
+                      sleep 1
+                    done
+                    echo \\\\\\\"Enter the tmux session\\\\\\\"
+                    tmux a
+                  \\\"
+                '
+              \"
+            "
           done
         startupProbe:
           exec: {command: [cat, /tmp/ready]}
