@@ -486,6 +486,9 @@ spec:
           new_pane "garden conditions" Enter <<"EOF"
             watch -c "k get garden local -o yaml | yq -P -C '[.status.conditions[] | del(.lastTransitionTime, .lastUpdateTime)]' | grep --color=Always -E '\"False\"| Unknown| Progressing|$'"
           EOF
+          new_window "garden lifecycle" "Reconcile" Enter <<"EOF"
+            k annotate garden local 'gardener.cloud/operation=reconcile'
+          EOF
           new_window "seed&shoots" "seed&shoots" Enter <<"EOF"
             export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
             watch k get -A seeds,shoots
