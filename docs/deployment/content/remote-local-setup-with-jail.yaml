@@ -350,7 +350,6 @@ spec:
           set -g default-shell /bin/bash
           set -g pane-border-status top
           set -g pane-border-format " #{pane_index} #{pane_title} - #{pane_current_command} "
-          set -g window-size smallest
           set -g history-limit 100000
           EOF
 
@@ -416,7 +415,7 @@ spec:
           source /usr/local/bin/tmux_functions.sh
           tmux new -d -s jail -n top -x 2000 -y 2000
           tmux select-pane -T top; rm -f ~/.config/procps/toprc
-          for k in top Enter z C c t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
+          for k in top Enter z C c t t m m V s 5 Enter E e W; do sleep .3; tmux send $k; done
           new_pane "CPU limit" Enter <<"EOF"
             nice dd if=/dev/zero of=/dev/null
           EOF
@@ -506,7 +505,7 @@ spec:
           tmux select-pane -t 1
           touch /tmp/ready
           # TODO keylogger
-          sleep 10m & # self destroy after 10m
+          sleep 30m & # self destroy after 30m
           wait
           SCRIPT_EOF
 
@@ -843,15 +842,20 @@ spec:
             '
           "
           (sleep 3 && touch /tmp/ready) &
-          while true; do
-            kubectl exec -it remote-local-setup-with-jail-0 -- sh -c "
+          # while true; do
+            kubectl exec -it remote-local-setup-with-jail-0 -- bash -c "
               echo \"Check the jail\"
               while ! docker inspect jail >/dev/null 2>&1; do
                 echo -n .
                 sleep 1
               done
-              echo \"Enter the jail\"
+              echo \"Start a recording\"
+              cd
+              # Record the session in a timestamped directory
+              mkdir -p \$(date +%Y-%m-%d_%H-%M-%S)
+              cd \$_
               script --log-timing timing.log --log-out out.log --log-in input.log --output-limit 1MB -c \"
+                echo \\\"Enter the jail\\\"
                 docker exec -it jail sh -c '
                   echo \\\"Check the cell\\\"
                   while ! docker inspect cell >/dev/null 2>&1; do
@@ -866,15 +870,17 @@ spec:
                       sleep 1
                     done
                     echo \\\\\\\"Enter the tmux session\\\\\\\"
+                    export LANG=C.UTF-8
+                    export TERM=xterm-256color
                     tmux a
                   \\\"
                 '
               \"
             "
-          done
+          # done
         startupProbe:
           exec: {command: [cat, /tmp/ready]}
-          failureThreshold: 36
+          failureThreshold: 360
         volumeMounts:
         - {name: home,    mountPath: /root}
   volumeClaimTemplates:
