@@ -807,9 +807,14 @@ spec:
         - /bin/sh
         - -c
         - |
-          set -e
+          set -ex -o pipefail
+          cd
+          mkdir -p ~/.cache/apk
+          ln -s ~/.cache/apk /etc/apk/cache
           apk add curl wget
-          wget -nv -N "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && cp kubectl /usr/local/bin/kubectl
+          mkdir -p ~/.cache/wget
+          cd ~/.cache/wget
+          wget -N "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && cp kubectl /usr/local/bin/kubectl
           chmod +x /usr/local/bin/kubectl
           while ! kubectl wait --for=condition=ready pod/remote-local-setup-with-jail-0 --timeout=-1s; do sleep 1; done
           kubectl exec -it remote-local-setup-with-jail-0 -- sh -c "
@@ -863,6 +868,16 @@ spec:
         startupProbe:
           exec: {command: [cat, /tmp/ready]}
           failureThreshold: 36
+        volumeMounts:
+        - {name: home,    mountPath: /root}
+  volumeClaimTemplates:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata: {name: home}
+    spec:
+      accessModes: [ReadWriteOnce]
+      resources: {requests: {storage: 1Gi}}
+      volumeMode: Filesystem
 ---
 apiVersion: v1
 kind: ServiceAccount
