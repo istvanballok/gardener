@@ -412,6 +412,7 @@ spec:
           SCRIPT_EOF
 
           RUN cat > /usr/local/bin/prepare-cell.sh <<"SCRIPT_EOF"
+          cat /root/.kube/hosts.entry >> /etc/hosts
           source /usr/local/bin/tmux_functions.sh
           tmux new -d -s jail -n top -x 2000 -y 2000
           tmux select-pane -T top; rm -f ~/.config/procps/toprc
@@ -425,18 +426,21 @@ spec:
           new_pane "findmnt" Enter <<"EOF"
             findmnt
           EOF
+          new_window "k9s" "k9s" Enter <<"EOF"
+            nice k9s
+          EOF
           new_window "garden" "garden" Enter <<"EOF"
-            watch k get garden
+            nice watch k get garden
           EOF
           new_pane "last operations" Enter <<"EOF"
-            k get garden local -o json -w | jq -r --unbuffered '.status.lastOperation | [.progress, .description] | join(" ")' | awk '{if (prev!=$0) print; fflush(); prev=$0}' | sed --unbuffered 's/,/, \n/g; s/$/\n/' | ts
+            nice k get garden local -o json -w | jq -r --unbuffered '.status.lastOperation | [.progress, .description] | join(" ")' | awk '{if (prev!=$0) print; fflush(); prev=$0}' | sed --unbuffered 's/,/, \n/g; s/$/\n/' | ts
           EOF
           new_pane "garden conditions" Enter <<"EOF"
-            watch -c "k get garden local -o yaml | yq -P -C '[.status.conditions[] | del(.lastTransitionTime, .lastUpdateTime)]' | grep --color=Always -E '\"False\"| Unknown| Progressing|$'"
+            nice watch -c "k get garden local -o yaml | yq -P -C '[.status.conditions[] | del(.lastTransitionTime, .lastUpdateTime)]' | grep --color=Always -E '\"False\"| Unknown| Progressing|$'"
           EOF
           new_window "seed&shoots" "seed&shoots" Enter <<"EOF"
             export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-            watch k get -A seeds,shoots
+            nice watch k get -A seeds,shoots
           EOF
           new_pane "last operations" <<"EOF"
             export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
@@ -444,11 +448,11 @@ spec:
           EOF
           new_pane "seed conditions" Enter <<"EOF"
             export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-            watch -c "k get seed local -o yaml | yq -P -C '[.status.conditions[] | del(.lastTransitionTime, .lastUpdateTime)]' | grep --color=Always -E '\"False\"| Unknown| Progressing|$'"
+            nice watch -c "k get seed local -o yaml | yq -P -C '[.status.conditions[] | del(.lastTransitionTime, .lastUpdateTime)]' | grep --color=Always -E '\"False\"| Unknown| Progressing|$'"
           EOF
           new_horizontal_pane "shoot conditions" Enter <<"EOF"
             export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-            watch -c "k get -n garden-local shoot local -o yaml | yq -P -C '[.status.conditions[] | del(.lastTransitionTime, .lastUpdateTime)]' | grep --color=Always -E '\"False\"| Unknown| Progressing|$'"
+            nice watch -c "k get -n garden-local shoot local -o yaml | yq -P -C '[.status.conditions[] | del(.lastTransitionTime, .lastUpdateTime)]' | grep --color=Always -E '\"False\"| Unknown| Progressing|$'"
           EOF
           new_window "shoot lifecycle" "Create" <<"EOF"
             export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
@@ -464,13 +468,13 @@ spec:
           EOF
           new_window "managed seed" "managed seed" <<"EOF"
             export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-            watch k get -A seeds,shoots,managedseeds
+            nice watch k get -A seeds,shoots,managedseeds
           EOF
-          new_pane "create shoot" Enter <<"EOF"
+          new_pane "create shoot" <<"EOF"
             export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
             k apply -f example/provider-local/managedseeds/shoot-managedseed.yaml
           EOF
-          new_pane "create managed seed" Enter <<"EOF"
+          new_pane "create managed seed" <<"EOF"
             export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
             k apply -f example/provider-local/managedseeds/managedseed.yaml
           EOF
@@ -480,10 +484,10 @@ spec:
           EOF
           new_window "runtime&seed pods" "pods" Enter <<"EOF"
             # the while loop is used instead of watch to allow for scrolling a longer list in the tmux pane
-            while true; do clear; k get pods -A -o wide; sleep 10s; done
+            nice while true; do clear; k get pods -A -o wide; sleep 10s; done
           EOF
           new_pane "not ready pods" Enter <<"EOF"
-            watch "k get pods -A -o wide | awk '{split(\$3, a, \"/\"); if (a[1]!=a[2] || \$4 != \"Running\") {print}}'"
+            nice watch "k get pods -A -o wide | awk '{split(\$3, a, \"/\"); if (a[1]!=a[2] || \$4 != \"Running\") {print}}'"
           EOF
           new_window "shoot pods" "pods" <<"EOF"
             export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
@@ -503,6 +507,7 @@ spec:
           EOF
           tmux select-window -t 0
           tmux select-pane -t 1
+
           touch /tmp/ready
           # TODO keylogger
           sleep 30m & # self destroy after 30m
@@ -560,15 +565,24 @@ spec:
           for k in top Enter z C c i t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
           new_pane "make kind-operator-up" Enter <<"EOF"
             sync_kubeconfig example/gardener-local/kind/operator & sleep 1
-            nice make kind-operator-down kind-operator-up && kubectl wait --for=condition=ready pod -A --all --timeout=-1s
+            rm -f kind-operator-up
+            nice make kind-operator-down kind-operator-up &&
+            kubectl wait --for=condition=ready pod -A --all --timeout=-1s &&
+            touch kind-operator-up
           EOF
-          new_pane "make operator-up" <<"EOF"
+          new_pane "make operator-up" Enter <<"EOF"
             export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig
-            nice make operator-up
+            rm -f operator-up
+            while [ ! -f kind-operator-up ]; do sleep 1; done &&
+            nice make operator-up &&
+            touch operator-up
           EOF
-          new_pane "make operator-seed-up" <<"EOF"
+          new_pane "make operator-seed-up" Enter <<"EOF"
             export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig
-            nice make operator-seed-up
+            rm -f operator-seed-up
+            while [ ! -f operator-up ]; do sleep 1; done &&
+            nice make operator-seed-up &&
+            touch operator-seed-up
           EOF
           new_window "garden" "garden" Enter <<"EOF"
             watch k get garden
@@ -595,9 +609,12 @@ spec:
             export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
             watch -c "k get -n garden-local shoot local -o yaml | yq -P -C '[.status.conditions[] | del(.lastTransitionTime, .lastUpdateTime)]' | grep --color=Always -E '\"False\"| Unknown| Progressing|$'"
           EOF
-          new_window "shoot lifecycle" "Create" <<"EOF"
+          new_window "shoot lifecycle" "Create" Enter <<"EOF"
             export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-            k apply -f example/provider-local/shoot.yaml
+            rm -f shoot
+            while [ ! -f operator-seed-up ]; do sleep 1; done &&
+            k apply -f example/provider-local/shoot.yaml &&
+            touch shoot
           EOF
           new_pane "Reconcile" <<"EOF"
             export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
@@ -671,15 +688,16 @@ spec:
             yq ~/.kube/config -o json \
             | jq --arg token "$(kubectl -n default create token readonly)" --arg SAN "$SAN" '
               .clusters[0].cluster.server = "https://\($SAN):44444" |
-              .users[0].user={token: $token}
-              ' > ~/.kube/readonly/export/kubeconfig
+              .users[0].user={token: $token} |
+              .contexts[0].context.namespace = "garden"
+              ' > ~/.kube/readonly/export/config
             echo "$DOCKER_IP $SAN" > ~/.kube/readonly/export/hosts.entry
             socat TCP-LISTEN:44444,fork,reuseaddr TCP:"$endpoint"
           EOF
           new_pane "test" Enter <<"EOF"
             cat ~/.kube/readonly/export/hosts.entry >> /etc/hosts
-            k --kubeconfig ~/.kube/readonly/export/kubeconfig auth can-i get pods
-            k --kubeconfig ~/.kube/readonly/export/kubeconfig auth can-i create pods
+            k --kubeconfig ~/.kube/readonly/export/config auth can-i get pods
+            k --kubeconfig ~/.kube/readonly/export/config auth can-i create pods
           EOF
           new_window "jail" "jail" Enter <<"EOF"
             if [ ! -f ~/inner.disk ]; then
@@ -689,7 +707,7 @@ spec:
             mkdir /mnt/inner.disk
             mount ~/inner.disk /mnt/inner.disk
             docker rm jail
-            docker run -d --rm --privileged --name jail -v /mnt/inner.disk:/var/lib/docker -v /root/go/src/github.com/gardener/gardener/cell:/root/go/src/github.com/gardener/gardener/cell:ro docker:26-dind
+            docker run -d --rm --privileged --name jail -v /root/.kube/readonly/export:/root/.kube:ro -v /mnt/inner.disk:/var/lib/docker -v /root/go/src/github.com/gardener/gardener/cell:/root/go/src/github.com/gardener/gardener/cell:ro docker:26-dind
           EOF
           new_pane "create cell image" Enter <<"EOF"
             docker exec jail docker rmi cell-image
@@ -697,18 +715,19 @@ spec:
               until docker ps >/dev/null 2>&1; do sleep 1; done
               cd /root/go/src/github.com/gardener/gardener/cell
               docker build . -t cell-image
+              docker image prune -f
           JAIL
           EOF
           new_pane "start cell container" Enter <<"EOF"
             cat <<"JAIL" | xargs -d '\0' docker exec jail sh -c
               until docker image history cell-image >/dev/null 2>&1; do sleep 1; done
               # https://docs.docker.com/engine/reference/run/#runtime-constraints-on-resources
-              docker run -d --rm --cpus=0.5 --memory=1g --name cell cell-image sh /usr/local/bin/prepare-cell.sh
+              docker run -d --rm --cpus=0.5 --memory=1g --name cell -v /root/.kube:/root/.kube:ro cell-image sh /usr/local/bin/prepare-cell.sh
           JAIL
           EOF
           new_window "cell" "cell" Enter <<"EOF"
             until docker exec -it jail sh -c "docker exec -it cell ls /tmp/ready" >/dev/null 2>&1; do sleep 1; done &&
-            docker exec -it jail sh -c "docker exec -it cell tmux a"
+            docker exec -it jail sh -c "docker exec -it cell tmux -u a"
           EOF
           # tmux select-window -t 0
           tmux select-pane -t 1
@@ -852,7 +871,7 @@ spec:
               echo \"Start a recording\"
               cd
               # Record the session in a timestamped directory
-              mkdir -p \$(date +%Y-%m-%d_%H-%M-%S)
+              mkdir -p script_recordings/\$(date +%Y-%m-%d_%H-%M-%S)
               cd \$_
               script --log-timing timing.log --log-out out.log --log-in input.log --output-limit 1MB -c \"
                 echo \\\"Enter the jail\\\"
