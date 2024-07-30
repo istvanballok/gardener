@@ -695,31 +695,37 @@ spec:
           EOF
 
           new_window "readonly" "readonly" Enter <<"EOF"
-            until k cluster-info; do sleep 10; done
-            endpoint=$(yq ~/.kube/config -o json | jq -r '.clusters[0].cluster.server' | sed 's#^https://##')
-            echo "KinD cluster endpoint: $endpoint"
+            while [ ! -f kind-operator-up ]; do echo -n .; sleep 1; done &&
+            echo &&
+            endpoint=$(yq ~/.kube/config -o json | jq -r '.clusters[0].cluster.server' | sed 's#^https://##') &&
+            echo "KinD cluster endpoint: $endpoint" &&
             SAN=$(openssl s_client -connect "$endpoint" </dev/null 2>/dev/null \
                   | openssl x509 -noout -ext subjectAltName \
                   | grep DNS: | sed 's/,/\n/g' | grep DNS: \
                   | awk -F : '{print $2}' \
-                  | grep -v -E 'localhost|kubernetes')
-            echo "KinD cluster certificate SAN: $SAN"
-            DOCKER_IP=$(ip addr show docker0 | awk '/inet /{print $2}' | cut -d '/' -f 1)
-            echo "Docker IP: $DOCKER_IP"
-            kubectl apply -f ~/.kube/readonly/resources.yaml
-            mkdir -p ~/.kube/readonly/export
+                  | grep -v -E 'localhost|kubernetes') &&
+            echo "KinD cluster certificate SAN: $SAN" &&
+            DOCKER_IP=$(ip addr show docker0 | awk '/inet /{print $2}' | cut -d '/' -f 1) &&
+            echo "Docker IP: $DOCKER_IP" &&
+            kubectl apply -f ~/.kube/readonly/resources.yaml &&
+            mkdir -p ~/.kube/readonly/export &&
             yq ~/.kube/config -o json \
             | jq --arg token "$(kubectl -n default create token readonly)" --arg SAN "$SAN" '
               .clusters[0].cluster.server = "https://\($SAN):44444" |
               .users[0].user={token: $token} |
               .contexts[0].context.namespace = "garden"
-              ' > ~/.kube/readonly/export/config
-            echo "$DOCKER_IP $SAN" > ~/.kube/readonly/export/hosts.entry
+              ' > ~/.kube/readonly/export/config &&
+            echo "$DOCKER_IP $SAN" > ~/.kube/readonly/export/hosts.entry &&
+            echo "starting socat" &&
+            touch socat &&
             socat TCP-LISTEN:44444,fork,reuseaddr TCP:"$endpoint"
           EOF
           new_pane "test" Enter <<"EOF"
-            cat ~/.kube/readonly/export/hosts.entry >> /etc/hosts
-            k --kubeconfig ~/.kube/readonly/export/config auth can-i get pods
+            while [ ! -f socat ]; do sleep 1; done &&
+            cat ~/.kube/readonly/export/hosts.entry >> /etc/hosts &&
+            echo "can-i get pods?" &&
+            k --kubeconfig ~/.kube/readonly/export/config auth can-i get pods &&
+            echo "can-i create pods?" &&
             k --kubeconfig ~/.kube/readonly/export/config auth can-i create pods
           EOF
           new_window "jail" "jail" Enter <<"EOF"
@@ -732,32 +738,34 @@ spec:
             docker rm jail
             docker run -d --rm --privileged --name jail          \
                    -v /root/.kube/readonly/export:/root/.kube:ro \
+                   -v /root/go/src/github.com/gardener/gardener/example/operator/virtual-garden:/root/.kube/virtual:ro \
                    -v /mnt/inner.disk:/var/lib/docker            \
                    -v /root/go/src/github.com/gardener/gardener/cell:/root/go/src/github.com/gardener/gardener/cell:ro \
                    docker:26-dind
           EOF
-
-
-
-          new_pane "create cell image" Enter <<"EOF"
-            until docker exec jail docker ps; do echo -n .; sleep 1; done &&
+          new_pane "create cell image and start it" Enter <<"EOF"
+            until docker exec jail docker ps >/dev/null 2>&1; do echo -n .; sleep 1; done &&
             docker exec jail docker rmi cell-image &&
             cat <<"JAIL" | xargs -d '\0' docker exec jail sh -c
               until docker ps >/dev/null 2>&1; do sleep 1; done
               cd /root/go/src/github.com/gardener/gardener/cell
+              echo "Build the cell image"
               docker build . -t cell-image
+              echo "Clean up the older images"
               docker image prune -f
-          JAIL
-          EOF
-          new_pane "start cell container" Enter <<"EOF"
-            until docker exec jail docker image history cell-image >/dev/null 2>&1; do echo -n .; sleep 1; done &&
-            cat <<"JAIL" | xargs -d '\0' docker exec jail sh -c
+              echo "Image list and disk usage"
+              docker images
+              docker system df
+              echo "Start the cell container"
               # https://docs.docker.com/engine/reference/run/#runtime-constraints-on-resources
               docker run -d --rm --name cell       \
-                     --cpus=0.5 --memory=1g        \
+                     --cpus=1 --memory=1g          \
                      -v /root/.kube:/root/.kube:ro \
+                     -v /root/.kube/virtual:/root/go/src/github.com/gardener/gardener/example/operator/virtual-garden:ro \
                      cell-image                    \
                      sh /usr/local/bin/prepare-cell.sh
+              echo "Cell container"
+              docker ps
           JAIL
           EOF
           new_window "cell" "cell" Enter <<"EOF"
