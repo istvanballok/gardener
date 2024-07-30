@@ -25,7 +25,7 @@ spec:
           apk add apache2-utils bash bash-completion bat bind-tools conntrack-tools coreutils curl \
                   diffutils dnsmasq docker-bash-completion findutils fzf g++ gawk gcompat git      \
                   git-prompt go grep helm inotify-tools jq k9s less lsof make mandoc mc moreutils  \
-                  mount ncurses neovim parallel procps sed socat strace tar tcpdump tmux tmux-doc  \
+                  mount ncurses neovim openssl parallel procps sed socat strace tar tcpdump tmux tmux-doc  \
                   tzdata util-linux vim wget yq
           mkdir -p ~/.cache/wget
           cd ~/.cache/wget
@@ -285,11 +285,11 @@ spec:
           RUN apk add apache2-utils bash bash-completion bat bind-tools conntrack-tools coreutils curl \
               diffutils dnsmasq docker-bash-completion findutils fzf g++ gawk gcompat git      \
               git-prompt go grep helm inotify-tools jq k9s less lsof make mandoc mc moreutils  \
-              mount ncurses neovim parallel procps sed strace tar tcpdump tmux tmux-doc tzdata \
+              mount ncurses neovim openssl parallel procps sed strace tar tcpdump tmux tmux-doc tzdata \
               util-linux vim wget yq
-          RUN echo gardenlogin     && wget -N "https://github.com/gardener/gardenlogin/releases/download/$(curl -sL https://raw.githubusercontent.com/gardener/gardenlogin/master/LATEST)/gardenlogin_linux_amd64" && mv gardenlogin_linux_amd64 /usr/local/bin/gardenlogin && chmod +x /usr/local/bin/gardenlogin \
+          RUN echo gardenlogin     && wget -N "https://github.com/gardener/gardenlogin/releases/download/$(curl -sL https://raw.githubusercontent.com/gardener/gardenlogin/master/LATEST)/gardenlogin_linux_amd64" && cp gardenlogin_linux_amd64 /usr/local/bin/gardenlogin && chmod +x /usr/local/bin/gardenlogin \
               && ln -s "$(which gardenlogin)" /usr/local/bin/kubectl-gardenlogin
-          RUN echo gardenctl       && wget -N "https://github.com/gardener/gardenctl-v2/releases/download/$(curl -sL https://raw.githubusercontent.com/gardener/gardenctl-v2/master/LATEST)/gardenctl_v2_linux_amd64" && mv gardenctl_v2_linux_amd64 /usr/local/bin/gardenctl && chmod +x /usr/local/bin/gardenctl \
+          RUN echo gardenctl       && wget -N "https://github.com/gardener/gardenctl-v2/releases/download/$(curl -sL https://raw.githubusercontent.com/gardener/gardenctl-v2/master/LATEST)/gardenctl_v2_linux_amd64" && cp gardenctl_v2_linux_amd64 /usr/local/bin/gardenctl && chmod +x /usr/local/bin/gardenctl \
                   && ln -s "$(which gardenctl)" /usr/local/bin/g
           RUN echo kind            && wget -N "https://kind.sigs.k8s.io/dl/$(curl -sL https://api.github.com/repos/kubernetes-sigs/kind/releases/latest | jq .tag_name -r)/kind-linux-amd64" && cp kind-linux-amd64 /usr/local/bin/kind && chmod +x /usr/local/bin/kind
           RUN echo kns             && wget -N "https://raw.githubusercontent.com/blendle/kns/master/bin/kns" && cp kns /usr/local/bin/kns && chmod +x /usr/local/bin/kns
@@ -587,7 +587,7 @@ spec:
           new_window "garden" "garden" Enter <<"EOF"
             watch k get garden
           EOF
-          new_pane "last operations" <<"EOF"
+          new_pane "last operations" Enter <<"EOF"
             while [ ! -f operator-up ]; do sleep 1; done &&
             k get garden local -o json -w \
             | jq -r --unbuffered '.status.lastOperation |
@@ -695,6 +695,7 @@ spec:
           EOF
 
           new_window "readonly" "readonly" Enter <<"EOF"
+            rm -f socat
             while [ ! -f kind-operator-up ]; do echo -n .; sleep 1; done &&
             echo &&
             endpoint=$(yq ~/.kube/config -o json | jq -r '.clusters[0].cluster.server' | sed 's#^https://##') &&
@@ -721,6 +722,7 @@ spec:
             socat TCP-LISTEN:44444,fork,reuseaddr TCP:"$endpoint"
           EOF
           new_pane "test" Enter <<"EOF"
+            # TODO wait for the port forward
             while [ ! -f socat ]; do sleep 1; done &&
             cat ~/.kube/readonly/export/hosts.entry >> /etc/hosts &&
             echo "can-i get pods?" &&
@@ -738,7 +740,7 @@ spec:
             docker rm jail
             docker run -d --rm --privileged --name jail          \
                    -v /root/.kube/readonly/export:/root/.kube:ro \
-                   -v /root/go/src/github.com/gardener/gardener/example/operator/virtual-garden:/root/.kube/virtual:ro \
+                   -v /root/go/src/github.com/gardener/gardener/example/operator/virtual-garden:/root/.kube_virtual:ro \
                    -v /mnt/inner.disk:/var/lib/docker            \
                    -v /root/go/src/github.com/gardener/gardener/cell:/root/go/src/github.com/gardener/gardener/cell:ro \
                    docker:26-dind
@@ -761,7 +763,7 @@ spec:
               docker run -d --rm --name cell       \
                      --cpus=1 --memory=1g          \
                      -v /root/.kube:/root/.kube:ro \
-                     -v /root/.kube/virtual:/root/go/src/github.com/gardener/gardener/example/operator/virtual-garden:ro \
+                     -v /root/.kube_virtual:/root/go/src/github.com/gardener/gardener/example/operator/virtual-garden:ro \
                      cell-image                    \
                      sh /usr/local/bin/prepare-cell.sh
               echo "Cell container"
