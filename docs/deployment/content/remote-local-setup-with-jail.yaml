@@ -589,12 +589,14 @@ spec:
           EOF
           new_pane "last operations" Enter <<"EOF"
             while [ ! -f operator-up ]; do sleep 1; done &&
-            k get garden local -o json -w \
-            | jq -r --unbuffered '.status.lastOperation |
-                                  [.progress, .description] |
-                                  join(" ")
-              ' | awk '{if (prev!=$0) print; fflush(); prev=$0}' \
-            | sed --unbuffered 's/,/, \n/g; s/$/\n/' | ts
+            while true; do k get garden local -o json -w \
+              | jq -r --unbuffered '.status.lastOperation |
+                                    [.progress, .description] |
+                                    join(" ")
+                ' | awk '{if (prev!=$0) print; fflush(); prev=$0}' \
+              | sed --unbuffered 's/,/, \n/g; s/$/\n/' | ts
+              sleep 1
+            done
           EOF
           new_pane "garden conditions" Enter <<"EOF"
             watch -c "k get garden local -o yaml | yq -P -C '
