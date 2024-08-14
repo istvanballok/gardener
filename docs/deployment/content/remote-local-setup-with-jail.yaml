@@ -1,82 +1,62 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
+  labels:
+    component: remote-local-setup-with-jail
   name: remote-local-setup-with-jail
-  labels: {component: remote-local-setup-with-jail}
 spec:
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
+  podManagementPolicy: OrderedReady
+  replicas: 1
+  revisionHistoryLimit: 10
   selector:
-    matchLabels: {component: remote-local-setup-with-jail}
+    matchLabels:
+      component: remote-local-setup-with-jail
+  serviceName: ""
   template:
     metadata:
-      labels: {component: remote-local-setup-with-jail}
+      creationTimestamp: null
+      labels:
+        component: remote-local-setup-with-jail
     spec:
-      terminationGracePeriodSeconds: 1
       containers:
-      - name: dev
-        image: docker:26-dind
-        command:
+      - command:
         - /bin/sh
         - -c
         - |
           set -ex -o pipefail
           cd
-
           mkdir -p ~/.cache/apk
           ln -s ~/.cache/apk /etc/apk/cache
           apk add apache2-utils bash bash-completion bat bind-tools conntrack-tools coreutils curl \
                   diffutils dnsmasq docker-bash-completion findutils fzf g++ gawk gcompat git      \
                   git-prompt go grep helm inotify-tools jq k9s less lsof make mandoc mc moreutils  \
-                  mount ncurses neovim openssl parallel procps sed socat strace tar tcpdump tmux   \
-                  tmux-doc tzdata util-linux vim wget yq
-
+                  mount ncurses neovim openssl parallel procps sed socat strace tar tcpdump tmux tmux-doc  \
+                  tzdata util-linux vim wget yq
           mkdir -p ~/.cache/wget
           cd ~/.cache/wget
-          echo gardenctl       && VERSION=$(curl -sL https://raw.githubusercontent.com/gardener/gardenctl-v2/master/LATEST) &&
-                                  wget -N "https://github.com/gardener/gardenctl-v2/releases/download/$VERSION/gardenctl_v2_linux_amd64" &&
-                                  cp gardenctl_v2_linux_amd64 /usr/local/bin/gardenctl &&
-                                  chmod +x /usr/local/bin/gardenctl &&
-                                  ln -s "$(which gardenctl)" /usr/local/bin/g
-          echo gardenlogin     && VERSION=$(curl -sL https://raw.githubusercontent.com/gardener/gardenlogin/master/LATEST) &&
-                                  wget -N "https://github.com/gardener/gardenlogin/releases/download/$VERSION/gardenlogin_linux_amd64" &&
-                                  cp gardenlogin_linux_amd64 /usr/local/bin/gardenlogin &&
-                                  chmod +x /usr/local/bin/gardenlogin &&
-                                  ln -s "$(which gardenlogin)" /usr/local/bin/kubectl-gardenlogin
-          echo kind            && VERSION=$(curl -sL https://api.github.com/repos/kubernetes-sigs/kind/releases/latest | jq .tag_name -r) &&
-                                  wget -N "https://kind.sigs.k8s.io/dl/$VERSION/kind-linux-amd64" &&
-                                  cp kind-linux-amd64 /usr/local/bin/kind &&
-                                  chmod +x /usr/local/bin/kind
-          echo kns             && wget -N "https://raw.githubusercontent.com/blendle/kns/master/bin/kns" &&
-                                  cp kns /usr/local/bin/kns &&
-                                  chmod +x /usr/local/bin/kns
-          echo krew            && VERSION=$(curl -sL https://api.github.com/repos/kubernetes-sigs/krew/releases/latest | jq .tag_name -r) &&
-                                  wget -N "https://github.com/kubernetes-sigs/krew/releases/download/$VERSION/krew-linux_amd64.tar.gz" &&
-                                  tar -xzf krew-linux_amd64.tar.gz ./krew-linux_amd64 &&
-                                  mv krew-linux_amd64 /usr/local/bin/krew &&
-                                  krew install krew
-          echo ktx             && wget -N "https://raw.githubusercontent.com/blendle/kns/master/bin/ktx" &&
-                                  cp ktx /usr/local/bin/ktx &&
-                                  chmod +x /usr/local/bin/ktx
-          echo kube-ps1        && wget -N "https://raw.githubusercontent.com/jonmosco/kube-ps1/master/kube-ps1.sh" &&
-                                  cp kube-ps1.sh ~/.kube-ps1.sh
-          echo kubectl         && VERSION=$(curl -sL https://dl.k8s.io/release/stable.txt) &&
-                                  wget -N "https://dl.k8s.io/release/$VERSION/bin/linux/amd64/kubectl" &&
-                                  cp kubectl /usr/local/bin/kubectl &&
-                                  chmod +x /usr/local/bin/kubectl &&
-                                  ln -s "$(which kubectl)" /usr/local/bin/k
-          echo tmux-completion && wget -N "https://raw.githubusercontent.com/imomaliev/tmux-bash-completion/master/completions/tmux" &&
-                                  cp tmux /usr/share/bash-completion/completions/tmux
-          echo yaml2json       && VERSION=$(curl -sL https://api.github.com/repos/bronze1man/yaml2json/releases/latest | jq .tag_name -r) &&
-                                  wget -N "https://github.com/bronze1man/yaml2json/releases/download/$VERSION/yaml2json_linux_amd64" &&
-                                  cp yaml2json_linux_amd64 /usr/local/bin/yaml2json &&
-                                  chmod +x /usr/local/bin/yaml2json
+          echo gardenlogin     && wget -N "https://github.com/gardener/gardenlogin/releases/download/$(curl -sL https://raw.githubusercontent.com/gardener/gardenlogin/master/LATEST)/gardenlogin_linux_amd64" && cp gardenlogin_linux_amd64 /usr/local/bin/gardenlogin && chmod +x /usr/local/bin/gardenlogin \
+                               && ln -s "$(which gardenlogin)" /usr/local/bin/kubectl-gardenlogin
+          echo gardenctl       && wget -N "https://github.com/gardener/gardenctl-v2/releases/download/$(curl -sL https://raw.githubusercontent.com/gardener/gardenctl-v2/master/LATEST)/gardenctl_v2_linux_amd64" && cp gardenctl_v2_linux_amd64 /usr/local/bin/gardenctl && chmod +x /usr/local/bin/gardenctl \
+                               && ln -s "$(which gardenctl)" /usr/local/bin/g
+          echo kind            && wget -N "https://kind.sigs.k8s.io/dl/$(curl -sL https://api.github.com/repos/kubernetes-sigs/kind/releases/latest | jq .tag_name -r)/kind-linux-amd64" && cp kind-linux-amd64 /usr/local/bin/kind && chmod +x /usr/local/bin/kind
+          echo kns             && wget -N "https://raw.githubusercontent.com/blendle/kns/master/bin/kns" && cp kns /usr/local/bin/kns && chmod +x /usr/local/bin/kns
+          echo krew            && wget -N "https://github.com/kubernetes-sigs/krew/releases/download/$(curl -sL https://api.github.com/repos/kubernetes-sigs/krew/releases/latest | jq .tag_name -r)/krew-linux_amd64.tar.gz" && tar -xzf krew-linux_amd64.tar.gz ./krew-linux_amd64 && mv krew-linux_amd64 /usr/local/bin/krew && krew install krew
+          echo ktx             && wget -N "https://raw.githubusercontent.com/blendle/kns/master/bin/ktx" && cp ktx /usr/local/bin/ktx && chmod +x /usr/local/bin/ktx
+          echo kube-ps1        && wget -N "https://raw.githubusercontent.com/jonmosco/kube-ps1/master/kube-ps1.sh" && cp kube-ps1.sh ~/.kube-ps1.sh
+          echo kubectl         && wget -N "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && cp kubectl /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl \
+                               && ln -s "$(which kubectl)" /usr/local/bin/k
+          echo tmux-completion && wget -N "https://raw.githubusercontent.com/imomaliev/tmux-bash-completion/master/completions/tmux" && cp tmux /usr/share/bash-completion/completions/tmux
+          echo yaml2json       && wget -N "https://github.com/bronze1man/yaml2json/releases/download/$(curl -sL https://api.github.com/repos/bronze1man/yaml2json/releases/latest | jq .tag_name -r)/yaml2json_linux_amd64" && cp yaml2json_linux_amd64 /usr/local/bin/yaml2json && chmod +x /usr/local/bin/yaml2json
           cd
-          echo delve      && go install github.com/go-delve/delve/cmd/dlv@latest
-          echo gron       && go install github.com/tomnomnom/gron@latest
-          echo ginkgo     && go install github.com/onsi/ginkgo/v2/ginkgo@latest
-          echo stern      && go install github.com/stern/stern@latest
-          echo neat       && krew install neat
-          echo node-shell && krew install node-shell
-
+          echo delve           && go install github.com/go-delve/delve/cmd/dlv@latest
+          echo gron            && go install github.com/tomnomnom/gron@latest
+          echo ginkgo          && go install github.com/onsi/ginkgo/v2/ginkgo@latest
+          echo stern           && go install github.com/stern/stern@latest
+          echo neat            && krew install neat
+          echo node-shell      && krew install node-shell
           bash -c "echo {{p,g}-seed,{gu,p,v}-local--local}.ingress.local.seed.local.gardener.cloud api.{e2e-managedseed.garden,{local,e2e-{hib,hib-wl,unpriv,wake-up,wake-up-wl,migrate,migrate-wl,mgr-hib,rotate,rotate-wl,default,default-wl,force-delete,fd-hib,upd-node,upd-node-wl,upgrade,upgrade-wl,upg-hib,upg-hib-wl}}.local}.{internal,external}.local.gardener.cloud" \
             | sed 's/ /\n/g' | sed 's/^/127.0.0.1 /' | sort >> /etc/hosts
           echo "127.0.0.3 api.virtual-garden.local.gardener.cloud" >> /etc/hosts
@@ -617,14 +597,12 @@ spec:
           EOF
           new_pane "last operations" Enter <<"EOF"
             while [ ! -f operator-up ]; do sleep 1; done &&
-            while true; do k get garden local -o json -w \
-              | jq -r --unbuffered '.status.lastOperation |
-                                    [.progress, .description] |
-                                    join(" ")
-                ' | awk '{if (prev!=$0) print; fflush(); prev=$0}' \
-              | sed --unbuffered 's/,/, \n/g; s/$/\n/' | ts
-              sleep 1
-            done
+            k get garden local -o json -w \
+            | jq -r --unbuffered '.status.lastOperation |
+                                  [.progress, .description] |
+                                  join(" ")
+              ' | awk '{if (prev!=$0) print; fflush(); prev=$0}' \
+            | sed --unbuffered 's/,/, \n/g; s/$/\n/' | ts
           EOF
           new_pane "garden conditions" Enter <<"EOF"
             watch -c "k get garden local -o yaml | yq -P -C '
@@ -817,209 +795,72 @@ spec:
 
           touch /tmp/ready
           wait
-        startupProbe:
-          exec: {command: [cat, /tmp/ready]}
-          failureThreshold: 36
-        env: [{name: ENV, value: /root/greeting.sh}] # ash sources the ENV file
+        env:
+        - name: ENV
+          value: /root/greeting.sh
+        image: docker:26-dind
+        imagePullPolicy: IfNotPresent
+        name: dev
         resources:
-          requests: {cpu: 14, memory: 28G}
-          limits:   {cpu: 14, memory: 28G}
+          limits:
+            cpu: "14"
+            memory: 28G
+          requests:
+            cpu: "14"
+            memory: 28G
         securityContext:
           privileged: true
-        volumeMounts:
-        # Without bind mounting `/sys/fs/cgroup` the nested shoot worker node failed in this DinD pod.
-        # Due to bind mounting `/sys/fs/cgroup` from the host, the docker containers in this DinD pod (i.e. the KinD cluster)
-        # use a top level cgroup and hence are not constrained by the resource limits of this pod.
-        # The host cgroups might leak until the nodes are recreated e.g. when the hosting Gardener dev shoot cluster is hibernated.
-        # To avoid conflicts on the top level docker cgroup, only one remote-local-setup-with-jail pod per node is recommended which is enforced by the high resource requests.
-        # See
-        # https://github.com/kubernetes-sigs/kind/issues/303
-        # https://github.com/kubernetes/test-infra/blob/dcf27e157932c3e8680be4ae6cb8a4e2c7acf8cf/config/prow/config.yaml#L978-L988
-        # https://github.com/gardener/ci-infra/blob/dff565bced0f386dd1acb0743beb3831dae6c10d/config/prow/config.yaml#L288-L298
-        - {name: cgroup,  mountPath: /sys/fs/cgroup}
-        - {name: home,    mountPath: /root}
-        - {name: home,    mountPath: /var/lib/docker, subPath: .docker}
-        - {name: modules, mountPath: /lib/modules, readOnly: true}
-      volumes:
-      - {name: cgroup,  hostPath: {type: Directory, path: /sys/fs/cgroup}}
-      - {name: modules, hostPath: {type: Directory, path: /lib/modules}}
-  volumeClaimTemplates:
-  - apiVersion: v1
-    kind: PersistentVolumeClaim
-    metadata: {name: home}
-    spec:
-      accessModes: [ReadWriteOnce]
-      resources: {requests: {storage: 80Gi}}
-      volumeMode: Filesystem
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: cell-exec
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: cell-exec
-rules:
-- apiGroups: [""]
-  resources: ["pods"]
-  resourceNames: ["remote-local-setup-with-jail-0"]
-  verbs: ["get", "list", "watch"]
-- apiGroups: [""]
-  resources: ["pods/exec"]
-  resourceNames: ["remote-local-setup-with-jail-0"]
-  verbs: ["create"]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: cell-exec
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: cell-exec
-subjects:
-- kind: ServiceAccount
-  name: cell-exec
----
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: cell-exec
-spec:
-  replicas: 1
-  selector: {matchLabels: {app: cell-exec}}
-  template:
-    metadata: {labels: {app: cell-exec}}
-    spec:
-      serviceAccountName: cell-exec
-      terminationGracePeriodSeconds: 1
-      containers:
-      - name: alpine
-        image: alpine:3.20
-        stdin: true
-        tty: true
-        command:
-        - /bin/sh
-        - -c
-        - |
-          set -ex -o pipefail
-          cd
-          mkdir -p ~/.cache/apk
-          ln -s ~/.cache/apk /etc/apk/cache
-          apk add curl wget
-          mkdir -p ~/.cache/wget
-          cd ~/.cache/wget
-          wget -N "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && cp kubectl /usr/local/bin/kubectl
-          chmod +x /usr/local/bin/kubectl
-          while ! kubectl wait --for=condition=ready pod/remote-local-setup-with-jail-0 --timeout=-1s; do sleep 1; done
-          kubectl exec -it remote-local-setup-with-jail-0 -- sh -c "
-            echo \"Check the jail\"
-            while ! docker inspect jail >/dev/null 2>&1; do
-              echo -n .
-              sleep 1
-            done
-            echo \"Enter the jail\"
-            docker exec -it jail sh -c '
-              echo \"Check the cell\"
-              while ! docker inspect cell >/dev/null 2>&1; do
-                echo -n .
-                sleep 1
-              done
-              echo \"Enter the cell\"
-              docker exec -it cell sh -c \"
-                echo \\\"Check the tmux session\\\"
-                while [ ! -e /tmp/ready ]; do
-                  echo -n .
-                  sleep 1
-                done
-                echo \\\"Enter the tmux session\\\"
-                tmux ls
-              \"
-            '
-          "
-          (sleep 3 && touch /tmp/ready) &
-          # while true; do
-            kubectl exec -it remote-local-setup-with-jail-0 -- bash -c "
-              echo \"Check the jail\"
-              while ! docker inspect jail >/dev/null 2>&1; do
-                echo -n .
-                sleep 1
-              done
-              echo \"Start a recording\"
-              cd
-              # Record the session in a timestamped directory
-              mkdir -p script_recordings/\$(date +%Y-%m-%d_%H-%M-%S)
-              cd \$_
-              script --log-timing timing.log --log-out out.log --log-in input.log --output-limit 1MB -c \"
-                echo \\\"Enter the jail\\\"
-                docker exec -it jail sh -c '
-                  echo \\\"Check the cell\\\"
-                  while ! docker inspect cell >/dev/null 2>&1; do
-                    echo -n .
-                    sleep 1
-                  done
-                  echo \\\"Enter the cell\\\"
-                  docker exec -it cell sh -c \\\"
-                    echo \\\\\\\"Check the tmux session\\\\\\\"
-                    while [ ! -e /tmp/ready ]; do
-                      echo -n .
-                      sleep 1
-                    done
-                    echo \\\\\\\"Enter the tmux session\\\\\\\"
-                    export LANG=C.UTF-8
-                    export TERM=xterm-256color
-                    tmux a
-                  \\\"
-                '
-              \"
-            "
-          # done
         startupProbe:
-          exec: {command: [cat, /tmp/ready]}
-          failureThreshold: 360
+          exec:
+            command:
+            - cat
+            - /tmp/ready
+          failureThreshold: 36
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
         volumeMounts:
-        - {name: home,    mountPath: /root}
+        - mountPath: /sys/fs/cgroup
+          name: cgroup
+        - mountPath: /root
+          name: home
+        - mountPath: /var/lib/docker
+          name: home
+          subPath: .docker
+        - mountPath: /lib/modules
+          name: modules
+          readOnly: true
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      terminationGracePeriodSeconds: 1
+      volumes:
+      - hostPath:
+          path: /sys/fs/cgroup
+          type: Directory
+        name: cgroup
+      - hostPath:
+          path: /lib/modules
+          type: Directory
+        name: modules
+  updateStrategy:
+    rollingUpdate:
+      partition: 0
+    type: RollingUpdate
   volumeClaimTemplates:
   - apiVersion: v1
     kind: PersistentVolumeClaim
-    metadata: {name: home}
+    metadata:
+      creationTimestamp: null
+      name: home
     spec:
-      accessModes: [ReadWriteOnce]
-      resources: {requests: {storage: 1Gi}}
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 80Gi
       volumeMode: Filesystem
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: cell-attach
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: cell-attach
-rules:
-- apiGroups: [""]
-  resources: ["pods"]
-  resourceNames: ["cell-exec-0"]
-  verbs: ["get", "list", "watch"]
-- apiGroups: [""]
-  resources: ["pods/attach"]
-  resourceNames: ["cell-exec-0"]
-  verbs: ["create"]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: cell-attach
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: cell-attach
-subjects:
-- kind: ServiceAccount
-  name: cell-attach
----
-# k --as system:serviceaccount:<ns>:cell-attach attach -it cell-exec-0
-# get ready time for the cell-exec
+    status:
+      phase: Pending
