@@ -642,6 +642,7 @@ spec:
           cat > /usr/local/bin/prepare-operator-complete.sh <<"SCRIPT_EOF"
           tmux kill-session 2>/dev/null || true
           cd ~/go/src/github.com/gardener/gardener
+          rm -rf sync && mkdir -p sync
           make kind-down kind-ha-multi-zone-down kind-operator-down >/dev/null 2>&1
           cd - >/dev/null
           mkdir -p ~/.kube
@@ -652,30 +653,27 @@ spec:
           for k in top Enter z C c i t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
           new_pane "make kind-operator-up" Enter <<"EOF"
             sync_kubeconfig example/gardener-local/kind/operator & sleep 1
-            rm -f kind-operator-up
             nice make kind-operator-down kind-operator-up &&
             kubectl wait --for=condition=ready pod -A --all --timeout=-1s || true &&
-            touch kind-operator-up
+            touch sync/kind-operator-up
           EOF
           new_pane "make operator-up" Enter <<"EOF"
             export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig
-            rm -f operator-up
-            while [ ! -f kind-operator-up ]; do sleep 1; done &&
+            while [ ! -f sync/kind-operator-up ]; do sleep 1; done &&
             nice make operator-up &&
-            touch operator-up
+            touch sync/operator-up
           EOF
           new_pane "make operator-seed-up" Enter <<"EOF"
             export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig
-            rm -f operator-seed-up
-            while [ ! -f operator-up ]; do sleep 1; done &&
+            while [ ! -f sync/operator-up ]; do sleep 1; done &&
             nice make operator-seed-up &&
-            touch operator-seed-up
+            touch sync/operator-seed-up
           EOF
           new_window "garden" "garden" Enter <<"EOF"
             watch k get garden
           EOF
           new_pane "last operations" Enter <<"EOF"
-            while [ ! -f operator-up ]; do sleep 1; done &&
+            while [ ! -f sync/operator-up ]; do sleep 1; done &&
             k get garden local -o json -w \
             | jq -r --unbuffered '.status.lastOperation |
                                   [.progress, .description] |
@@ -690,10 +688,9 @@ spec:
           EOF
           new_window "shoot lifecycle" "Create" Enter <<"EOF"
             export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-            rm -f shoot
-            while [ ! -f operator-seed-up ]; do sleep 1; done &&
+            while [ ! -f sync/operator-seed-up ]; do sleep 1; done &&
             k apply -f example/provider-local/shoot.yaml &&
-            touch shoot
+            touch sync/shoot
           EOF
           new_pane "Reconcile" <<"EOF"
             export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
@@ -710,7 +707,7 @@ spec:
           EOF
           new_pane "last operations" <<"EOF"
             export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-            while [ ! -f shoot ]; do sleep 1; done &&
+            while [ ! -f sync/shoot ]; do sleep 1; done &&
             k -n garden-local get shoot local -o json -w | jq -r --unbuffered '
               .status.lastOperation.description
             ' | awk '{if (prev!=$0) print; fflush(); prev=$0}' | sed --unbuffered 's/,/, \n/g; s/$/\n/' | ts
@@ -782,8 +779,7 @@ spec:
           EOF
 
           new_window "readonly" "readonly" Enter <<"EOF"
-            rm -f socat
-            while [ ! -f kind-operator-up ]; do echo -n .; sleep 1; done &&
+            while [ ! -f sync/kind-operator-up ]; do echo -n .; sleep 1; done &&
             echo &&
             endpoint=$(yq ~/.kube/config -o json | jq -r '.clusters[0].cluster.server' | sed 's#^https://##') &&
             echo "KinD cluster endpoint: $endpoint" &&
@@ -806,7 +802,7 @@ spec:
             echo "$DOCKER_IP $SAN" > ~/.kube/readonly/export/hosts.entry &&
             echo "$DOCKER_IP api.virtual-garden.local.gardener.cloud" > ~/.kube/readonly/export/hosts.entry &&
             echo "starting socat" &&
-            touch socat &&
+            touch sync/socat &&
             socat TCP-LISTEN:44444,fork,reuseaddr TCP:"$endpoint"
           EOF
           new_pane "test" Enter <<"EOF"
@@ -814,7 +810,7 @@ spec:
           EOF
           new_pane "test" Enter <<"EOF"
             # TODO wait for the port forward
-            while [ ! -f socat ]; do sleep 1; done &&
+            while [ ! -f sync/socat ]; do sleep 1; done &&
             cat ~/.kube/readonly/export/hosts.entry >> /etc/hosts &&
             echo "can-i get pods?" &&
             k --kubeconfig ~/.kube/readonly/export/config auth can-i get pods &&
