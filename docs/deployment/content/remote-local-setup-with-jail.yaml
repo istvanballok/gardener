@@ -347,11 +347,6 @@ spec:
                    cp gardenctl_v2_linux_amd64 /usr/local/bin/gardenctl                                                             && \
                    chmod +x /usr/local/bin/gardenctl                                                                                && \
                    ln -s "$(which gardenctl)" /usr/local/bin/g
-          RUN echo kind                                                                                                             && \
-                   VERSION=$(curl -sL https://api.github.com/repos/kubernetes-sigs/kind/releases/latest | jq .tag_name -r)          && \
-                   wget -N "https://kind.sigs.k8s.io/dl/$VERSION/kind-linux-amd64"                                                  && \
-                   cp kind-linux-amd64 /usr/local/bin/kind                                                                          && \
-                   chmod +x /usr/local/bin/kind
           RUN echo kns                                                                                                              && \
                    wget -N "https://raw.githubusercontent.com/blendle/kns/master/bin/kns"                                           && \
                    cp kns /usr/local/bin/kns                                                                                        && \
