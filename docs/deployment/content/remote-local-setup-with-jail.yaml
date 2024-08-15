@@ -335,25 +335,65 @@ spec:
               git-prompt go grep helm inotify-tools jq k9s less lsof make mandoc mc moreutils  \
               mount ncurses neovim openssl parallel procps sed strace tar tcpdump tmux tmux-doc tzdata \
               util-linux vim wget yq
-          RUN echo gardenlogin     && wget -N "https://github.com/gardener/gardenlogin/releases/download/$(curl -sL https://raw.githubusercontent.com/gardener/gardenlogin/master/LATEST)/gardenlogin_linux_amd64" && cp gardenlogin_linux_amd64 /usr/local/bin/gardenlogin && chmod +x /usr/local/bin/gardenlogin \
-              && ln -s "$(which gardenlogin)" /usr/local/bin/kubectl-gardenlogin
-          RUN echo gardenctl       && wget -N "https://github.com/gardener/gardenctl-v2/releases/download/$(curl -sL https://raw.githubusercontent.com/gardener/gardenctl-v2/master/LATEST)/gardenctl_v2_linux_amd64" && cp gardenctl_v2_linux_amd64 /usr/local/bin/gardenctl && chmod +x /usr/local/bin/gardenctl \
-                  && ln -s "$(which gardenctl)" /usr/local/bin/g
-          RUN echo kind            && wget -N "https://kind.sigs.k8s.io/dl/$(curl -sL https://api.github.com/repos/kubernetes-sigs/kind/releases/latest | jq .tag_name -r)/kind-linux-amd64" && cp kind-linux-amd64 /usr/local/bin/kind && chmod +x /usr/local/bin/kind
-          RUN echo kns             && wget -N "https://raw.githubusercontent.com/blendle/kns/master/bin/kns" && cp kns /usr/local/bin/kns && chmod +x /usr/local/bin/kns
-          RUN echo krew            && wget -N "https://github.com/kubernetes-sigs/krew/releases/download/$(curl -sL https://api.github.com/repos/kubernetes-sigs/krew/releases/latest | jq .tag_name -r)/krew-linux_amd64.tar.gz" && tar -xzf krew-linux_amd64.tar.gz ./krew-linux_amd64 && mv krew-linux_amd64 /usr/local/bin/krew && krew install krew
-          RUN echo ktx             && wget -N "https://raw.githubusercontent.com/blendle/kns/master/bin/ktx" && cp ktx /usr/local/bin/ktx && chmod +x /usr/local/bin/ktx
-          RUN echo kube-ps1        && wget -N "https://raw.githubusercontent.com/jonmosco/kube-ps1/master/kube-ps1.sh" && cp kube-ps1.sh ~/.kube-ps1.sh
-          RUN echo kubectl         && wget -N "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && cp kubectl /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl \
-                  && ln -s "$(which kubectl)" /usr/local/bin/k
-          RUN echo tmux-completion && wget -N "https://raw.githubusercontent.com/imomaliev/tmux-bash-completion/master/completions/tmux" && cp tmux /usr/share/bash-completion/completions/tmux
-          RUN echo yaml2json       && wget -N "https://github.com/bronze1man/yaml2json/releases/download/$(curl -sL https://api.github.com/repos/bronze1man/yaml2json/releases/latest | jq .tag_name -r)/yaml2json_linux_amd64" && cp yaml2json_linux_amd64 /usr/local/bin/yaml2json && chmod +x /usr/local/bin/yaml2json
-          RUN echo delve           && go install github.com/go-delve/delve/cmd/dlv@latest
-          RUN echo gron            && go install github.com/tomnomnom/gron@latest
-          RUN echo ginkgo          && go install github.com/onsi/ginkgo/v2/ginkgo@latest
-          RUN echo stern           && go install github.com/stern/stern@latest
-          RUN echo neat            && krew install neat
-          RUN echo node-shell      && krew install node-shell
+          RUN echo gardenlogin                                                                                                      && \
+                   VERSION=$(curl -sL https://raw.githubusercontent.com/gardener/gardenlogin/master/LATEST)                         && \
+                   wget -N "https://github.com/gardener/gardenlogin/releases/download/$VERSION/gardenlogin_linux_amd64"             && \
+                   cp gardenlogin_linux_amd64 /usr/local/bin/gardenlogin                                                            && \
+                   chmod +x /usr/local/bin/gardenlogin                                                                              && \
+                   ln -s "$(which gardenlogin)" /usr/local/bin/kubectl-gardenlogin
+          RUN echo gardenctl                                                                                                        && \
+                   VERSION=$(curl -sL https://raw.githubusercontent.com/gardener/gardenctl-v2/master/LATEST)                        && \
+                   wget -N "https://github.com/gardener/gardenctl-v2/releases/download/$VERSION/gardenctl_v2_linux_amd64"           && \
+                   cp gardenctl_v2_linux_amd64 /usr/local/bin/gardenctl                                                             && \
+                   chmod +x /usr/local/bin/gardenctl                                                                                && \
+                   ln -s "$(which gardenctl)" /usr/local/bin/g
+          RUN echo kind                                                                                                             && \
+                   VERSION=$(curl -sL https://api.github.com/repos/kubernetes-sigs/kind/releases/latest | jq .tag_name -r)          && \
+                   wget -N "https://kind.sigs.k8s.io/dl/$VERSION/kind-linux-amd64"                                                  && \
+                   cp kind-linux-amd64 /usr/local/bin/kind                                                                          && \
+                   chmod +x /usr/local/bin/kind
+          RUN echo kns                                                                                                              && \
+                   wget -N "https://raw.githubusercontent.com/blendle/kns/master/bin/kns"                                           && \
+                   cp kns /usr/local/bin/kns                                                                                        && \
+                   chmod +x /usr/local/bin/kns
+          RUN echo krew                                                                                                             && \
+                   VERSION=$(curl -sL https://api.github.com/repos/kubernetes-sigs/krew/releases/latest | jq .tag_name -r)          && \
+                   wget -N "https://github.com/kubernetes-sigs/krew/releases/download/$VERSION/krew-linux_amd64.tar.gz"             && \
+                   tar -xzf krew-linux_amd64.tar.gz ./krew-linux_amd64                                                              && \
+                   mv krew-linux_amd64 /usr/local/bin/krew                                                                          && \
+                   krew install krew
+          RUN echo ktx                                                                                                              && \
+                   wget -N "https://raw.githubusercontent.com/blendle/kns/master/bin/ktx"                                           && \
+                   cp ktx /usr/local/bin/ktx                                                                                        && \
+                   chmod +x /usr/local/bin/ktx
+          RUN echo kube-ps1                                                                                                         && \
+                   wget -N "https://raw.githubusercontent.com/jonmosco/kube-ps1/master/kube-ps1.sh"                                 && \
+                   cp kube-ps1.sh ~/.kube-ps1.sh
+          RUN echo kubectl                                                                                                          && \
+                   wget -N "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"     && \
+                   cp kubectl /usr/local/bin/kubectl                                                                                && \
+                   chmod +x /usr/local/bin/kubectl                                                                                  && \
+                   ln -s "$(which kubectl)" /usr/local/bin/k
+          RUN echo tmux-completion                                                                                                  && \
+                   wget -N "https://raw.githubusercontent.com/imomaliev/tmux-bash-completion/master/completions/tmux"               && \
+                   cp tmux /usr/share/bash-completion/completions/tmux
+          RUN echo yaml2json                                                                                                        && \
+                   VERSION=$(curl -sL https://api.github.com/repos/bronze1man/yaml2json/releases/latest | jq .tag_name -r)          && \
+                   wget -N "https://github.com/bronze1man/yaml2json/releases/download/$VERSION/yaml2json_linux_amd64"               && \
+                   cp yaml2json_linux_amd64 /usr/local/bin/yaml2json                                                                && \
+                   chmod +x /usr/local/bin/yaml2json
+          RUN echo delve                                                                                                            && \
+                   go install github.com/go-delve/delve/cmd/dlv@latest
+          RUN echo gron                                                                                                             && \
+                   go install github.com/tomnomnom/gron@latest
+          RUN echo ginkgo                                                                                                           && \
+                   go install github.com/onsi/ginkgo/v2/ginkgo@latest
+          RUN echo stern                                                                                                            && \
+                   go install github.com/stern/stern@latest
+          RUN echo neat                                                                                                             && \
+                   krew install neat
+          RUN echo node-shell                                                                                                       && \
+                   krew install node-shell
 
           RUN kubectl completion bash > /usr/share/bash-completion/completions/kubectl
           RUN gardenctl completion bash > /usr/share/bash-completion/completions/gardenctl
