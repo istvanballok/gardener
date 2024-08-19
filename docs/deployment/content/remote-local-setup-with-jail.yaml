@@ -330,10 +330,10 @@ spec:
           fi
           cat > ~/go/src/github.com/gardener/gardener/cell/Dockerfile <<"DOCKERFILE"
           FROM alpine:3.20
-          RUN apk add apache2-utils bash bash-completion bat bind-tools conntrack-tools coreutils curl \
-              diffutils dnsmasq docker-bash-completion findutils fzf g++ gawk gcompat git      \
-              git-prompt go grep helm inotify-tools jq k9s less lsof make mandoc mc moreutils  \
-              mount ncurses neovim openssl parallel procps sed strace tar tcpdump tmux tmux-doc tzdata \
+          RUN apk add bash bash-completion bat bind-tools conntrack-tools coreutils curl        \
+              diffutils docker-bash-completion findutils fzf gawk gcompat git                   \
+              git-prompt go grep helm inotify-tools jq k9s less lsof make mandoc mc moreutils   \
+              mount ncurses neovim openssl parallel procps sed tar tcpdump tmux tmux-doc tzdata \
               util-linux vim wget yq
           RUN echo gardenlogin                                                                                                      && \
                    VERSION=$(curl -sL https://raw.githubusercontent.com/gardener/gardenlogin/master/LATEST)                         && \
@@ -377,8 +377,6 @@ spec:
                    wget -N "https://github.com/bronze1man/yaml2json/releases/download/$VERSION/yaml2json_linux_amd64"               && \
                    cp yaml2json_linux_amd64 /usr/local/bin/yaml2json                                                                && \
                    chmod +x /usr/local/bin/yaml2json
-          RUN echo delve                                                                                                            && \
-                   go install github.com/go-delve/delve/cmd/dlv@latest
           RUN echo gron                                                                                                             && \
                    go install github.com/tomnomnom/gron@latest
           RUN echo ginkgo                                                                                                           && \
