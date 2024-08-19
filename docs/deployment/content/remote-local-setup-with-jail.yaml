@@ -328,7 +328,7 @@ spec:
           else
             git clone ~/go/src/github.com/gardener/gardener gardener
           fi
-          cat > ~/go/src/github.com/gardener/gardener/cell/Dockerfile <<"DOCKERFILE"
+          cat > ~/go/src/github.com/gardener/gardener/cell/Dockerfile <<DOCKERFILE
           FROM alpine:3.20
           RUN apk add bash bash-completion bat bind-tools conntrack-tools coreutils curl        \
               diffutils docker-bash-completion findutils fzf gawk gcompat git                   \
@@ -337,23 +337,23 @@ spec:
               util-linux vim wget yq
           RUN echo gardenlogin                                                                                                      && \
                    VERSION=$(curl -sL https://raw.githubusercontent.com/gardener/gardenlogin/master/LATEST)                         && \
-                   wget "https://github.com/gardener/gardenlogin/releases/download/$VERSION/gardenlogin_linux_amd64"                && \
+                   wget "https://github.com/gardener/gardenlogin/releases/download/\$VERSION/gardenlogin_linux_amd64"               && \
                    mv gardenlogin_linux_amd64 /usr/local/bin/gardenlogin                                                            && \
                    chmod +x /usr/local/bin/gardenlogin                                                                              && \
-                   ln -s "$(which gardenlogin)" /usr/local/bin/kubectl-gardenlogin
+                   ln -s "\$(which gardenlogin)" /usr/local/bin/kubectl-gardenlogin
           RUN echo gardenctl                                                                                                        && \
                    VERSION=$(curl -sL https://raw.githubusercontent.com/gardener/gardenctl-v2/master/LATEST)                        && \
-                   wget "https://github.com/gardener/gardenctl-v2/releases/download/$VERSION/gardenctl_v2_linux_amd64"              && \
+                   wget "https://github.com/gardener/gardenctl-v2/releases/download/\$VERSION/gardenctl_v2_linux_amd64"             && \
                    mv gardenctl_v2_linux_amd64 /usr/local/bin/gardenctl                                                             && \
                    chmod +x /usr/local/bin/gardenctl                                                                                && \
-                   ln -s "$(which gardenctl)" /usr/local/bin/g
+                   ln -s "\$(which gardenctl)" /usr/local/bin/g
           RUN echo kns                                                                                                              && \
                    wget "https://raw.githubusercontent.com/blendle/kns/master/bin/kns"                                              && \
                    mv kns /usr/local/bin/kns                                                                                        && \
                    chmod +x /usr/local/bin/kns
           RUN echo krew                                                                                                             && \
                    VERSION=$(curl -sL https://api.github.com/repos/kubernetes-sigs/krew/releases/latest | jq .tag_name -r)          && \
-                   wget "https://github.com/kubernetes-sigs/krew/releases/download/$VERSION/krew-linux_amd64.tar.gz"                && \
+                   wget "https://github.com/kubernetes-sigs/krew/releases/download/\$VERSION/krew-linux_amd64.tar.gz"               && \
                    tar -xzf krew-linux_amd64.tar.gz ./krew-linux_amd64                                                              && \
                    mv krew-linux_amd64 /usr/local/bin/krew                                                                          && \
                    krew install krew
@@ -365,16 +365,17 @@ spec:
                    wget "https://raw.githubusercontent.com/jonmosco/kube-ps1/master/kube-ps1.sh"                                    && \
                    mv kube-ps1.sh ~/.kube-ps1.sh
           RUN echo kubectl                                                                                                          && \
-                   wget "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"        && \
+                   VERSION=$(curl -sL https://dl.k8s.io/release/stable.txt)                                                         && \
+                   wget "https://dl.k8s.io/release/\$VERSION/bin/linux/amd64/kubectl"                                               && \
                    mv kubectl /usr/local/bin/kubectl                                                                                && \
                    chmod +x /usr/local/bin/kubectl                                                                                  && \
-                   ln -s "$(which kubectl)" /usr/local/bin/k
+                   ln -s "\$(which kubectl)" /usr/local/bin/k
           RUN echo tmux-completion                                                                                                  && \
                    wget "https://raw.githubusercontent.com/imomaliev/tmux-bash-completion/master/completions/tmux"                  && \
                    mv tmux /usr/share/bash-completion/completions/tmux
           RUN echo yaml2json                                                                                                        && \
                    VERSION=$(curl -sL https://api.github.com/repos/bronze1man/yaml2json/releases/latest | jq .tag_name -r)          && \
-                   wget "https://github.com/bronze1man/yaml2json/releases/download/$VERSION/yaml2json_linux_amd64"                  && \
+                   wget "https://github.com/bronze1man/yaml2json/releases/download/\$VERSION/yaml2json_linux_amd64"                  && \
                    mv yaml2json_linux_amd64 /usr/local/bin/yaml2json                                                                && \
                    chmod +x /usr/local/bin/yaml2json
           RUN echo gron                                                                                                             && \
@@ -387,7 +388,9 @@ spec:
                    krew install neat
           RUN echo node-shell                                                                                                       && \
                    krew install node-shell
+          DOCKERFILE
 
+          cat >> ~/go/src/github.com/gardener/gardener/cell/Dockerfile <<"DOCKERFILE"
           RUN kubectl completion bash > /usr/share/bash-completion/completions/kubectl
           RUN gardenctl completion bash > /usr/share/bash-completion/completions/gardenctl
           RUN ~/go/bin/stern --completion=bash > /usr/share/bash-completion/completions/stern
