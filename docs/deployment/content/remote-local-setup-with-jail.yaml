@@ -835,7 +835,7 @@ spec:
               until docker ps >/dev/null 2>&1; do sleep 1; done
               cd /root/go/src/github.com/gardener/gardener/cell
               echo "Build the cell image"
-              docker build . -t cell-image
+              until docker build . -t cell-image; do echo "Retrying..."; sleep 1; done
               echo "Clean up the older images"
               docker image prune -f
               echo "Image list and disk usage"
