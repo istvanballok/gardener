@@ -650,20 +650,20 @@ spec:
           for k in top Enter z C c i t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
           new_pane "make kind-operator-up" Enter <<"EOF"
             sync_kubeconfig example/gardener-local/kind/operator & sleep 1
-            nice make kind-operator-down kind-operator-up &&
+            nice time make kind-operator-down kind-operator-up &&
             kubectl wait --for=condition=ready pod -A --all --timeout=-1s || true &&
             touch sync/kind-operator-up
           EOF
           new_pane "make operator-up" Enter <<"EOF"
             export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig
             while [ ! -f sync/kind-operator-up ]; do sleep 1; done &&
-            nice make operator-up &&
+            nice time make operator-up &&
             touch sync/operator-up
           EOF
           new_pane "make operator-seed-up" Enter <<"EOF"
             export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig
             while [ ! -f sync/operator-up ]; do sleep 1; done &&
-            nice make operator-seed-up &&
+            nice time make operator-seed-up &&
             touch sync/operator-seed-up
           EOF
           new_window "garden" "garden" Enter <<"EOF"
