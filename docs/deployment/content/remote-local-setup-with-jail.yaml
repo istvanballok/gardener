@@ -830,7 +830,7 @@ spec:
           EOF
           new_pane "create cell image and start it" Enter <<"EOF"
             until docker exec jail docker ps >/dev/null 2>&1; do echo -n .; sleep 1; done &&
-            docker exec jail docker rmi cell-image || true
+            docker exec jail docker rmi cell-image &&
             cat <<"JAIL" | xargs -d '\0' docker exec jail sh -c
               until docker ps >/dev/null 2>&1; do sleep 1; done
               cd /root/go/src/github.com/gardener/gardener/cell
