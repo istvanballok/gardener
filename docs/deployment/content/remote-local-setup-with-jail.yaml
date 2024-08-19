@@ -375,7 +375,7 @@ spec:
                    mv tmux /usr/share/bash-completion/completions/tmux
           RUN echo yaml2json                                                                                                        && \
                    VERSION=$(curl -sL https://api.github.com/repos/bronze1man/yaml2json/releases/latest | jq .tag_name -r)          && \
-                   wget "https://github.com/bronze1man/yaml2json/releases/download/\$VERSION/yaml2json_linux_amd64"                  && \
+                   wget "https://github.com/bronze1man/yaml2json/releases/download/\$VERSION/yaml2json_linux_amd64"                 && \
                    mv yaml2json_linux_amd64 /usr/local/bin/yaml2json                                                                && \
                    chmod +x /usr/local/bin/yaml2json
           RUN echo gron                                                                                                             && \
