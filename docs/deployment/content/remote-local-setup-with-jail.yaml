@@ -704,12 +704,25 @@ spec:
             export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
             watch k get -A seeds,shoots
           EOF
-          new_pane "last operations" <<"EOF"
+          new_pane "last operations seed" Enter <<"EOF"
+            export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+            while [ ! -f sync/operator-seed-up ]; do sleep 1; done &&
+            while true; do
+              k get seed local -o json -w 2>/dev/null | jq -r --unbuffered '
+                .status.lastOperation.description
+              ' | awk '{if (prev!=$0) print; fflush(); prev=$0}' | sed --unbuffered 's/,/, \n/g; s/$/\n/' | ts
+              sleep 1
+            done
+          EOF
+          new_pane "last operations shoot" Enter <<"EOF"
             export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
             while [ ! -f sync/shoot ]; do sleep 1; done &&
-            k -n garden-local get shoot local -o json -w | jq -r --unbuffered '
-              .status.lastOperation.description
-            ' | awk '{if (prev!=$0) print; fflush(); prev=$0}' | sed --unbuffered 's/,/, \n/g; s/$/\n/' | ts
+            while true; do
+              k -n garden-local get shoot local -o json -w 2>/dev/null | jq -r --unbuffered '
+                .status.lastOperation.description
+              ' | awk '{if (prev!=$0) print; fflush(); prev=$0}' | sed --unbuffered 's/,/, \n/g; s/$/\n/' | ts
+              sleep 1
+            done
           EOF
           new_pane "seed conditions" Enter <<"EOF"
             export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
