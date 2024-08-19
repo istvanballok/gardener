@@ -814,8 +814,10 @@ spec:
             k --kubeconfig ~/.kube/readonly/export/config auth can-i create pods
           EOF
           new_window "jail" "jail" Enter <<"EOF"
-            rm -rf ~/inner.disk && dd if=/dev/zero of=~/inner.disk bs=1M count=8192
-            mkfs.ext4 ~/inner.disk
+            if [ ! -f ~/inner.disk ]; then
+              dd if=/dev/zero of=~/inner.disk bs=1M count=8192
+              mkfs.ext4 ~/inner.disk
+            fi
             mkdir /mnt/inner.disk
             mount ~/inner.disk /mnt/inner.disk
             docker rm jail
