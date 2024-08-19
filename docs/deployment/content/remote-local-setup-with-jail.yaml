@@ -817,8 +817,8 @@ spec:
             touch sync/socat &&
             socat TCP-LISTEN:44444,fork,reuseaddr TCP:"$endpoint"
           EOF
-          new_pane "test" Enter <<"EOF"
-            socat TCP-LISTEN:443,fork,reuseaddr,bind=172.17.0.1 TCP:127.0.0.3:443
+          new_pane "virtual garden" Enter <<"EOF"
+            socat TCP-LISTEN:443,fork,reuseaddr,bind=172.17.0.1 TCP:172.18.255.3:443
           EOF
           new_pane "test" Enter <<"EOF"
             # TODO wait for the port forward
