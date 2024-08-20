@@ -4,6 +4,7 @@ metadata:
   name: remote-local-setup-with-jail
   labels: {component: remote-local-setup-with-jail}
 spec:
+  replicas: 1
   selector:
     matchLabels: {component: remote-local-setup-with-jail}
   template:
