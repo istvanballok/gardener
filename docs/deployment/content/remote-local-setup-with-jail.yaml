@@ -689,7 +689,7 @@ spec:
           new_window "shoot lifecycle" "Create" Enter <<"EOF"
             export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
             while [ ! -f sync/operator-seed-up ]; do sleep 1; done &&
-            k apply -f example/provider-local/shoot.yaml &&
+            k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type="zone"' example/provider-local/shoot.yaml) &&
             touch sync/shoot
           EOF
           new_pane "Reconcile" <<"EOF"
