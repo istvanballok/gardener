@@ -669,6 +669,11 @@ spec:
             nice time make operator-seed-up &&
             touch sync/operator-seed-up
           EOF
+          new_pane "make the virtual cluster HA " Enter <<"EOF"
+            k get garden local -o json | jq '
+              .spec.virtualCluster.controlPlane.highAvailability = {}
+            ' | k apply -f -
+          EOF
           new_window "garden" "garden" Enter <<"EOF"
             watch k get garden
           EOF
