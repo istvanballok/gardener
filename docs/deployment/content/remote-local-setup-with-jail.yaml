@@ -787,7 +787,7 @@ spec:
             generate-admin-kubeconf.sh > /tmp/shoot.kubeconfig &&
             watch k --kubeconfig /tmp/shoot.kubeconfig get pods -A
           EOF
-          new_pane "not ready pods" <<"EOF"
+          new_pane "not ready pods" Enter <<"EOF"
             export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
             while [ ! -f sync/shoot ]; do sleep 1; done &&
             k -n garden-local wait shoot local --for=condition=SystemComponentsHealthy --timeout=-1s &&
