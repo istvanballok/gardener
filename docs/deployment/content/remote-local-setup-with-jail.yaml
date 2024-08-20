@@ -215,6 +215,13 @@ spec:
             stty -ixon
             [ -n "$GCTL_SESSION_ID" ] || [ -n "$TERM_SESSION_ID" ] || export GCTL_SESSION_ID=$(uuidgen)
             cd ~/go/src/github.com/gardener/gardener
+            function token {
+              jq -R '
+                split(".")[1] |
+                @base64d |
+                fromjson |
+                (.exp,.iat,.nbf) |= todate'
+            }
             function pr {
               if [ "$#" -ne 1 ]; then
                 echo "Usage: pr <id> - checkout the HEAD of PR <id>"
@@ -820,11 +827,12 @@ spec:
             kubectl apply -f ~/.kube/readonly/resources.yaml &&
             mkdir -p ~/.kube/readonly/export &&
             yq ~/.kube/config -o json \
-            | jq --arg token "$(kubectl -n default create token readonly)" --arg SAN "$SAN" '
+            | jq --arg token "$(kubectl -n default create token readonly --duration 48h)" --arg SAN "$SAN" '
               .clusters[0].cluster.server = "https://\($SAN):44444" |
               .users[0].user={token: $token} |
               .contexts[0].context.namespace = "garden"
               ' > ~/.kube/readonly/export/config &&
+            echo "The readonly token expires at: $(jq '.users[0].user.token' ~/.kube/readonly/export/config | token | jq -r .exp)" &&
             echo "$DOCKER_IP $SAN" > ~/.kube/readonly/export/hosts.entry &&
             echo "$DOCKER_IP api.virtual-garden.local.gardener.cloud" >> ~/.kube/readonly/export/hosts.entry &&
             echo "starting socat" &&
