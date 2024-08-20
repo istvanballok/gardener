@@ -541,7 +541,7 @@ spec:
           EOF
           new_window "shoot lifecycle" "Create" <<"EOF"
             export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-            k apply -f example/provider-local/shoot.yaml
+            k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type="zone"' example/provider-local/shoot.yaml)
           EOF
           new_pane "Reconcile" <<"EOF"
             export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
