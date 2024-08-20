@@ -661,7 +661,7 @@ spec:
           new_pane "make kind-operator-up" Enter <<"EOF"
             sync_kubeconfig example/gardener-local/kind/operator & sleep 1
             nice time make kind-operator-down kind-operator-up &&
-            kubectl wait --for=condition=ready pod -A --all --timeout=-1s || true &&
+            time kubectl wait --for=condition=ready pod -A --all --timeout=-1s || true &&
             touch sync/kind-operator-up
           EOF
           new_pane "make operator-up" Enter <<"EOF"
@@ -681,8 +681,8 @@ spec:
             k get garden local -o json | jq '
               .spec.virtualCluster.controlPlane.highAvailability = {}
             ' | k apply -f - &&
-            kubectl wait --for=jsonpath='{.status.lastOperation.state}'=Processing garden local --timeout=-1s &&
-            kubectl wait --for=jsonpath='{.status.lastOperation.state}'=Succeeded garden local --timeout=-1s &&
+            time kubectl wait --for=jsonpath='{.status.lastOperation.state}'=Processing garden local --timeout=-1s &&
+            time kubectl wait --for=jsonpath='{.status.lastOperation.state}'=Succeeded garden local --timeout=-1s &&
             touch sync/virtual-garden-ha
           EOF
           new_window "garden" "garden" Enter <<"EOF"
