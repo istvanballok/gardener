@@ -275,12 +275,14 @@ spec:
             set -g window-size smallest
             set -g history-limit 100000
           EOF
+
           mkdir -p ~/go/src/github.com/gardener
           cd ~/go/src/github.com/gardener
           [ -d gardener/.git ] || git clone -q https://github.com/gardener/gardener
           cd gardener
           git fetch
           git checkout $(git tag | sort -V | tail -n 1)
+
           nice dockerd-entrypoint.sh 2>&1 | tee ~/.dockerd.log &
           until docker ps >/dev/null 2>&1; do sleep 1; done
 
