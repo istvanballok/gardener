@@ -672,7 +672,9 @@ spec:
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               time while [ ! -f sync/virtual-garden-ha ]; do sleep 1; done &&
               k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type="zone"' example/provider-local/shoot.yaml) &&
-              touch sync/shoot
+              touch sync/shoot &&
+              time k -n garden-local wait shoot local --for=condition=SystemComponentsHealthy --timeout=-1s &&
+              touch sync/shoot-ready
             EOF
             new_pane "Reconcile" <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
@@ -746,15 +748,13 @@ spec:
             EOF
             new_window "shoot pods" "pods" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              while [ ! -f sync/shoot ]; do sleep 1; done &&
-              k -n garden-local wait shoot local --for=condition=SystemComponentsHealthy --timeout=-1s &&
+              while [ ! -f sync/shoot-ready ]; do sleep 1; done &&
               generate-admin-kubeconf.sh > /tmp/shoot.kubeconfig &&
               watch k --kubeconfig /tmp/shoot.kubeconfig get pods -A
             EOF
             new_pane "not ready pods" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              while [ ! -f sync/shoot ]; do sleep 1; done &&
-              k -n garden-local wait shoot local --for=condition=SystemComponentsHealthy --timeout=-1s &&
+              while [ ! -f sync/shoot-ready ]; do sleep 1; done &&
               generate-admin-kubeconf.sh > /tmp/shoot.kubeconfig2 &&
               watch "k --kubeconfig /tmp/shoot.kubeconfig2 get pods -A -o wide \
                     | awk '{split(\$3, a, \"/\"); if (a[1]!=a[2] || \$4 != \"Running\") {print}}'"
