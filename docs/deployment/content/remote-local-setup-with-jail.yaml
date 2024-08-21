@@ -493,7 +493,7 @@ spec:
                 nice watch k get garden
               EOF
               new_pane "last operations" Enter <<"EOF"
-                nice k get garden local -o json -w | jq -r --unbuffered '.status.lastOperation | [.progress, .description] | join(" ")' | awk '{if (prev!=$0) print; fflush(); prev=$0}' | sed --unbuffered 's/,/, \n/g; s/$/\n/' | ts
+                nice k get garden local -o json -w | jq -r --unbuffered '.status.lastOperation | [.progress, .description] | join(" ")' | awk '{if (prev!=$0) print; fflush(); prev=$0}' | sed --unbuffered 's/, /,\n/g; s/$/\n/' | ts
               EOF
               new_pane "garden conditions" Enter <<"EOF"
                 nice watch -c "k get garden local -o yaml | yq -P -C '[.status.conditions[] | del(.lastTransitionTime, .lastUpdateTime)]' | grep --color=Always -E '\"False\"| Unknown| Progressing|$'"
@@ -504,7 +504,7 @@ spec:
               EOF
               new_pane "last operations" <<"EOF"
                 export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-                k -n garden-local get shoot local -o json -w | jq -r --unbuffered '.status.lastOperation.description' | awk '{if (prev!=$0) print; fflush(); prev=$0}' | sed --unbuffered 's/,/, \n/g; s/$/\n/' | ts
+                k -n garden-local get shoot local -o json -w | jq -r --unbuffered '.status.lastOperation.description' | awk '{if (prev!=$0) print; fflush(); prev=$0}' | sed --unbuffered 's/, /,\n/g; s/$/\n/' | ts
               EOF
               new_pane "seed conditions" Enter <<"EOF"
                 export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
