@@ -407,217 +407,217 @@ spec:
                      krew install node-shell
           DOCKERFILE
 
-          cat >> ~/go/src/github.com/gardener/gardener/cell/Dockerfile <<"DOCKERFILE"
-          RUN kubectl completion bash > /usr/share/bash-completion/completions/kubectl
-          RUN gardenctl completion bash > /usr/share/bash-completion/completions/gardenctl
-          RUN ~/go/bin/stern --completion=bash > /usr/share/bash-completion/completions/stern
+          sed 's/^  //' <<"DOCKERFILE" >> ~/go/src/github.com/gardener/gardener/cell/Dockerfile
+            RUN kubectl completion bash > /usr/share/bash-completion/completions/kubectl
+            RUN gardenctl completion bash > /usr/share/bash-completion/completions/gardenctl
+            RUN ~/go/bin/stern --completion=bash > /usr/share/bash-completion/completions/stern
 
-          RUN cat > ~/.bash_profile <<"EOF"
-          source /etc/bash/bashrc
-          source ~/.bashrc
-          EOF
+            RUN cat > ~/.bash_profile <<"EOF"
+            source /etc/bash/bashrc
+            source ~/.bashrc
+            EOF
 
-          RUN cat > ~/.bashrc <<"EOF"
-          [ -z "$TMUX" ] && export TERM=xterm-256color
-          export GOPATH=~/go
-          export PATH=$PATH:$GOPATH/bin:~/.krew/bin:~/go/src/github.com/gardener/gardener/hack/usage
-          export XDG_CONFIG_HOME=~/.config
-          export EDITOR=nvim
-          export KUBE_EDITOR=nvim
-          export HISTFILESIZE=10000
-          export HISTSIZE=10000
-          export HISTTIMEFORMAT="%F %T "
-          export HISTCONTROL=ignorespace
-          export PROMPT_COMMAND='history -a'
-          shopt -s histappend
-          source /usr/share/bash-completion/completions/kubectl
-          source /usr/share/bash-completion/completions/gardenctl
-          complete -o default -F __start_kubectl k
-          complete -o default -F __start_gardenctl g
-          source ~/.kube-ps1.sh
-          source /usr/share/git-core/git-prompt.sh
-          export PS1='[\w $(printf "$(kube_ps1)")] $(__git_ps1 "(%s)") [$(date +%H:%M)]\$ '
-          stty -ixon
-          [ -n "$GCTL_SESSION_ID" ] || [ -n "$TERM_SESSION_ID" ] || export GCTL_SESSION_ID=$(uuidgen)
-          cd ~/go/src/github.com/gardener/gardener
-          EOF
+            RUN cat > ~/.bashrc <<"EOF"
+            [ -z "$TMUX" ] && export TERM=xterm-256color
+            export GOPATH=~/go
+            export PATH=$PATH:$GOPATH/bin:~/.krew/bin:~/go/src/github.com/gardener/gardener/hack/usage
+            export XDG_CONFIG_HOME=~/.config
+            export EDITOR=nvim
+            export KUBE_EDITOR=nvim
+            export HISTFILESIZE=10000
+            export HISTSIZE=10000
+            export HISTTIMEFORMAT="%F %T "
+            export HISTCONTROL=ignorespace
+            export PROMPT_COMMAND='history -a'
+            shopt -s histappend
+            source /usr/share/bash-completion/completions/kubectl
+            source /usr/share/bash-completion/completions/gardenctl
+            complete -o default -F __start_kubectl k
+            complete -o default -F __start_gardenctl g
+            source ~/.kube-ps1.sh
+            source /usr/share/git-core/git-prompt.sh
+            export PS1='[\w $(printf "$(kube_ps1)")] $(__git_ps1 "(%s)") [$(date +%H:%M)]\$ '
+            stty -ixon
+            [ -n "$GCTL_SESSION_ID" ] || [ -n "$TERM_SESSION_ID" ] || export GCTL_SESSION_ID=$(uuidgen)
+            cd ~/go/src/github.com/gardener/gardener
+            EOF
 
-          RUN cat > ~/.tmux.conf <<"EOF"
-          set -g mouse on
-          bind -T copy-mode-vi MouseDown3Pane send -X copy-selection-and-cancel
-          bind -T copy-mode-vi MouseDown2Pane send -X copy-selection # Command right-click to copy without leaving the copy mode
-          bind -T copy-mode-vi MouseDragEnd1Pane send -X select-pane
-          set -g mode-keys vi
-          set -g default-shell /bin/bash
-          set -g pane-border-status top
-          set -g pane-border-format " #{pane_index} #{pane_title} - #{pane_current_command} "
-          set -g history-limit 100000
-          EOF
+            RUN cat > ~/.tmux.conf <<"EOF"
+            set -g mouse on
+            bind -T copy-mode-vi MouseDown3Pane send -X copy-selection-and-cancel
+            bind -T copy-mode-vi MouseDown2Pane send -X copy-selection # Command right-click to copy without leaving the copy mode
+            bind -T copy-mode-vi MouseDragEnd1Pane send -X select-pane
+            set -g mode-keys vi
+            set -g default-shell /bin/bash
+            set -g pane-border-status top
+            set -g pane-border-format " #{pane_index} #{pane_title} - #{pane_current_command} "
+            set -g history-limit 100000
+            EOF
 
-          ENV ENV=/root/greeting.sh
-          RUN cat > ~/greeting.sh <<"EOF"
-          [ -n "$TMUX" ] && exit
-          export LANG=C.UTF-8
-          export TERM=xterm-256color
-          echo "Welcome to the jail!"
-          EOF
+            ENV ENV=/root/greeting.sh
+            RUN cat > ~/greeting.sh <<"EOF"
+            [ -n "$TMUX" ] && exit
+            export LANG=C.UTF-8
+            export TERM=xterm-256color
+            echo "Welcome to the jail!"
+            EOF
 
-          RUN mkdir -p ~/go/src/github.com/gardener/gardener
+            RUN mkdir -p ~/go/src/github.com/gardener/gardener
 
-          RUN cat > /usr/local/bin/tmux_functions.sh <<"SCRIPT_EOF"
-          function wait_for_prompt {
-            # wait for the character '#' or '>' to appear in the last non empty line of the tmux pane indicating that the bash prompt is ready
-            while ! tmux capture-pane -p | grep -v ^$ | tail -n 1 | grep -E '#$|>$' >/dev/null; do sleep .3; done
-          }
+            RUN cat > /usr/local/bin/tmux_functions.sh <<"SCRIPT_EOF"
+            function wait_for_prompt {
+              # wait for the character '#' or '>' to appear in the last non empty line of the tmux pane indicating that the bash prompt is ready
+              while ! tmux capture-pane -p | grep -v ^$ | tail -n 1 | grep -E '#$|>$' >/dev/null; do sleep .3; done
+            }
 
-          function wait_for_line {
-            # wait for a line to appear in the last non empty line of the tmux pane indicating that the input was echoed back by bash
-            while ! tmux capture-pane -p | grep -v ^$ | tail -n 1 | grep -F -- "$1" >/dev/null; do sleep .3; done
-          }
+            function wait_for_line {
+              # wait for a line to appear in the last non empty line of the tmux pane indicating that the input was echoed back by bash
+              while ! tmux capture-pane -p | grep -v ^$ | tail -n 1 | grep -F -- "$1" >/dev/null; do sleep .3; done
+            }
 
-          function send_commands {
-            wait_for_prompt
-            read -r line
-            tmux send -- "$line"
-            wait_for_line "$line"
-            while read -r line; do
-              tmux send Enter
+            function send_commands {
               wait_for_prompt
+              read -r line
               tmux send -- "$line"
               wait_for_line "$line"
-            done
-            tmux send -- "$@"
-          }
+              while read -r line; do
+                tmux send Enter
+                wait_for_prompt
+                tmux send -- "$line"
+                wait_for_line "$line"
+              done
+              tmux send -- "$@"
+            }
 
-          function new_window {
-            tmux new-window -n "$1"
-            tmux select-pane -T "$2"
-            shift; shift
-            send_commands "$@"
-          }
+            function new_window {
+              tmux new-window -n "$1"
+              tmux select-pane -T "$2"
+              shift; shift
+              send_commands "$@"
+            }
 
-          function new_pane {
-            tmux split-window
-            tmux select-pane -T "$1"
-            tmux select-layout even-vertical
-            shift
-            send_commands "$@"
-          }
+            function new_pane {
+              tmux split-window
+              tmux select-pane -T "$1"
+              tmux select-layout even-vertical
+              shift
+              send_commands "$@"
+            }
 
-          function new_horizontal_pane {
-            tmux split-window -h
-            tmux select-pane -T "$1"
-            shift
-            send_commands "$@"
-          }
-          SCRIPT_EOF
+            function new_horizontal_pane {
+              tmux split-window -h
+              tmux select-pane -T "$1"
+              shift
+              send_commands "$@"
+            }
+            SCRIPT_EOF
 
-          RUN cat > /usr/local/bin/prepare-cell.sh <<"SCRIPT_EOF"
-          cat /root/.kube/hosts.entry >> /etc/hosts
-          source /usr/local/bin/tmux_functions.sh
-          tmux new -d -s jail -n top -x 2000 -y 2000
-          tmux select-pane -T top; rm -f ~/.config/procps/toprc
-          for k in top Enter z C c t t m m V s 5 Enter E e W; do sleep .3; tmux send $k; done
-          new_pane "CPU limit" Enter <<"EOF"
-            nice dd if=/dev/zero of=/dev/null
-          EOF
-          new_window "disk" "df" Enter <<"EOF"
-            df -h
-          EOF
-          new_pane "findmnt" Enter <<"EOF"
-            findmnt
-          EOF
-          new_window "k9s" "k9s" Enter <<"EOF"
-            nice k9s
-          EOF
-          new_window "garden" "garden" Enter <<"EOF"
-            nice watch k get garden
-          EOF
-          new_pane "last operations" Enter <<"EOF"
-            nice k get garden local -o json -w | jq -r --unbuffered '.status.lastOperation | [.progress, .description] | join(" ")' | awk '{if (prev!=$0) print; fflush(); prev=$0}' | sed --unbuffered 's/,/, \n/g; s/$/\n/' | ts
-          EOF
-          new_pane "garden conditions" Enter <<"EOF"
-            nice watch -c "k get garden local -o yaml | yq -P -C '[.status.conditions[] | del(.lastTransitionTime, .lastUpdateTime)]' | grep --color=Always -E '\"False\"| Unknown| Progressing|$'"
-          EOF
-          new_window "seed&shoots" "seed&shoots" Enter <<"EOF"
-            export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-            nice watch k get -A seeds,shoots
-          EOF
-          new_pane "last operations" <<"EOF"
-            export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-            k -n garden-local get shoot local -o json -w | jq -r --unbuffered '.status.lastOperation.description' | awk '{if (prev!=$0) print; fflush(); prev=$0}' | sed --unbuffered 's/,/, \n/g; s/$/\n/' | ts
-          EOF
-          new_pane "seed conditions" Enter <<"EOF"
-            export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-            nice watch -c "k get seed local -o yaml | yq -P -C '[.status.conditions[] | del(.lastTransitionTime, .lastUpdateTime)]' | grep --color=Always -E '\"False\"| Unknown| Progressing|$'"
-          EOF
-          new_horizontal_pane "shoot conditions" Enter <<"EOF"
-            export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-            nice watch -c "k get -n garden-local shoot local -o yaml | yq -P -C '[.status.conditions[] | del(.lastTransitionTime, .lastUpdateTime)]' | grep --color=Always -E '\"False\"| Unknown| Progressing|$'"
-          EOF
-          new_window "shoot lifecycle" "Create" <<"EOF"
-            export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-            k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type="zone"' example/provider-local/shoot.yaml)
-          EOF
-          new_pane "Reconcile" <<"EOF"
-            export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-            k annotate shoot local -n garden-local 'gardener.cloud/operation=reconcile'
-          EOF
-          new_pane "Delete" <<"EOF"
-            export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-            k annotate shoot local -n garden-local 'confirmation.gardener.cloud/deletion=true' && k delete shoot local -n garden-local
-          EOF
-          new_window "managed seed" "managed seed" <<"EOF"
-            export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-            nice watch k get -A seeds,shoots,managedseeds
-          EOF
-          new_pane "create shoot" <<"EOF"
-            export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-            k apply -f example/provider-local/managedseeds/shoot-managedseed.yaml
-          EOF
-          new_pane "create managed seed" <<"EOF"
-            export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-            k apply -f example/provider-local/managedseeds/managedseed.yaml
-          EOF
-          new_pane "managed seed pods" <<"EOF"
-            export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-            generate-admin-kubeconf.sh --namespace garden --shoot-name managedseed > /tmp/shoot.kubeconfig && while true; do clear; k --kubeconfig /tmp/shoot.kubeconfig get pods -A -o wide; sleep 10s; done
-          EOF
-          new_window "runtime&seed pods" "pods" Enter <<"EOF"
-            # the while loop is used instead of watch to allow for scrolling a longer list in the tmux pane
-            nice while true; do clear; k get pods -A -o wide; sleep 10s; done
-          EOF
-          new_pane "not ready pods" Enter <<"EOF"
-            nice watch "k get pods -A -o wide | awk '{split(\$3, a, \"/\"); if (a[1]!=a[2] || \$4 != \"Running\") {print}}'"
-          EOF
-          new_window "shoot pods" "pods" <<"EOF"
-            export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-            generate-admin-kubeconf.sh > /tmp/shoot.kubeconfig && watch k --kubeconfig /tmp/shoot.kubeconfig get pods -A
-          EOF
-          new_pane "not ready pods" <<"EOF"
-            export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-            generate-admin-kubeconf.sh > /tmp/shoot.kubeconfig && watch "k --kubeconfig /tmp/shoot.kubeconfig get pods -A -o wide | awk '{split(\$3, a, \"/\"); if (a[1]!=a[2] || \$4 != \"Running\") {print}}'"
-          EOF
-          new_window "gardenctl" "gardenctl" <<"EOF"
-            gardenctl config set-garden local --kubeconfig $PWD/example/operator/virtual-garden/kubeconfig
-            eval $(gardenctl kubectl-env bash)
-            g target --garden local --shoot local
-          EOF
-          new_window "ad-hoc" "ad-hoc" Enter <<"EOF"
-            # Use this pane for ad-hoc commands
-          EOF
-          tmux select-window -t 0
-          tmux select-pane -t 1
+            RUN cat > /usr/local/bin/prepare-cell.sh <<"SCRIPT_EOF"
+            cat /root/.kube/hosts.entry >> /etc/hosts
+            source /usr/local/bin/tmux_functions.sh
+            tmux new -d -s jail -n top -x 2000 -y 2000
+            tmux select-pane -T top; rm -f ~/.config/procps/toprc
+            for k in top Enter z C c t t m m V s 5 Enter E e W; do sleep .3; tmux send $k; done
+            new_pane "CPU limit" Enter <<"EOF"
+              nice dd if=/dev/zero of=/dev/null
+            EOF
+            new_window "disk" "df" Enter <<"EOF"
+              df -h
+            EOF
+            new_pane "findmnt" Enter <<"EOF"
+              findmnt
+            EOF
+            new_window "k9s" "k9s" Enter <<"EOF"
+              nice k9s
+            EOF
+            new_window "garden" "garden" Enter <<"EOF"
+              nice watch k get garden
+            EOF
+            new_pane "last operations" Enter <<"EOF"
+              nice k get garden local -o json -w | jq -r --unbuffered '.status.lastOperation | [.progress, .description] | join(" ")' | awk '{if (prev!=$0) print; fflush(); prev=$0}' | sed --unbuffered 's/,/, \n/g; s/$/\n/' | ts
+            EOF
+            new_pane "garden conditions" Enter <<"EOF"
+              nice watch -c "k get garden local -o yaml | yq -P -C '[.status.conditions[] | del(.lastTransitionTime, .lastUpdateTime)]' | grep --color=Always -E '\"False\"| Unknown| Progressing|$'"
+            EOF
+            new_window "seed&shoots" "seed&shoots" Enter <<"EOF"
+              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              nice watch k get -A seeds,shoots
+            EOF
+            new_pane "last operations" <<"EOF"
+              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              k -n garden-local get shoot local -o json -w | jq -r --unbuffered '.status.lastOperation.description' | awk '{if (prev!=$0) print; fflush(); prev=$0}' | sed --unbuffered 's/,/, \n/g; s/$/\n/' | ts
+            EOF
+            new_pane "seed conditions" Enter <<"EOF"
+              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              nice watch -c "k get seed local -o yaml | yq -P -C '[.status.conditions[] | del(.lastTransitionTime, .lastUpdateTime)]' | grep --color=Always -E '\"False\"| Unknown| Progressing|$'"
+            EOF
+            new_horizontal_pane "shoot conditions" Enter <<"EOF"
+              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              nice watch -c "k get -n garden-local shoot local -o yaml | yq -P -C '[.status.conditions[] | del(.lastTransitionTime, .lastUpdateTime)]' | grep --color=Always -E '\"False\"| Unknown| Progressing|$'"
+            EOF
+            new_window "shoot lifecycle" "Create" <<"EOF"
+              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type="zone"' example/provider-local/shoot.yaml)
+            EOF
+            new_pane "Reconcile" <<"EOF"
+              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              k annotate shoot local -n garden-local 'gardener.cloud/operation=reconcile'
+            EOF
+            new_pane "Delete" <<"EOF"
+              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              k annotate shoot local -n garden-local 'confirmation.gardener.cloud/deletion=true' && k delete shoot local -n garden-local
+            EOF
+            new_window "managed seed" "managed seed" <<"EOF"
+              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              nice watch k get -A seeds,shoots,managedseeds
+            EOF
+            new_pane "create shoot" <<"EOF"
+              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              k apply -f example/provider-local/managedseeds/shoot-managedseed.yaml
+            EOF
+            new_pane "create managed seed" <<"EOF"
+              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              k apply -f example/provider-local/managedseeds/managedseed.yaml
+            EOF
+            new_pane "managed seed pods" <<"EOF"
+              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              generate-admin-kubeconf.sh --namespace garden --shoot-name managedseed > /tmp/shoot.kubeconfig && while true; do clear; k --kubeconfig /tmp/shoot.kubeconfig get pods -A -o wide; sleep 10s; done
+            EOF
+            new_window "runtime&seed pods" "pods" Enter <<"EOF"
+              # the while loop is used instead of watch to allow for scrolling a longer list in the tmux pane
+              nice while true; do clear; k get pods -A -o wide; sleep 10s; done
+            EOF
+            new_pane "not ready pods" Enter <<"EOF"
+              nice watch "k get pods -A -o wide | awk '{split(\$3, a, \"/\"); if (a[1]!=a[2] || \$4 != \"Running\") {print}}'"
+            EOF
+            new_window "shoot pods" "pods" <<"EOF"
+              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              generate-admin-kubeconf.sh > /tmp/shoot.kubeconfig && watch k --kubeconfig /tmp/shoot.kubeconfig get pods -A
+            EOF
+            new_pane "not ready pods" <<"EOF"
+              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              generate-admin-kubeconf.sh > /tmp/shoot.kubeconfig && watch "k --kubeconfig /tmp/shoot.kubeconfig get pods -A -o wide | awk '{split(\$3, a, \"/\"); if (a[1]!=a[2] || \$4 != \"Running\") {print}}'"
+            EOF
+            new_window "gardenctl" "gardenctl" <<"EOF"
+              gardenctl config set-garden local --kubeconfig $PWD/example/operator/virtual-garden/kubeconfig
+              eval $(gardenctl kubectl-env bash)
+              g target --garden local --shoot local
+            EOF
+            new_window "ad-hoc" "ad-hoc" Enter <<"EOF"
+              # Use this pane for ad-hoc commands
+            EOF
+            tmux select-window -t 0
+            tmux select-pane -t 1
 
-          touch /tmp/ready
-          # TODO keylogger
-          sleep 30m & # self destroy after 30m
-          wait
-          SCRIPT_EOF
+            touch /tmp/ready
+            # TODO keylogger
+            sleep 30m & # self destroy after 30m
+            wait
+            SCRIPT_EOF
 
-          RUN chmod +x /usr/local/bin/prepare-cell.sh
+            RUN chmod +x /usr/local/bin/prepare-cell.sh
 
-          COPY gardener /root/go/src/github.com/gardener/gardener
+            COPY gardener /root/go/src/github.com/gardener/gardener
 
           DOCKERFILE
           cd -
