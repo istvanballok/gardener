@@ -186,9 +186,11 @@ spec:
               echo
             fi
           EOF
-          kubectl completion bash > /usr/share/bash-completion/completions/kubectl
-          gardenctl completion bash > /usr/share/bash-completion/completions/gardenctl
+
+          kubectl   completion bash        > /usr/share/bash-completion/completions/kubectl
+          gardenctl completion bash        > /usr/share/bash-completion/completions/gardenctl
           ~/go/bin/stern --completion=bash > /usr/share/bash-completion/completions/stern
+
           cat > ~/.bash_profile <<"EOF"
             source /etc/bash/bashrc
             source ~/.bashrc
