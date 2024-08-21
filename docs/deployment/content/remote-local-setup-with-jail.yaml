@@ -338,7 +338,7 @@ spec:
           cd cell
           if [ -d gardener/.git ]; then
             cd gardener
-            git fetch origin
+            git fetch origin HEAD
             git reset --hard FETCH_HEAD
             cd -
           else
