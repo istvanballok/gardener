@@ -477,6 +477,9 @@ spec:
               new_pane "CPU limit" Enter <<"EOF"
                 nice dd if=/dev/zero of=/dev/null
               EOF
+
+              ##### Prepare the panes for the demo scenario here #####
+
               new_window "disk" "df" Enter <<"EOF"
                 df -h
               EOF
