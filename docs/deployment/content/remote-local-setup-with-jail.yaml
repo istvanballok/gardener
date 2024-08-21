@@ -408,59 +408,59 @@ spec:
           DOCKERFILE
 
           sed 's/^  //' <<"DOCKERFILE" >> ~/go/src/github.com/gardener/gardener/cell/Dockerfile
-            RUN kubectl completion bash > /usr/share/bash-completion/completions/kubectl
-            RUN gardenctl completion bash > /usr/share/bash-completion/completions/gardenctl
+            RUN kubectl   completion bash        > /usr/share/bash-completion/completions/kubectl
+            RUN gardenctl completion bash        > /usr/share/bash-completion/completions/gardenctl
             RUN ~/go/bin/stern --completion=bash > /usr/share/bash-completion/completions/stern
 
-            RUN cat > ~/.bash_profile <<"EOF"
-            source /etc/bash/bashrc
-            source ~/.bashrc
+            RUN sed 's/^  //' <<"EOF" > ~/.bash_profile
+              source /etc/bash/bashrc
+              source ~/.bashrc
             EOF
 
-            RUN cat > ~/.bashrc <<"EOF"
-            [ -z "$TMUX" ] && export TERM=xterm-256color
-            export GOPATH=~/go
-            export PATH=$PATH:$GOPATH/bin:~/.krew/bin:~/go/src/github.com/gardener/gardener/hack/usage
-            export XDG_CONFIG_HOME=~/.config
-            export EDITOR=nvim
-            export KUBE_EDITOR=nvim
-            export HISTFILESIZE=10000
-            export HISTSIZE=10000
-            export HISTTIMEFORMAT="%F %T "
-            export HISTCONTROL=ignorespace
-            export PROMPT_COMMAND='history -a'
-            shopt -s histappend
-            source /usr/share/bash-completion/completions/kubectl
-            source /usr/share/bash-completion/completions/gardenctl
-            complete -o default -F __start_kubectl k
-            complete -o default -F __start_gardenctl g
-            source ~/.kube-ps1.sh
-            source /usr/share/git-core/git-prompt.sh
-            export PS1='[\w $(printf "$(kube_ps1)")] $(__git_ps1 "(%s)") [$(date +%H:%M)]\$ '
-            stty -ixon
-            [ -n "$GCTL_SESSION_ID" ] || [ -n "$TERM_SESSION_ID" ] || export GCTL_SESSION_ID=$(uuidgen)
-            cd ~/go/src/github.com/gardener/gardener
+            RUN sed 's/^  //' <<"EOF" > ~/.bashrc
+              [ -z "$TMUX" ] && export TERM=xterm-256color
+              export GOPATH=~/go
+              export PATH=$PATH:$GOPATH/bin:~/.krew/bin:~/go/src/github.com/gardener/gardener/hack/usage
+              export XDG_CONFIG_HOME=~/.config
+              export EDITOR=nvim
+              export KUBE_EDITOR=nvim
+              export HISTFILESIZE=10000
+              export HISTSIZE=10000
+              export HISTTIMEFORMAT="%F %T "
+              export HISTCONTROL=ignorespace
+              export PROMPT_COMMAND='history -a'
+              shopt -s histappend
+              source /usr/share/bash-completion/completions/kubectl
+              source /usr/share/bash-completion/completions/gardenctl
+              complete -o default -F __start_kubectl k
+              complete -o default -F __start_gardenctl g
+              source ~/.kube-ps1.sh
+              source /usr/share/git-core/git-prompt.sh
+              export PS1='[\w $(printf "$(kube_ps1)")] $(__git_ps1 "(%s)") [$(date +%H:%M)]\$ '
+              stty -ixon
+              [ -n "$GCTL_SESSION_ID" ] || [ -n "$TERM_SESSION_ID" ] || export GCTL_SESSION_ID=$(uuidgen)
+              cd ~/go/src/github.com/gardener/gardener
             EOF
 
-            RUN cat > ~/.tmux.conf <<"EOF"
-            set -g mouse on
-            bind -T copy-mode-vi MouseDown3Pane send -X copy-selection-and-cancel
-            bind -T copy-mode-vi MouseDown2Pane send -X copy-selection # Command right-click to copy without leaving the copy mode
-            bind -T copy-mode-vi MouseDragEnd1Pane send -X select-pane
-            set -g mode-keys vi
-            set -g default-shell /bin/bash
-            set -g pane-border-status top
-            set -g pane-border-format " #{pane_index} #{pane_title} - #{pane_current_command} "
-            set -g history-limit 100000
+            RUN sed 's/^  //' <<"EOF" > ~/.tmux.conf
+              set -g mouse on
+              bind -T copy-mode-vi MouseDown3Pane send -X copy-selection-and-cancel
+              bind -T copy-mode-vi MouseDown2Pane send -X copy-selection # Command right-click to copy without leaving the copy mode
+              bind -T copy-mode-vi MouseDragEnd1Pane send -X select-pane
+              set -g mode-keys vi
+              set -g default-shell /bin/bash
+              set -g pane-border-status top
+              set -g pane-border-format " #{pane_index} #{pane_title} - #{pane_current_command} "
+              set -g history-limit 100000
             EOF
 
+            RUN sed 's/^  //' <<"EOF" > ~/greeting.sh
+              [ -n "$TMUX" ] && exit
+              export LANG=C.UTF-8
+              export TERM=xterm-256color
+              echo "Welcome to the jail!"
+            EOF
             ENV ENV=/root/greeting.sh
-            RUN cat > ~/greeting.sh <<"EOF"
-            [ -n "$TMUX" ] && exit
-            export LANG=C.UTF-8
-            export TERM=xterm-256color
-            echo "Welcome to the jail!"
-            EOF
 
             RUN mkdir -p ~/go/src/github.com/gardener/gardener
 
