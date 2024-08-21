@@ -467,7 +467,7 @@ spec:
             ADD /scripts/tmux_functions.sh /usr/local/bin/tmux_functions.sh
 
             RUN sed 's/^  //' <<"SCRIPT_EOF" > /usr/local/bin/prepare-cell.sh
-              cat /root/.kube/hosts.entry >> /etc/hosts
+              cat /root/.kube_readonly/hosts.entry >> /etc/hosts
               source /usr/local/bin/tmux_functions.sh
               tmux new -d -s jail -n top -x 2000 -y 2000
               tmux select-pane -T top; rm -f ~/.config/procps/toprc
@@ -820,12 +820,12 @@ spec:
             mkdir /mnt/inner.disk
             mount ~/inner.disk /mnt/inner.disk
             docker rm jail
-            docker run -d --rm --privileged --name jail          \
-                   -v /root/.kube/readonly/export:/root/.kube:ro \
+            docker run -d --rm --privileged --name jail \
+                   -v /root/.kube/readonly/export:/root/.kube_readonly:ro \
                    -v /root/go/src/github.com/gardener/gardener/example/operator/virtual-garden:/root/.kube_virtual:ro \
-                   -v /mnt/inner.disk:/var/lib/docker            \
+                   -v /mnt/inner.disk:/var/lib/docker \
                    -v /root/go/src/github.com/gardener/gardener/cell:/root/go/src/github.com/gardener/gardener/cell:ro \
-                   -v /usr/local/bin:/scripts                    \
+                   -v /usr/local/bin:/scripts \
                    docker:26-dind
           EOF
           new_pane "create cell image and start it" Enter <<"EOF"
@@ -844,12 +844,12 @@ spec:
               docker system df
               echo "Start the cell container"
               # https://docs.docker.com/engine/reference/run/#runtime-constraints-on-resources
-              docker run -d --rm --name cell       \
-                     --cpus=1 --memory=1g          \
-                     -v /root/.kube:/root/.kube:ro \
-                     -v /root/.kube_virtual:/root/go/src/github.com/gardener/gardener/example/operator/virtual-garden:ro \
-                     cell-image                    \
-                     sh /usr/local/bin/prepare-cell.sh
+              docker run -d --rm --name cell \
+                         --cpus=1 --memory=1g \
+                         -v /root/.kube_readonly:/root/.kube_readonly:ro \
+                         -v /root/.kube_virtual:/root/go/src/github.com/gardener/gardener/example/operator/virtual-garden:ro \
+                         cell-image \
+                         sh /usr/local/bin/prepare-cell.sh
               echo "Cell container"
               docker ps
           JAIL
