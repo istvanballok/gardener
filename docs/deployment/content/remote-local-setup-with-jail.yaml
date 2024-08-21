@@ -470,8 +470,10 @@ spec:
               cat /root/.kube_readonly/hosts.entry >> /etc/hosts
               source /usr/local/bin/tmux_functions.sh
               tmux new -d -s jail -n top -x 2000 -y 2000
-              tmux select-pane -T top; rm -f ~/.config/procps/toprc
-              for k in top Enter z C c t t m m V s 5 Enter E e W; do sleep .3; tmux send $k; done
+              tmux select-pane -T top; mkdir -p ~/.config/procps; rm -f ~/.config/procps/toprc
+              tmux send top Enter
+              sleep 1
+              for k in z C c t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
               new_pane "CPU limit" Enter <<"EOF"
                 nice dd if=/dev/zero of=/dev/null
               EOF
@@ -617,7 +619,7 @@ spec:
           echo '{"current-context": "kind-gardener-operator-local"}' > ~/.kube/config
           source /usr/local/bin/tmux_functions.sh
           tmux new -d -s operator-complete -n make -x 2000 -y 2000
-          tmux select-pane -T top; rm -f ~/.config/procps/toprc
+          tmux select-pane -T top; mkdir -p ~/.config/procps; rm -f ~/.config/procps/toprc
           for k in top Enter z C c i t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
           new_pane "make kind-operator-up" Enter <<"EOF"
             sync_kubeconfig example/gardener-local/kind/operator & sleep 1
