@@ -464,53 +464,7 @@ spec:
 
             RUN mkdir -p ~/go/src/github.com/gardener/gardener
 
-            RUN cat > /usr/local/bin/tmux_functions.sh <<"SCRIPT_EOF"
-            function wait_for_prompt {
-              # wait for the character '#' or '>' to appear in the last non empty line of the tmux pane indicating that the bash prompt is ready
-              while ! tmux capture-pane -p | grep -v ^$ | tail -n 1 | grep -E '#$|>$' >/dev/null; do sleep .3; done
-            }
-
-            function wait_for_line {
-              # wait for a line to appear in the last non empty line of the tmux pane indicating that the input was echoed back by bash
-              while ! tmux capture-pane -p | grep -v ^$ | tail -n 1 | grep -F -- "$1" >/dev/null; do sleep .3; done
-            }
-
-            function send_commands {
-              wait_for_prompt
-              read -r line
-              tmux send -- "$line"
-              wait_for_line "$line"
-              while read -r line; do
-                tmux send Enter
-                wait_for_prompt
-                tmux send -- "$line"
-                wait_for_line "$line"
-              done
-              tmux send -- "$@"
-            }
-
-            function new_window {
-              tmux new-window -n "$1"
-              tmux select-pane -T "$2"
-              shift; shift
-              send_commands "$@"
-            }
-
-            function new_pane {
-              tmux split-window
-              tmux select-pane -T "$1"
-              tmux select-layout even-vertical
-              shift
-              send_commands "$@"
-            }
-
-            function new_horizontal_pane {
-              tmux split-window -h
-              tmux select-pane -T "$1"
-              shift
-              send_commands "$@"
-            }
-            SCRIPT_EOF
+            ADD /scripts/tmux_functions.sh /usr/local/bin/tmux_functions.sh
 
             RUN cat > /usr/local/bin/prepare-cell.sh <<"SCRIPT_EOF"
             cat /root/.kube/hosts.entry >> /etc/hosts
@@ -871,6 +825,7 @@ spec:
                    -v /root/go/src/github.com/gardener/gardener/example/operator/virtual-garden:/root/.kube_virtual:ro \
                    -v /mnt/inner.disk:/var/lib/docker            \
                    -v /root/go/src/github.com/gardener/gardener/cell:/root/go/src/github.com/gardener/gardener/cell:ro \
+                   -v /usr/local/bin:/scripts                    \
                    docker:26-dind
           EOF
           new_pane "create cell image and start it" Enter <<"EOF"
