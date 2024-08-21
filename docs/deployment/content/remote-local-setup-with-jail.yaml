@@ -104,7 +104,7 @@ spec:
           echo "172.18.255.3 api.virtual-garden.local.gardener.cloud" >> /etc/hosts
 
           # Resolve e.g. gu-local--e2e-rotate{-wl}.ingress.$seed_name. ... to 127.0.0.1 for the e2e tests:
-          cat <<"EOF" | sed 's/^  //' > /etc/dnsmasq.d/gardener.conf
+          sed 's/^  //' <<"EOF" > /etc/dnsmasq.d/gardener.conf
             address=/.seed.local.gardener.cloud/127.0.0.1
             address=/.garden.external.local.gardener.cloud/127.0.0.1
           EOF
@@ -113,13 +113,13 @@ spec:
 
           ln -s /usr/share/zoneinfo/Europe/Berlin /etc/localtime
 
-          cat <<"EOF" | sed 's/^  //' > ~/greeting.sh
+          sed 's/^  //' <<"EOF" > ~/greeting.sh
             [ -n "$TMUX" ] && exit
             export LANG=C.UTF-8
             export TERM=xterm-256color
             normal='\e[0m'; green='\e[1;32m'; yellow='\e[1;33m'; cyan='\e[1;36m'; n=$normal; g=$green; y=$yellow; c=$cyan
             echo -e "$(
-            cat <<GREETING_EOF | sed 's/^  //'
+            sed 's/^  //' <<GREETING_EOF
               ${c}Welcome${y} to the jailed version of the remote local setup pod of ${c}Gardener${y} as citizen!${n}
 
               ${c}Documentation:${n} https://github.com/gardener/gardener/blob/master/docs/deployment/getting_started_locally.md
@@ -169,7 +169,7 @@ spec:
             if grep -q server ~/.kube/config 2>/dev/null; then
               echo
               echo -e "$(
-            cat <<GREETING_EOF | sed 's/^  //'
+             sed 's/^  //' <<GREETING_EOF
               ${y}To connect to the ${c}KinD${y} cluster from your ${c}laptop${y} with kubectl, run:${n}
                 kubectl exec remote-local-setup-with-jail-0 -- sh -c 'cat ~/.kube/config' > kubeconfig
                 kubectl port-forward remote-local-setup-with-jail-0 $(< ~/.kube/config grep server | awk -F : '{print $4}')
@@ -191,12 +191,12 @@ spec:
           gardenctl completion bash        > /usr/share/bash-completion/completions/gardenctl
           ~/go/bin/stern --completion=bash > /usr/share/bash-completion/completions/stern
 
-          cat <<"EOF" | sed 's/^  //' > ~/.bash_profile
+          sed 's/^  //' <<"EOF" > ~/.bash_profile
             source /etc/bash/bashrc
             source ~/.bashrc
           EOF
 
-          cat <<"EOF" | sed 's/^  //' > ~/.bashrc
+          sed 's/^  //' <<"EOF" > ~/.bashrc
             [ -z "$TMUX" ] && export TERM=xterm-256color
             export GOPATH=~/go
             export PATH=$PATH:$GOPATH/bin:~/.krew/bin:~/go/src/github.com/gardener/gardener/hack/usage
@@ -263,7 +263,7 @@ spec:
               done
             }
           EOF
-          cat <<"EOF" | sed 's/^  //' > ~/.tmux.conf
+          sed 's/^  //' <<"EOF" > ~/.tmux.conf
             set -g mouse on
             bind -T copy-mode-vi MouseDown3Pane    send -X copy-selection-and-cancel
             bind -T copy-mode-vi MouseDown2Pane    send -X copy-selection # Command right-click to copy without leaving the copy mode
@@ -286,7 +286,7 @@ spec:
           nice dockerd-entrypoint.sh 2>&1 | tee ~/.dockerd.log &
           until docker ps >/dev/null 2>&1; do sleep 1; done
 
-          cat <<"SCRIPT_EOF" | sed 's/^  //' > /usr/local/bin/tmux_functions.sh
+          sed 's/^  //' <<"SCRIPT_EOF" > /usr/local/bin/tmux_functions.sh
             function wait_for_prompt {
               # wait for the character '#' or '>' to appear in the last non empty line of the tmux pane indicating that the bash prompt is ready
               while ! tmux capture-pane -p | grep -v ^$ | tail -n 1 | grep -E '#$|>$' >/dev/null; do sleep .3; done
