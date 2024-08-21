@@ -569,7 +569,7 @@ spec:
               tmux select-pane -t 1
 
               touch /tmp/ready
-              sleep 30m & # self destroy after 30m
+              sleep 2h & # self destroy after 2 hours
               wait
             SCRIPT_EOF
 
