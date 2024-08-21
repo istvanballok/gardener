@@ -569,7 +569,6 @@ spec:
               tmux select-pane -t 1
 
               touch /tmp/ready
-              # TODO keylogger
               sleep 30m & # self destroy after 30m
               wait
             SCRIPT_EOF
