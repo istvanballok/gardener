@@ -113,78 +113,78 @@ spec:
 
           ln -s /usr/share/zoneinfo/Europe/Berlin /etc/localtime
 
-          cat > ~/greeting.sh <<"EOF"
-          [ -n "$TMUX" ] && exit
-          export LANG=C.UTF-8
-          export TERM=xterm-256color
-          normal='\e[0m'; green='\e[1;32m'; yellow='\e[1;33m'; cyan='\e[1;36m'; n=$normal; g=$green; y=$yellow; c=$cyan
-          echo -e "$(
-          cat <<GREETING_EOF
-          ${c}Welcome${y} to the jailed version of the remote local setup pod of ${c}Gardener${y} as citizen!${n}
-
-          ${c}Documentation:${n} https://github.com/gardener/gardener/blob/master/docs/deployment/getting_started_locally.md
-          ${y}To ${c}exec${y} into this pod, run '${g}kubectl exec -it remote-local-setup-with-jail-0 -- sh${y}'${n}
-
-          The "Gardener Operator Complete" tmux session is prepared by default.
-
-          ${y}To attach to the ${c}tmux${y} session, run '${g}tmux a${y}'${n}.
-          - ${y}mouse${n} support is enabled
-            - use the mouse to select panes or windows and to resize panes
-            - scroll the pane content with the mouse,
-              leave the "scroll mode" with '${y}q${n}' or scroll to the very bottom
-            - after selecting some text, copy it with '${y}right-click${n}' or
-              cancel the selection with '${y}q${n}'
-            - paste the copied text with '${y}⌘ right-click${n}'
-          - '${y}CTRL-b${n}, ?' is the tmux prefix: press and hold the 'CTRL' key,
-              press the 'b' key, let go of both keys and then
-              press e.g. the '?' key to show the keyboard shortcuts.
-            '${y}d${n}' - detach from the tmux session
-            '${y}c${n}' - new window
-            '${y}%${n}' or '${y}\"${n}' - new pane (horizontal or vertical split)
-            '${y}z${n}' - zoom in/out
-            '${y},${n}' - rename the window
-            '${y}]${n}','${y}=${n}' - paste (with history).
-              The ${y}clipboard${n} is managed by tmux:
-              copy with the ${y}mouse${n}, paste with these shortcuts or the mouse.
-              You can turn off mouse reporting in the terminal emulator
-              (⌘-R in the default Mac OS Terminal app) for native copy/paste.
-          - '${y}CTRL-d${n}' - exit a bash session. Not be confused with 'CTRL-b, d'
-
-          ${y}When this remote local setup pod is not needed, consider ${c}stopping${y} it
-          by scaling the StatefulSet to zero replicas:${n}
-            kubectl scale statefulset remote-local-setup-with-jail --replicas 0
-
-          ${y}To ${c}start${y} it, simply scale it to 1 replica:${n}
-            kubectl scale statefulset remote-local-setup-with-jail --replicas 1
-
-          Note that the persistent disk with the home folder,
-          the Gardener git repository, the go build cache and
-          the local container registry is retained between restarts.
-
-          ${y}The purge this environment, delete both the StatefulSet and the pvc:${n}
-            kubectl delete statefulset remote-local-setup-with-jail
-            kubectl delete pvc    home-remote-local-setup-with-jail-0
-          GREETING_EOF
-          )"
-          if grep -q server ~/.kube/config 2>/dev/null; then
-            echo
+          cat <<"EOF" | sed 's/^  //' > ~/greeting.sh
+            [ -n "$TMUX" ] && exit
+            export LANG=C.UTF-8
+            export TERM=xterm-256color
+            normal='\e[0m'; green='\e[1;32m'; yellow='\e[1;33m'; cyan='\e[1;36m'; n=$normal; g=$green; y=$yellow; c=$cyan
             echo -e "$(
-          cat <<GREETING_EOF
-          ${y}To connect to the ${c}KinD${y} cluster from your ${c}laptop${y} with kubectl, run:${n}
-            kubectl exec remote-local-setup-with-jail-0 -- sh -c 'cat ~/.kube/config' > kubeconfig
-            kubectl port-forward remote-local-setup-with-jail-0 $(< ~/.kube/config grep server | awk -F : '{print $4}')
-            # in another terminal:
-            export KUBECONFIG=\$PWD/kubeconfig
-          GREETING_EOF
+            cat <<GREETING_EOF | sed 's/^  //'
+              ${c}Welcome${y} to the jailed version of the remote local setup pod of ${c}Gardener${y} as citizen!${n}
+
+              ${c}Documentation:${n} https://github.com/gardener/gardener/blob/master/docs/deployment/getting_started_locally.md
+              ${y}To ${c}exec${y} into this pod, run '${g}kubectl exec -it remote-local-setup-with-jail-0 -- sh${y}'${n}
+
+              The "Gardener Operator Complete" tmux session is prepared by default.
+
+              ${y}To attach to the ${c}tmux${y} session, run '${g}tmux a${y}'${n}.
+              - ${y}mouse${n} support is enabled
+                - use the mouse to select panes or windows and to resize panes
+                - scroll the pane content with the mouse,
+                  leave the "scroll mode" with '${y}q${n}' or scroll to the very bottom
+                - after selecting some text, copy it with '${y}right-click${n}' or
+                  cancel the selection with '${y}q${n}'
+                - paste the copied text with '${y}⌘ right-click${n}'
+              - '${y}CTRL-b${n}, ?' is the tmux prefix: press and hold the 'CTRL' key,
+                  press the 'b' key, let go of both keys and then
+                  press e.g. the '?' key to show the keyboard shortcuts.
+                '${y}d${n}' - detach from the tmux session
+                '${y}c${n}' - new window
+                '${y}%${n}' or '${y}\"${n}' - new pane (horizontal or vertical split)
+                '${y}z${n}' - zoom in/out
+                '${y},${n}' - rename the window
+                '${y}]${n}','${y}=${n}' - paste (with history).
+                  The ${y}clipboard${n} is managed by tmux:
+                  copy with the ${y}mouse${n}, paste with these shortcuts or the mouse.
+                  You can turn off mouse reporting in the terminal emulator
+                  (⌘-R in the default Mac OS Terminal app) for native copy/paste.
+              - '${y}CTRL-d${n}' - exit a bash session. Not be confused with 'CTRL-b, d'
+
+              ${y}When this remote local setup pod is not needed, consider ${c}stopping${y} it
+              by scaling the StatefulSet to zero replicas:${n}
+                kubectl scale statefulset remote-local-setup-with-jail --replicas 0
+
+              ${y}To ${c}start${y} it, simply scale it to 1 replica:${n}
+                kubectl scale statefulset remote-local-setup-with-jail --replicas 1
+
+              Note that the persistent disk with the home folder,
+              the Gardener git repository, the go build cache and
+              the local container registry is retained between restarts.
+
+              ${y}The purge this environment, delete both the StatefulSet and the pvc:${n}
+                kubectl delete statefulset remote-local-setup-with-jail
+                kubectl delete pvc    home-remote-local-setup-with-jail-0
+            GREETING_EOF
             )"
-          fi
-          echo
-          if [ ! -f /tmp/ready ]; then
-            echo -n "Please wait a few more seconds for the initialization of the remote local setup to complete"
-            while [ ! -f /tmp/ready ]; do echo -n .; sleep 1; done
+            if grep -q server ~/.kube/config 2>/dev/null; then
+              echo
+              echo -e "$(
+            cat <<GREETING_EOF | sed 's/^  //'
+              ${y}To connect to the ${c}KinD${y} cluster from your ${c}laptop${y} with kubectl, run:${n}
+                kubectl exec remote-local-setup-with-jail-0 -- sh -c 'cat ~/.kube/config' > kubeconfig
+                kubectl port-forward remote-local-setup-with-jail-0 $(< ~/.kube/config grep server | awk -F : '{print $4}')
+                # in another terminal:
+                export KUBECONFIG=\$PWD/kubeconfig
+            GREETING_EOF
+              )"
+            fi
             echo
-            echo
-          fi
+            if [ ! -f /tmp/ready ]; then
+              echo -n "Please wait a few more seconds for the initialization of the remote local setup to complete"
+              while [ ! -f /tmp/ready ]; do echo -n .; sleep 1; done
+              echo
+              echo
+            fi
           EOF
           kubectl completion bash > /usr/share/bash-completion/completions/kubectl
           gardenctl completion bash > /usr/share/bash-completion/completions/gardenctl
