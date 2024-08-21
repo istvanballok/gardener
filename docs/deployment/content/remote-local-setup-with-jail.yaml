@@ -776,7 +776,7 @@ spec:
             EOF
 
             new_window "readonly" "readonly" Enter <<"EOF"
-              while [ ! -f sync/kind-operator-up ]; do echo -n .; sleep 1; done &&
+              while [ ! -f sync/virtual-garden-ha ]; do echo -n .; sleep 1; done &&
               echo &&
               endpoint=$(yq ~/.kube/config -o json | jq -r '.clusters[0].cluster.server' | sed 's#^https://##') &&
               echo "KinD cluster endpoint: $endpoint" &&
@@ -804,6 +804,7 @@ spec:
               socat TCP-LISTEN:44444,fork,reuseaddr TCP:"$endpoint"
             EOF
             new_pane "virtual garden" Enter <<"EOF"
+              while [ ! -f sync/virtual-garden-ha ]; do echo -n .; sleep 1; done &&
               socat TCP-LISTEN:443,fork,reuseaddr,bind=172.17.0.1 TCP:172.18.255.3:443
             EOF
             new_pane "test" Enter <<"EOF"
