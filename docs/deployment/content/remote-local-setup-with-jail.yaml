@@ -576,39 +576,39 @@ spec:
             RUN chmod +x /usr/local/bin/prepare-cell.sh
 
             COPY gardener /root/go/src/github.com/gardener/gardener
-
           DOCKERFILE
+
           cd -
 
           mkdir -p ~/.kube/readonly
-          cat > ~/.kube/readonly/resources.yaml <<"EOF"
-          apiVersion: v1
-          kind: ServiceAccount
-          metadata:
-            name: readonly
-            namespace: default
-          ---
-          apiVersion: rbac.authorization.k8s.io/v1
-          kind: ClusterRole
-          metadata:
-            name: readonly
-          rules:
-          - apiGroups: ["*"]
-            resources: ["*"]
-            verbs: ["get", "list", "watch"]
-          ---
-          apiVersion: rbac.authorization.k8s.io/v1
-          kind: ClusterRoleBinding
-          metadata:
-            name: readonly
-          roleRef:
-            apiGroup: rbac.authorization.k8s.io
+          sed 's/^  //' <<"EOF" > ~/.kube/readonly/resources.yaml
+            apiVersion: v1
+            kind: ServiceAccount
+            metadata:
+              name: readonly
+              namespace: default
+            ---
+            apiVersion: rbac.authorization.k8s.io/v1
             kind: ClusterRole
-            name: readonly
-          subjects:
-          - kind: ServiceAccount
-            name: readonly
-            namespace: default
+            metadata:
+              name: readonly
+            rules:
+            - apiGroups: ["*"]
+              resources: ["*"]
+              verbs: ["get", "list", "watch"]
+            ---
+            apiVersion: rbac.authorization.k8s.io/v1
+            kind: ClusterRoleBinding
+            metadata:
+              name: readonly
+            roleRef:
+              apiGroup: rbac.authorization.k8s.io
+              kind: ClusterRole
+              name: readonly
+            subjects:
+            - kind: ServiceAccount
+              name: readonly
+              namespace: default
           EOF
 
           cat > /usr/local/bin/prepare-operator-complete.sh <<"SCRIPT_EOF"
