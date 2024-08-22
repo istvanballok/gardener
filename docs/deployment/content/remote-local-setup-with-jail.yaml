@@ -778,7 +778,7 @@ spec:
                                .metadata.name="local2" |
                                .spec.networking.nodes="10.11.0.0/16" |
                                .spec.networking.pods="10.5.0.0/16" |
-                               .spec.networking.services="10.6.0.0/16"' example/provider-local/shoot.yaml) &&
+                               .spec.networking.services="10.6.0.0/16"' example/provider-local/shoot-workerless.yaml) &&
               time k -n garden-local wait shoot local2 --for=condition=SystemComponentsHealthy --timeout=-1s &&
               touch sync/managedseed-nested-shoot-ready
             EOF
