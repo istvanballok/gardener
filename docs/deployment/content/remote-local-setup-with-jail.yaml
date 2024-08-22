@@ -21,6 +21,7 @@ spec:
         - |
           set -ex -o pipefail
           cd
+          start=$(date +%s)
 
           mkdir -p ~/.cache/apk
           ln -s ~/.cache/apk /etc/apk/cache
@@ -183,6 +184,10 @@ spec:
               echo -n "Please wait a few more seconds for the initialization of the remote local setup to complete"
               while [ ! -f /tmp/ready ]; do echo -n .; sleep 1; done
               echo
+              echo
+            fi
+            if [ -f /tmp/elapsed ]; then
+              echo "Initialization time: $(cat /tmp/elapsed)"
               echo
             fi
           EOF
@@ -869,6 +874,11 @@ spec:
           chmod +x /usr/local/bin/prepare-*.sh
           /usr/local/bin/prepare-operator-complete.sh
 
+          end=$(date +%s)
+          diff=$(( end - start ))
+          elapsed=$(date -u -d @${diff} +"%T")
+          echo $elapsed > /tmp/elapsed
+          echo "Elapsed time: ${elapsed}"
           touch /tmp/ready
           wait
         startupProbe:
