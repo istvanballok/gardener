@@ -351,6 +351,8 @@ spec:
           else
             git clone ~/go/src/github.com/gardener/gardener gardener
           fi
+          mkdir -p scripts
+          cp /usr/local/bin/tmux_functions.sh scripts
 
           sed 's/^  //' <<DOCKERFILE > ~/go/src/github.com/gardener/gardener/cell/Dockerfile
             FROM alpine:3.20
@@ -471,7 +473,7 @@ spec:
 
             RUN mkdir -p ~/go/src/github.com/gardener/gardener
 
-            ADD /scripts/tmux_functions.sh /usr/local/bin/tmux_functions.sh
+            ADD scripts/tmux_functions.sh /usr/local/bin/tmux_functions.sh
 
             RUN sed 's/^  //' <<"SCRIPT_EOF" > /usr/local/bin/prepare-cell.sh
               cat /root/.kube_readonly/hosts.entry >> /etc/hosts
@@ -575,6 +577,7 @@ spec:
               tmux select-window -t 0
               tmux select-pane -t 1
 
+              echo "The tmux session is prepared. To attach to it, run 'tmux a'."
               touch /tmp/ready
               sleep 2h & # self destroy after 2 hours
               wait
@@ -865,7 +868,6 @@ spec:
                     -v /root/go/src/github.com/gardener/gardener/example/operator/virtual-garden:/root/.kube_virtual:ro \
                     -v /mnt/inner.disk:/var/lib/docker \
                     -v /root/go/src/github.com/gardener/gardener/cell:/root/go/src/github.com/gardener/gardener/cell:ro \
-                    -v /usr/local/bin:/scripts \
                     docker:26-dind
             EOF
             new_pane "create cell image and start it" Enter <<"EOF"
