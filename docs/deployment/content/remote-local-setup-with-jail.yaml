@@ -630,7 +630,9 @@ spec:
             new_pane "make kind-operator-up" Enter <<"EOF"
               sync_kubeconfig example/gardener-local/kind/operator & sleep 1
               nice time make kind-operator-down kind-operator-up &&
-              time kubectl wait --for=condition=ready pod -A --all --timeout=-1s || true &&
+              time ( kubectl wait --for=jsonpath='{.status.numberReady}'=3 daemonset -A --all --timeout=-1s &
+                     kubectl wait --for=condition=available deployments -A --all --timeout=-1s &
+                     wait ) &&
               touch sync/kind-operator-up
             EOF
             new_pane "make operator-up" Enter <<"EOF"
