@@ -834,12 +834,13 @@ spec:
               echo "The readonly token expires at: $(jq '.users[0].user.token' ~/.kube/readonly/export/config | token | jq -r .exp)" &&
               echo "$DOCKER_IP $SAN" > ~/.kube/readonly/export/hosts.entry &&
               echo "$DOCKER_IP api.virtual-garden.local.gardener.cloud" >> ~/.kube/readonly/export/hosts.entry &&
-              echo "starting socat" &&
+              echo "starting socat for the KinD cluster" &&
               touch sync/socat &&
               socat TCP-LISTEN:44444,fork,reuseaddr TCP:"$endpoint"
             EOF
             new_pane "virtual garden" Enter <<"EOF"
               while [ ! -f sync/virtual-garden-ha ]; do echo -n .; sleep 1; done &&
+              echo "starting socat for the virtual Garden cluster" &&
               socat TCP-LISTEN:443,fork,reuseaddr,bind=172.17.0.1 TCP:172.18.255.3:443
             EOF
             new_pane "test" Enter <<"EOF"
