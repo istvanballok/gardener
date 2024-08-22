@@ -737,22 +737,30 @@ spec:
                 [.status.conditions[] | del(.lastTransitionTime, .lastUpdateTime)]
               ' | grep --color=Always -E '\"False\"| Unknown| Progressing|$'"
             EOF
-            new_window "managed seed" "managed seed" <<"EOF"
+            new_window "managed seed" "managed seed" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               watch k get -A seeds,shoots,managedseeds
             EOF
             new_pane "create shoot" <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              k apply -f example/provider-local/managedseeds/shoot-managedseed.yaml
+              time while [ ! -f sync/virtual-garden-ha ]; do sleep 1; done &&
+              k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type="zone"' example/provider-local/managedseeds/shoot-managedseed.yaml) &&
+              time k -n garden wait shoot managedseed --for=condition=SystemComponentsHealthy --timeout=-1s &&
+              touch sync/managedseed-shoot-ready
             EOF
             new_pane "create managed seed" <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              k apply -f example/provider-local/managedseeds/managedseed.yaml
+              time while [ ! -f sync/managedseed-shoot-ready ]; do sleep 1; done &&
+              k apply -f example/provider-local/managedseeds/managedseed.yaml &&
+              time k wait -n garden managedseed managedseed --for=condition=SeedRegistered --timeout=-1s &&
+              time until k wait seed managedseed --for=condition=SeedSystemComponentsHealthy --timeout=-1s 2>/dev/null; do sleep 1; done &&
+              touch sync/managedseed-seed-ready
             EOF
-            new_pane "managed seed pods" <<"EOF"
+            new_pane "managed seed pods" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              generate-admin-kubeconf.sh --namespace garden --shoot-name managedseed > /tmp/shoot.kubeconfig &&
-              while true; do clear; k --kubeconfig /tmp/shoot.kubeconfig get pods -A -o wide; sleep 10s; done
+              time while [ ! -f sync/managedseed-seed-ready ]; do sleep 1; done &&
+              generate-admin-kubeconf.sh --namespace garden --shoot-name managedseed > /tmp/managedseed.kubeconfig &&
+              while true; do clear; k --kubeconfig /tmp/managedseed.kubeconfig get pods -A -o wide; sleep 10s; done
             EOF
             new_window "runtime&seed pods" "pods" Enter <<"EOF"
               # the while loop is used instead of watch to allow for scrolling a longer list in the tmux pane
