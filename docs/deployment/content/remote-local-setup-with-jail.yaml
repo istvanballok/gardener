@@ -670,6 +670,9 @@ spec:
                 sleep 1
               done
             EOF
+            new_pane "Reconcile" <<"EOF"
+              k annotate garden local 'gardener.cloud/operation=reconcile'
+            EOF
             new_pane "garden conditions" Enter <<"EOF"
               watch -c "k get garden local -o yaml | yq -P -C '
                 [.status.conditions[] | del(.lastTransitionTime, .lastUpdateTime)]
