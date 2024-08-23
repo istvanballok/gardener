@@ -896,7 +896,7 @@ spec:
                 echo "Start the cell container"
                 # https://docs.docker.com/engine/reference/run/#runtime-constraints-on-resources
                 docker run -d --rm --name cell \
-                          --cpus=1 --memory=1g \
+                          --cpus=1 --memory=1g --pids-limit 1000 \
                           -v /root/.kube_readonly:/root/.kube_readonly:ro \
                           -v /root/.kube_virtual:/root/go/src/github.com/gardener/gardener/example/operator/virtual-garden:ro \
                           cell-image \
