@@ -779,8 +779,10 @@ spec:
             new_pane "managed seed pods" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               time while [ ! -f sync/managedseed-seed-ready ]; do sleep 1; done &&
-              generate-admin-kubeconf.sh --namespace garden --shoot-name managedseed > /tmp/managedseed.kubeconfig &&
-              while true; do clear; k --kubeconfig /tmp/managedseed.kubeconfig get pods -A -o wide | nl; sleep 10s; done
+              while true; do
+                generate-admin-kubeconf.sh --namespace garden --shoot-name managedseed > /tmp/managedseed.kubeconfig
+                while k --kubeconfig /tmp/managedseed.kubeconfig get pods -A -o wide | nl; do sleep 10s; clear; done
+              done
             EOF
             # TODO: how to connect to the API server?
             # Note: regular shoots do not work due to nesting overlayfs, see dmesg + the managed seed is not HA because it has only one node
