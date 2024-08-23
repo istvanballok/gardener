@@ -754,14 +754,14 @@ spec:
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               watch k get -A seeds,shoots,managedseeds
             EOF
-            new_pane "create shoot" <<"EOF"
+            new_pane "create shoot" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               time while [ ! -f sync/virtual-garden-ha ]; do sleep 1; done &&
               k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type="zone"' example/provider-local/managedseeds/shoot-managedseed.yaml) &&
               time k -n garden wait shoot managedseed --for=condition=SystemComponentsHealthy --timeout=-1s &&
               touch sync/managedseed-shoot-ready
             EOF
-            new_pane "create managed seed" <<"EOF"
+            new_pane "create managed seed" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               time while [ ! -f sync/managedseed-shoot-ready ]; do sleep 1; done &&
               k apply -f example/provider-local/managedseeds/managedseed.yaml &&
