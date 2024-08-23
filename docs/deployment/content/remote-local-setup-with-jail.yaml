@@ -104,10 +104,10 @@ spec:
             " | sed 's/ /\n/g' | sed 's/^/172.18.255.1 /' | sort >> /etc/hosts
           echo "172.18.255.3 api.virtual-garden.local.gardener.cloud" >> /etc/hosts
 
-          # Resolve e.g. gu-local--e2e-rotate{-wl}.ingress.$seed_name. ... to 127.0.0.1 for the e2e tests:
+          # Resolve e.g. gu-local--e2e-rotate{-wl}.ingress.$seed_name. ... for the e2e tests:
           sed 's/^  //' <<"EOF" > /etc/dnsmasq.d/gardener.conf
-            address=/.seed.local.gardener.cloud/127.0.0.1
-            address=/.garden.external.local.gardener.cloud/127.0.0.1
+            address=/.seed.local.gardener.cloud/172.18.255.1
+            address=/.garden.external.local.gardener.cloud/172.18.255.1
           EOF
           sed '1inameserver 127.0.0.1' /etc/resolv.conf > /tmp/resolv.conf && cat /tmp/resolv.conf > /etc/resolv.conf
           nice dnsmasq --no-daemon --log-debug --log-queries 2>&1 | ts > ~/.dnsmasq.log &
