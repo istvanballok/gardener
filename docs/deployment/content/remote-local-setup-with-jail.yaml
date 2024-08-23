@@ -714,10 +714,12 @@ spec:
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               while [ ! -f sync/virtual-garden-ha ]; do sleep 1; done &&
               while true; do
-                k get seed local -o json -w 2>/dev/null \
-                | jq -r --unbuffered '.status.lastOperation |
-                                      [.progress, .description] |
-                                      join(" ")
+                k get seed -o json -w 2>/dev/null \
+                | jq -r --unbuffered '[ "[seed=\(.metadata.name)]",
+                                        (.status.lastOperation |
+                                         [.progress, .description] |
+                                         join(" "))
+                                      ] | join(" ")
                   ' | awk '{if (prev!=$0) print; fflush(); prev=$0}' | sed --unbuffered 's/, /,\n+ /g' | ts
                 sleep 1
               done
@@ -726,10 +728,12 @@ spec:
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               while [ ! -f sync/shoot ]; do sleep 1; done &&
               while true; do
-                k -n garden-local get shoot local -o json -w 2>/dev/null  \
-                | jq -r --unbuffered '.status.lastOperation |
-                                      [.progress, .description] |
-                                      join(" ")
+                k get shoot -A -o json -w 2>/dev/null  \
+                | jq -r --unbuffered '[ "[shoot=\(.metadata.namespace)/\(.metadata.name)]",
+                                        (.status.lastOperation |
+                                         [.progress, .description] |
+                                         join(" "))
+                                      ] | join(" ")
                   ' | awk '{if (prev!=$0) print; fflush(); prev=$0}' | sed --unbuffered 's/, /,\n+ /g' | ts
                 sleep 1
               done
