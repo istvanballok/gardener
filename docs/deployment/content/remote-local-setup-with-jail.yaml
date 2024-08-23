@@ -806,15 +806,17 @@ spec:
             new_window "shoot pods" "pods" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               while [ ! -f sync/shoot-ready ]; do sleep 1; done &&
-              generate-admin-kubeconf.sh > /tmp/shoot.kubeconfig &&
-              watch k --kubeconfig /tmp/shoot.kubeconfig get pods -A
+              while true; do
+                generate-admin-kubeconf.sh > /tmp/shoot.kubeconfig
+                yes | watch -e k --kubeconfig /tmp/shoot.kubeconfig get pods -A
+              done
             EOF
             new_pane "not ready pods" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               while [ ! -f sync/shoot-ready ]; do sleep 1; done &&
               generate-admin-kubeconf.sh > /tmp/shoot.kubeconfig2 &&
-              watch "k --kubeconfig /tmp/shoot.kubeconfig2 get pods -A -o wide \
-                    | awk '{split(\$3, a, \"/\"); if (a[1]!=a[2] || \$4 != \"Running\") {print}}'"
+              yes | watch -e "k --kubeconfig /tmp/shoot.kubeconfig2 get pods -A -o wide \
+                              | awk '{split(\$3, a, \"/\"); if (a[1]!=a[2] || \$4 != \"Running\") {print}}'"
             EOF
             new_window "gardenctl" "gardenctl" <<"EOF"
               gardenctl config set-garden local --kubeconfig $PWD/example/operator/virtual-garden/kubeconfig
