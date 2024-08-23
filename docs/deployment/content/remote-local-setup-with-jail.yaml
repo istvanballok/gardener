@@ -67,7 +67,7 @@ spec:
                chmod +x /usr/local/bin/ktx
           echo kube-ps1
                wget -N "https://raw.githubusercontent.com/jonmosco/kube-ps1/master/kube-ps1.sh"
-               cp kube-ps1.sh ~/.kube-ps1.sh
+               cp kube-ps1.sh /usr/local/bin/kube-ps1.sh
           echo kubectl
                VERSION=$(curl -sL https://dl.k8s.io/release/stable.txt)
                wget -N "https://dl.k8s.io/release/$VERSION/bin/linux/amd64/kubectl"
@@ -218,7 +218,7 @@ spec:
             source /usr/share/bash-completion/completions/gardenctl
             complete -o default -F __start_kubectl k
             complete -o default -F __start_gardenctl g
-            source ~/.kube-ps1.sh
+            source /usr/local/bin/kube-ps1.sh
             source /usr/share/git-core/git-prompt.sh
             export PS1='[\w $(printf "$(kube_ps1)")] $(__git_ps1 "(%s)") [$(date +%H:%M)]\$ '
             stty -ixon
@@ -389,7 +389,7 @@ spec:
                      chmod +x /usr/local/bin/ktx
             RUN echo kube-ps1                                                                                                && \\
                      wget "https://raw.githubusercontent.com/jonmosco/kube-ps1/master/kube-ps1.sh"                           && \\
-                     mv kube-ps1.sh ~/.kube-ps1.sh
+                     mv kube-ps1.sh /usr/local/bin/kube-ps1.sh
             RUN echo kubectl                                                                                                 && \\
                      VERSION=$(curl -sL https://dl.k8s.io/release/stable.txt)                                                && \\
                      wget "https://dl.k8s.io/release/\$VERSION/bin/linux/amd64/kubectl"                                      && \\
@@ -450,7 +450,7 @@ spec:
               source /usr/share/bash-completion/completions/gardenctl
               complete -o default -F __start_kubectl k
               complete -o default -F __start_gardenctl g
-              source ~/.kube-ps1.sh
+              source /usr/local/bin/kube-ps1.sh
               source /usr/share/git-core/git-prompt.sh
               export PS1='[\w $(printf "$(kube_ps1)")] $(__git_ps1 "(%s)") [$(date +%H:%M)]\$ '
               stty -ixon
