@@ -404,6 +404,11 @@ spec:
                      wget "https://github.com/bronze1man/yaml2json/releases/download/\$VERSION/yaml2json_linux_amd64"        && \\
                      mv yaml2json_linux_amd64 /usr/local/bin/yaml2json                                                       && \\
                      chmod +x /usr/local/bin/yaml2json
+
+
+            RUN adduser --disabled-password --gecos '' demo
+            USER demo
+
             RUN echo gron                                                                                                    && \\
                      go install github.com/tomnomnom/gron@latest
             RUN echo ginkgo                                                                                                  && \\
@@ -417,9 +422,11 @@ spec:
           DOCKERFILE
 
           sed 's/^  //' <<"DOCKERFILE" >> ~/go/src/github.com/gardener/gardener/cell/Dockerfile
-            RUN kubectl   completion bash        > /usr/share/bash-completion/completions/kubectl
-            RUN gardenctl completion bash        > /usr/share/bash-completion/completions/gardenctl
-            RUN ~/go/bin/stern --completion=bash > /usr/share/bash-completion/completions/stern
+            USER root
+            RUN kubectl   completion bash                 > /usr/share/bash-completion/completions/kubectl
+            RUN gardenctl completion bash                 > /usr/share/bash-completion/completions/gardenctl
+            RUN /home/demo/go/bin/stern --completion=bash > /usr/share/bash-completion/completions/stern
+            USER demo
 
             RUN sed 's/^  //' <<"EOF" > ~/.bash_profile
               source /etc/bash/bashrc
@@ -469,14 +476,14 @@ spec:
               export TERM=xterm-256color
               echo "Welcome to the jail!"
             EOF
-            ENV ENV=/root/greeting.sh
+            ENV ENV=~/greeting.sh
 
             RUN mkdir -p ~/go/src/github.com/gardener/gardener
 
             ADD scripts/tmux_functions.sh /usr/local/bin/tmux_functions.sh
 
-            RUN sed 's/^  //' <<"SCRIPT_EOF" > /usr/local/bin/prepare-cell.sh
-              cat /root/.kube_readonly/hosts.entry >> /etc/hosts
+            RUN sed 's/^  //' <<"SCRIPT_EOF" > ~/prepare-cell.sh
+              cat ~/.kube_readonly/hosts.entry >> /etc/hosts
               source /usr/local/bin/tmux_functions.sh
               tmux new -d -s jail -n top -x 2000 -y 2000
               tmux select-pane -T top; mkdir -p ~/.config/procps; rm -f ~/.config/procps/toprc
@@ -589,9 +596,9 @@ spec:
               wait
             SCRIPT_EOF
 
-            RUN chmod +x /usr/local/bin/prepare-cell.sh
+            RUN chmod +x ~/prepare-cell.sh
 
-            COPY gardener /root/go/src/github.com/gardener/gardener
+            COPY gardener ~/go/src/github.com/gardener/gardener
           DOCKERFILE
 
           cd -
@@ -897,10 +904,10 @@ spec:
                 # https://docs.docker.com/engine/reference/run/#runtime-constraints-on-resources
                 docker run -d --rm --name cell \
                           --cpus=1 --memory=1g --pids-limit 1000 \
-                          -v /root/.kube_readonly:/root/.kube_readonly:ro \
-                          -v /root/.kube_virtual:/root/go/src/github.com/gardener/gardener/example/operator/virtual-garden:ro \
+                          -v /root/.kube_readonly:/home/demo/.kube_readonly:ro \
+                          -v /root/.kube_virtual:/home/demo/go/src/github.com/gardener/gardener/example/operator/virtual-garden:ro \
                           cell-image \
-                          sh /usr/local/bin/prepare-cell.sh
+                          sh /home/demo/prepare-cell.sh
                 echo "Cell container"
                 docker ps
             JAIL
