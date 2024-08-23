@@ -476,7 +476,7 @@ spec:
               export TERM=xterm-256color
               echo "Welcome to the jail!"
             EOF
-            ENV ENV=~/greeting.sh
+            ENV ENV=/home/demo/greeting.sh
 
             RUN mkdir -p ~/go/src/github.com/gardener/gardener
 
