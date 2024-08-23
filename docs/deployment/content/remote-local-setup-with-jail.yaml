@@ -483,7 +483,6 @@ spec:
             ADD scripts/tmux_functions.sh /usr/local/bin/tmux_functions.sh
 
             RUN sed 's/^  //' <<"SCRIPT_EOF" > ~/prepare-cell.sh
-              cat ~/.kube_readonly/hosts.entry >> /etc/hosts
               source /usr/local/bin/tmux_functions.sh
               tmux new -d -s jail -n top -x 2000 -y 2000
               tmux select-pane -T top; mkdir -p ~/.config/procps; rm -f ~/.config/procps/toprc
@@ -908,6 +907,7 @@ spec:
                 # https://docs.docker.com/engine/reference/run/#runtime-constraints-on-resources
                 docker run -d --rm --name cell \
                           --cpus=1 --memory=2g --pids-limit 1000 \
+                          $(sed -E 's/(.*) (.*)/--add-host \2:\1/' /root/.kube_readonly/hosts.entry) \
                           -v /root/.kube_readonly:/home/demo/.kube_readonly:ro \
                           -v /root/.kube_virtual:/home/demo/go/src/github.com/gardener/gardener/example/operator/virtual-garden:ro \
                           cell-image \
