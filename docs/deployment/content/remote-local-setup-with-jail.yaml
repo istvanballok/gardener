@@ -769,7 +769,7 @@ spec:
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               time while [ ! -f sync/managedseed-seed-ready ]; do sleep 1; done &&
               generate-admin-kubeconf.sh --namespace garden --shoot-name managedseed > /tmp/managedseed.kubeconfig &&
-              while true; do clear; k --kubeconfig /tmp/managedseed.kubeconfig get pods -A -o wide; sleep 10s; done
+              while true; do clear; k --kubeconfig /tmp/managedseed.kubeconfig get pods -A -o wide | nl; sleep 10s; done
             EOF
             new_pane "shoot on managed seed" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
@@ -784,7 +784,7 @@ spec:
             EOF
             new_window "runtime&seed pods" "pods" Enter <<"EOF"
               # the while loop is used instead of watch to allow for scrolling a longer list in the tmux pane
-              while true; do clear; k get pods -A -o wide; sleep 10s; done
+              while true; do clear; k get pods -A -o wide | nl; sleep 10s; done
             EOF
             new_pane "not ready pods" Enter <<"EOF"
               watch "k get pods -A -o wide | awk '
