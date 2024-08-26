@@ -705,7 +705,6 @@ spec:
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               time flag_wait virtual-garden-ha &&
               k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type="zone"' example/provider-local/shoot.yaml) &&
-              flag_notify shoot-created &&
               time k -n garden-local wait shoot local --for=condition=SystemComponentsHealthy --timeout=-1s &&
               flag_notify shoot-ready
             EOF
@@ -738,7 +737,7 @@ spec:
             EOF
             new_pane "last operations shoot" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              flag_wait shoot-created &&
+              flag_wait operator-seed-up &&
               while true; do
                 k get shoot -A -o json -w 2>/dev/null  \
                 | jq -r --unbuffered '[ "[shoot=\(.metadata.namespace)/\(.metadata.name)]",
