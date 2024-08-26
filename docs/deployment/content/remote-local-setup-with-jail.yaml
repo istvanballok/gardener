@@ -489,6 +489,7 @@ spec:
             ADD scripts/tmux_functions.sh /usr/local/bin/tmux_functions.sh
 
             RUN sed 's/^  //' <<"SCRIPT_EOF" > ~/prepare-cell.sh
+              set -x
               source /usr/local/bin/tmux_functions.sh
               tmux new -d -s jail -n top -x 2000 -y 2000
               tmux select-pane -T top; mkdir -p ~/.config/procps; rm -f ~/.config/procps/toprc
@@ -946,7 +947,7 @@ spec:
                           -v /root/.kube_readonly:/home/demo/.kube_readonly:ro \
                           -v /root/.kube_virtual:/home/demo/go/src/github.com/gardener/gardener/example/operator/virtual-garden:ro \
                           cell-image \
-                          sh /home/demo/prepare-cell.sh
+                          sh -c "/home/demo/prepare-cell.sh > /home/demo/prepare-cell.log 2>&1"
                 echo "Cell container"
                 docker ps
             JAIL
