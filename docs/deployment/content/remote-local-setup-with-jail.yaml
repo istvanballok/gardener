@@ -835,7 +835,35 @@ spec:
               # Use this pane for ad-hoc commands
             EOF
 
-            new_window "readonly" "readonly" Enter <<"EOF"
+            new_window "virtual garden" "virtual garden" Enter <<"EOF"
+              # The virtual garden cluster's kubeconfig: 'example/operator/virtual-garden/kubeconfig'
+              # uses the endpoint: 'api.virtual-garden.local.gardener.cloud'
+              # that is mapped to '172.18.255.3', an arbitrary IP of the docker network 'kind'.
+              #   See PR g/g#10019 and 'docker network inspect 'kind'.
+              # "docker ps | sed 's/,/\n/g'" shows that '172.18.255.3:443' is mapped to the KinD node port 31443,
+              # which is the node port of the 'virtual-garden-istio-ingress/istio-ingressgateway' service.
+              # With 'socat', 172.18.255.3:443 is remapped to 172.17.0.1:443, where
+              # 172.17.0.1 is an IP in the default bridge docker network,
+              # that is going to be reachable from the cell.
+              flag_wait virtual-garden-ha &&
+              echo "starting socat for the virtual Garden cluster" &&
+              flag_notify socat_virtual_garden &&
+              socat TCP-LISTEN:443,fork,reuseaddr,bind=172.17.0.1 TCP:172.18.255.3:443
+            EOF
+            new_pane "test via socat" Enter <<"EOF"
+              # api.virtual-garden.local.gardener.cloud is reachable via 172.17.0.1
+              flag_wait socat_virtual_garden &&
+              while ! nc -z 172.17.0.1 443; do sleep 1; done &&
+              CACERT=$(yq -o json example/operator/virtual-garden/kubeconfig | jq -r '.clusters[0].cluster."certificate-authority-data" | @base64d') &&
+              TOKEN=$(yq -o json example/operator/virtual-garden/kubeconfig | jq -r '.users[0].user.token') &&
+              curl -s \
+                -H        "Authorization: Bearer $TOKEN" \
+                --cacert  <(echo "$CACERT")              \
+                --resolve api.virtual-garden.local.gardener.cloud:443:172.17.0.1 \
+                 https://api.virtual-garden.local.gardener.cloud/ | head
+            EOF
+
+            new_window "kind-readonly" "readonly kubeconfig" Enter <<"EOF"
               flag_wait virtual-garden-ha &&
               echo &&
               endpoint=$(yq ~/.kube/config -o json | jq -r '.clusters[0].cluster.server' | sed 's#^https://##') &&
@@ -862,11 +890,6 @@ spec:
               echo "starting socat for the KinD cluster" &&
               flag_notify socat &&
               socat TCP-LISTEN:44444,fork,reuseaddr TCP:"$endpoint"
-            EOF
-            new_pane "virtual garden" Enter <<"EOF"
-              flag_wait virtual-garden-ha &&
-              echo "starting socat for the virtual Garden cluster" &&
-              socat TCP-LISTEN:443,fork,reuseaddr,bind=172.17.0.1 TCP:172.18.255.3:443
             EOF
             new_pane "test" Enter <<"EOF"
               # TODO wait for the port forward
