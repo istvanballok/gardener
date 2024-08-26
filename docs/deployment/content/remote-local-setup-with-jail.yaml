@@ -918,18 +918,24 @@ spec:
               fi
               mkdir /mnt/inner.disk
               mount ~/inner.disk /mnt/inner.disk
+              echo > /root/hosts.entries
+              mkdir /root/jail.cache
               docker rm jail
               docker run -d --rm --privileged --name jail \
+                    -v /root/jail.cache:/root/cache \
+                    -v /root/hosts.entries:/root/hosts.entries:ro \
                     -v /root/.kube/readonly/export:/root/.kube_readonly:ro \
                     -v /root/go/src/github.com/gardener/gardener/example/operator/virtual-garden:/root/.kube_virtual:ro \
                     -v /mnt/inner.disk:/var/lib/docker \
                     -v /root/go/src/github.com/gardener/gardener/cell:/root/go/src/github.com/gardener/gardener/cell:ro \
-                    docker:26-dind
+                    docker:26-dind &&
+              flag_notify jail
             EOF
             new_pane "create cell image and start it" Enter <<"EOF"
               flag_wait virtual-garden-ha &&
+              flag_wait jail &&
               until docker exec jail docker ps >/dev/null 2>&1; do sleep 1; done &&
-              time sed 's/^  //' <<"JAIL" | xargs -d '\0' docker exec jail sh -c
+              time sed 's/^  //' <<"JAIL" | xargs -d '\0' docker exec jail sh -c && flag_notify cell
                 until docker ps >/dev/null 2>&1; do sleep 1; done
                 cd /root/go/src/github.com/gardener/gardener/cell
                 echo "Build the cell image"
@@ -944,13 +950,34 @@ spec:
                 docker run -d --rm --name cell \
                           --cpus=1 --memory=2g --pids-limit 1000 \
                           $(sed -E 's/(.*) (.*)/--add-host \2:\1/' /root/.kube_readonly/hosts.entry) \
+                          -v /root/hosts.entries:/etc/hosts.entries:ro \
                           -v /root/.kube_readonly:/home/demo/.kube_readonly:ro \
                           -v /root/.kube_virtual:/home/demo/go/src/github.com/gardener/gardener/example/operator/virtual-garden:ro \
                           cell-image \
                           sh -c "/home/demo/prepare-cell.sh > /home/demo/prepare-cell.log 2>&1"
-                echo "Cell container"
+                echo "Cell container:"
                 docker ps
-            JAIL
+              JAIL
+            EOF
+            new_pane "Add /etc/hosts entries in the cell" Enter <<"EOF"
+              flag_wait cell &&
+              sed 's/^  //' <<"JAIL" | xargs -d '\0' docker exec jail sh -c
+                echo "Starting to add the entries from /root/hosts.entries to /etc/hosts in the cell"
+                mkdir -p ~/cache/apk
+                ln -s ~/cache/apk /etc/apk/cache
+                apk add findutils
+                sed 's/^  //' <<"CELL" | xargs -d '\0' docker exec -u root cell sh -c
+                  inotifywait -m -e close_write /etc/hosts.entries 2>&1 \
+                  | grep --line-buffered -E 'Watches established.|CLOSE_WRITE' \
+                  | while read line; do
+                      sed -n '/# Gardener/q;p' /etc/hosts > /etc/hosts.base
+                      cat /etc/hosts.base > /etc/hosts
+                      echo "# Gardener" >> /etc/hosts
+                      cat /etc/hosts.entries >> /etc/hosts
+                      sed -n '/# Gardener/,$p' /etc/hosts | ts
+                    done
+                CELL
+              JAIL
             EOF
             new_window "cell" "cell" Enter <<"EOF"
               until docker exec jail sh -c "docker exec cell ls /tmp/ready" >/dev/null 2>&1; do sleep 1; done &&
