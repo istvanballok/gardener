@@ -351,7 +351,7 @@ spec:
           cd cell
           if [ -d gardener/.git ]; then
             cd gardener
-            git fetch
+            git fetch --tags
             git checkout $(git tag | sort -V | tail -n 1)
             cd -
           else
