@@ -604,7 +604,7 @@ spec:
 
             RUN chmod +x ~/prepare-cell.sh
 
-            COPY gardener /home/demo/go/src/github.com/gardener/gardener
+            COPY --chown=demo:demo gardener /home/demo/go/src/github.com/gardener/gardener
           DOCKERFILE
 
           cd -
