@@ -675,8 +675,8 @@ spec:
               k get garden local -o json | jq '
                 .spec.virtualCluster.controlPlane.highAvailability = {}
               ' | k apply -f - &&
-              kubectl wait --for=jsonpath='{.status.lastOperation.state}'=Processing garden local --timeout=-1s &&
-              time kubectl wait --for=jsonpath='{.status.lastOperation.state}'=Succeeded garden local --timeout=-1s &&
+              time ( kubectl wait --for=jsonpath='{.status.lastOperation.state}'=Processing garden local --timeout=-1s &&
+                     kubectl wait --for=jsonpath='{.status.lastOperation.state}'=Succeeded garden local --timeout=-1s ) &&
               flag_notify virtual-garden-ha
             EOF
             new_window "garden" "garden" Enter <<"EOF"
@@ -776,8 +776,8 @@ spec:
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               time flag_wait managedseed-shoot-ready &&
               k apply -f example/provider-local/managedseeds/managedseed.yaml &&
-              k wait -n garden managedseed managedseed --for=condition=SeedRegistered --timeout=-1s &&
-              time until k wait seed managedseed --for=condition=SeedSystemComponentsHealthy --timeout=-1s 2>/dev/null; do sleep 1; done &&
+              time ( k wait -n garden managedseed managedseed --for=condition=SeedRegistered --timeout=-1s &&
+                     until k wait seed managedseed --for=condition=SeedSystemComponentsHealthy --timeout=-1s 2>/dev/null; do sleep 1; done ) &&
               flag_notify managedseed-seed-ready
             EOF
             new_pane "managed seed pods" Enter <<"EOF"
