@@ -675,7 +675,7 @@ spec:
               k get garden local -o json | jq '
                 .spec.virtualCluster.controlPlane.highAvailability = {}
               ' | k apply -f - &&
-              time kubectl wait --for=jsonpath='{.status.lastOperation.state}'=Processing garden local --timeout=-1s &&
+              kubectl wait --for=jsonpath='{.status.lastOperation.state}'=Processing garden local --timeout=-1s &&
               time kubectl wait --for=jsonpath='{.status.lastOperation.state}'=Succeeded garden local --timeout=-1s &&
               flag_notify virtual-garden-ha
             EOF
