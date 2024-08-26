@@ -777,7 +777,7 @@ spec:
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               time flag_wait managedseed-shoot-ready &&
               k apply -f example/provider-local/managedseeds/managedseed.yaml &&
-              time k wait -n garden managedseed managedseed --for=condition=SeedRegistered --timeout=-1s &&
+              k wait -n garden managedseed managedseed --for=condition=SeedRegistered --timeout=-1s &&
               time until k wait seed managedseed --for=condition=SeedSystemComponentsHealthy --timeout=-1s 2>/dev/null; do sleep 1; done &&
               flag_notify managedseed-seed-ready
             EOF
