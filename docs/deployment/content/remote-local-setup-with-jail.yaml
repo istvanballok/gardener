@@ -224,6 +224,12 @@ spec:
             stty -ixon
             [ -n "$GCTL_SESSION_ID" ] || [ -n "$TERM_SESSION_ID" ] || export GCTL_SESSION_ID=$(uuidgen)
             cd ~/go/src/github.com/gardener/gardener
+            function flag_notify {
+              touch sync/$1
+            }
+            function flag_wait {
+              [ -f sync/$1 ] || inotifywait -qq sync --include /$1$
+            }
             function token {
               jq -R '
                 split(".")[1] |
@@ -650,34 +656,34 @@ spec:
               time ( kubectl wait --for=jsonpath='{.status.numberReady}'=3 daemonset -A --all --timeout=-1s &
                      kubectl wait --for=condition=available deployments -A --all --timeout=-1s &
                      wait ) &&
-              touch sync/kind-operator-up
+              flag_notify kind-operator-up
             EOF
             new_pane "make operator-up" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig
-              while [ ! -f sync/kind-operator-up ]; do inotifywait -qq sync --include /kind-operator-up$; done &&
+              flag_wait kind-operator-up &&
               nice time make operator-up &&
-              touch sync/operator-up
+              flag_notify operator-up
             EOF
             new_pane "make operator-seed-up" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig
-              while [ ! -f sync/operator-up ]; do inotifywait -qq sync --include /operator-up$; done &&
+              flag_wait operator-up &&
               nice time make operator-seed-up &&
-              touch sync/operator-seed-up
+              flag_notify operator-seed-up
             EOF
             new_pane "make the virtual cluster HA " Enter <<"EOF"
-              while [ ! -f sync/operator-seed-up ]; do inotifywait -qq sync --include /operator-seed-up$; done &&
+              flag_wait operator-seed-up &&
               k get garden local -o json | jq '
                 .spec.virtualCluster.controlPlane.highAvailability = {}
               ' | k apply -f - &&
               time kubectl wait --for=jsonpath='{.status.lastOperation.state}'=Processing garden local --timeout=-1s &&
               time kubectl wait --for=jsonpath='{.status.lastOperation.state}'=Succeeded garden local --timeout=-1s &&
-              touch sync/virtual-garden-ha
+              flag_notify virtual-garden-ha
             EOF
             new_window "garden" "garden" Enter <<"EOF"
               watch k get garden
             EOF
             new_pane "last operations" Enter <<"EOF"
-              while [ ! -f sync/operator-up ]; do inotifywait -qq sync --include /operator-up$; done &&
+              flag_wait operator-up &&
               while true; do k get garden local -o json -w 2>/dev/null \
                 | jq -r --unbuffered '.status.lastOperation |
                                       [.progress, .description] |
@@ -697,11 +703,11 @@ spec:
             EOF
             new_window "shoot lifecycle" "Create" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              time while [ ! -f sync/virtual-garden-ha ]; do inotifywait -qq sync --include /virtual-garden-ha$; done &&
+              time flag_wait virtual-garden-ha &&
               k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type="zone"' example/provider-local/shoot.yaml) &&
-              touch sync/shoot-created &&
+              flag_notify shoot-created &&
               time k -n garden-local wait shoot local --for=condition=SystemComponentsHealthy --timeout=-1s &&
-              touch sync/shoot-ready
+              flag_notify shoot-ready
             EOF
             new_pane "Reconcile" <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
@@ -718,7 +724,7 @@ spec:
             EOF
             new_pane "last operations seed" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              while [ ! -f sync/virtual-garden-ha ]; do inotifywait -qq sync --include /virtual-garden-ha$; done &&
+              flag_wait virtual-garden-ha &&
               while true; do
                 k get seed -o json -w 2>/dev/null \
                 | jq -r --unbuffered '[ "[seed=\(.metadata.name)]",
@@ -732,7 +738,7 @@ spec:
             EOF
             new_pane "last operations shoot" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              while [ ! -f sync/shoot-created ]; do inotifywait -qq sync --include /shoot-created$; done &&
+              flag_wait shoot-created &&
               while true; do
                 k get shoot -A -o json -w 2>/dev/null  \
                 | jq -r --unbuffered '[ "[shoot=\(.metadata.namespace)/\(.metadata.name)]",
@@ -762,22 +768,22 @@ spec:
             EOF
             new_pane "create shoot" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              time while [ ! -f sync/virtual-garden-ha ]; do inotifywait -qq sync --include /virtual-garden-ha$; done &&
+              time flag_wait virtual-garden-ha &&
               k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type="zone"' example/provider-local/managedseeds/shoot-managedseed.yaml) &&
               time k -n garden wait shoot managedseed --for=condition=SystemComponentsHealthy --timeout=-1s &&
-              touch sync/managedseed-shoot-ready
+              flag_notify managedseed-shoot-ready
             EOF
             new_pane "create managed seed" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              time while [ ! -f sync/managedseed-shoot-ready ]; do inotifywait -qq sync --include /managedseed-shoot-ready$; done &&
+              time flag_wait managedseed-shoot-ready &&
               k apply -f example/provider-local/managedseeds/managedseed.yaml &&
               time k wait -n garden managedseed managedseed --for=condition=SeedRegistered --timeout=-1s &&
               time until k wait seed managedseed --for=condition=SeedSystemComponentsHealthy --timeout=-1s 2>/dev/null; do sleep 1; done &&
-              touch sync/managedseed-seed-ready
+              flag_notify managedseed-seed-ready
             EOF
             new_pane "managed seed pods" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              time while [ ! -f sync/managedseed-seed-ready ]; do inotifywait -qq sync --include /managedseed-seed-ready$; done &&
+              time flag_wait managedseed-seed-ready &&
               while true; do
                 generate-admin-kubeconf.sh --namespace garden --shoot-name managedseed > /tmp/managedseed.kubeconfig
                 while k --kubeconfig /tmp/managedseed.kubeconfig get pods -A -o wide | nl; do sleep 10s; clear; done
@@ -787,12 +793,12 @@ spec:
             # Note: regular shoots do not work due to nesting overlayfs, see dmesg + the managed seed is not HA because it has only one node
             new_pane "shoot on managed seed" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              time while [ ! -f sync/managedseed-seed-ready ]; do inotifywait -qq sync --include /managedseed-seed-ready$; done &&
+              time flag_wait managedseed-seed-ready &&
               k apply -f <(yq '.metadata.name="local-wl-ms" |
                                .spec.seedName="managedseed" |
                                .spec.networking.services="10.6.0.0/16"' example/provider-local/shoot-workerless.yaml) &&
               time k -n garden-local wait shoot local-wl-ms --for=condition=SystemComponentsHealthy --timeout=-1s &&
-              touch sync/managedseed-nested-shoot-ready
+              flag_notify managedseed-nested-shoot-ready
             EOF
             new_window "runtime&seed pods" "pods" Enter <<"EOF"
               # the while loop is used instead of watch to allow for scrolling a longer list in the tmux pane
@@ -804,7 +810,7 @@ spec:
             EOF
             new_window "shoot pods" "pods" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              while [ ! -f sync/shoot-ready ]; do inotifywait -qq sync --include /shoot-ready$; done &&
+              flag_wait shoot-ready &&
               while true; do
                 generate-admin-kubeconf.sh > /tmp/shoot.kubeconfig
                 yes | watch -e k --kubeconfig /tmp/shoot.kubeconfig get pods -A
@@ -812,7 +818,7 @@ spec:
             EOF
             new_pane "not ready pods" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              while [ ! -f sync/shoot-ready ]; do inotifywait -qq sync --include /shoot-ready$; done &&
+              flag_wait shoot-ready &&
               generate-admin-kubeconf.sh > /tmp/shoot.kubeconfig2 &&
               yes | watch -e "k --kubeconfig /tmp/shoot.kubeconfig2 get pods -A -o wide \
                               | awk '{split(\$3, a, \"/\"); if (a[1]!=a[2] || \$4 != \"Running\") {print}}'"
@@ -834,7 +840,7 @@ spec:
             EOF
 
             new_window "readonly" "readonly" Enter <<"EOF"
-              while [ ! -f sync/virtual-garden-ha ]; do inotifywait -qq sync --include /virtual-garden-ha$; done &&
+              flag_wait virtual-garden-ha &&
               echo &&
               endpoint=$(yq ~/.kube/config -o json | jq -r '.clusters[0].cluster.server' | sed 's#^https://##') &&
               echo "KinD cluster endpoint: $endpoint" &&
@@ -858,17 +864,17 @@ spec:
               echo "$DOCKER_IP $SAN" > ~/.kube/readonly/export/hosts.entry &&
               echo "$DOCKER_IP api.virtual-garden.local.gardener.cloud" >> ~/.kube/readonly/export/hosts.entry &&
               echo "starting socat for the KinD cluster" &&
-              touch sync/socat &&
+              flag_notify socat &&
               socat TCP-LISTEN:44444,fork,reuseaddr TCP:"$endpoint"
             EOF
             new_pane "virtual garden" Enter <<"EOF"
-              while [ ! -f sync/virtual-garden-ha ]; do inotifywait -qq sync --include /virtual-garden-ha$ done &&
+              flag_wait virtual-garden-ha &&
               echo "starting socat for the virtual Garden cluster" &&
               socat TCP-LISTEN:443,fork,reuseaddr,bind=172.17.0.1 TCP:172.18.255.3:443
             EOF
             new_pane "test" Enter <<"EOF"
               # TODO wait for the port forward
-              while [ ! -f sync/socat ]; do inotifywait -qq sync --include /socat$; done &&
+              flag_wait socat &&
               cat ~/.kube/readonly/export/hosts.entry >> /etc/hosts &&
               echo "can-i get pods?" &&
               k --kubeconfig ~/.kube/readonly/export/config auth can-i get pods &&
@@ -891,7 +897,7 @@ spec:
                     docker:26-dind
             EOF
             new_pane "create cell image and start it" Enter <<"EOF"
-              while [ ! -f sync/virtual-garden-ha ]; do inotifywait -qq sync --include /virtual-garden-ha$; done &&
+              flag_wait virtual-garden-ha &&
               until docker exec jail docker ps >/dev/null 2>&1; do sleep 1; done &&
               time sed 's/^  //' <<"JAIL" | xargs -d '\0' docker exec jail sh -c
                 until docker ps >/dev/null 2>&1; do sleep 1; done
