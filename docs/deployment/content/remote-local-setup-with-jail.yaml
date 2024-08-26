@@ -791,7 +791,7 @@ spec:
             EOF
             # TODO: how to connect to the API server?
             # Note: regular shoots do not work due to nesting overlayfs, see dmesg + the managed seed is not HA because it has only one node
-            new_pane "shoot on managed seed" Enter <<"EOF"
+            new_pane "workerless shoot on managed seed" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               time flag_wait managedseed-seed-ready &&
               k apply -f <(yq '.metadata.name="local-wl-ms" |
