@@ -607,11 +607,27 @@ spec:
               EOF
               new_pane "seed conditions" Enter <<"EOF"
                 export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-                nice watch -c "k get seed local -o yaml | yq -P -C '[.status.conditions[] | del(.lastTransitionTime, .lastUpdateTime)]' | grep --color=Always -E '\"False\"| Unknown| Progressing|$'"
+                while true; do
+                  k get seeds -o json | jq '
+                    [.items[] |
+                    { name: .metadata.name,
+                      conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
+                  ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$'
+                  sleep 10s
+                  clear
+                done
               EOF
               new_horizontal_pane "shoot conditions" Enter <<"EOF"
                 export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-                nice watch -c "k get -n garden-local shoot local -o yaml | yq -P -C '[.status.conditions[] | del(.lastTransitionTime, .lastUpdateTime)]' | grep --color=Always -E '\"False\"| Unknown| Progressing|$'"
+                while true; do
+                  k get shoots -A -o json | jq '
+                    [.items[] |
+                    { name: [.metadata.namespace, .metadata.name] | join("/"),
+                      conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
+                  ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$'
+                  sleep 10s
+                  clear
+                done
               EOF
 
               new_window "shoot lifecycle" "Create" <<"EOF"
@@ -852,15 +868,27 @@ spec:
             EOF
             new_pane "seed conditions" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              watch -c "k get seed local -o yaml | yq -P -C '
-                [.status.conditions[] | del(.lastTransitionTime, .lastUpdateTime)]
-              ' | grep --color=Always -E '\"False\"| Unknown| Progressing|$'"
+              while true; do
+                k get seeds -o json | jq '
+                  [.items[] |
+                   { name: .metadata.name,
+                     conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
+                ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$'
+                sleep 10s
+                clear
+              done
             EOF
             new_horizontal_pane "shoot conditions" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              watch -c "k get -n garden-local shoot local -o yaml | yq -P -C '
-                [.status.conditions[] | del(.lastTransitionTime, .lastUpdateTime)]
-              ' | grep --color=Always -E '\"False\"| Unknown| Progressing|$'"
+              while true; do
+                k get shoots -A -o json | jq '
+                  [.items[] |
+                   { name: [.metadata.namespace, .metadata.name] | join("/"),
+                     conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
+                ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$'
+                sleep 10s
+                clear
+              done
             EOF
             new_window "managed seed" "managed seed" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
