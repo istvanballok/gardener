@@ -990,7 +990,7 @@ spec:
             EOF
             new_pane "hosts entries once" <<"EOF"
               k get gateways -A -o json | jq -r --argjson ingress2IP "$(
-                k get svc -A -o json | jq -r -c '
+                k get svc -A -o json | jq -r '
                 .items |
                 map(select(.metadata | (.namespace | test("^istio-ingress")) and .name=="istio-ingressgateway") |
                     {(.spec.selector.istio): .status.loadBalancer.ingress[0].ip}) | add'
