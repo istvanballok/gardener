@@ -831,7 +831,7 @@ spec:
             EOF
             new_pane "last operations seed" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              flag_wait virtual-garden-ha &&
+              flag_wait operator-seed-up &&
               while true; do
                 k get seed -o json -w 2>/dev/null \
                 | jq -r --unbuffered '[ "[seed=\(.metadata.name)]",
