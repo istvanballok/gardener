@@ -553,10 +553,6 @@ spec:
 
               ##### Prepare the panes for the demo scenario here #####
 
-              new_window "k9s" "k9s" Enter <<"EOF"
-                export KUBECONFIG=~/.kube_readonly/config
-                nice k9s
-              EOF
               new_window "garden" "garden" Enter <<"EOF"
                 export KUBECONFIG=~/.kube_readonly/config
                 nice watch k get garden
@@ -640,6 +636,11 @@ spec:
               EOF
 
               #### Misc ####
+
+              new_window "k9s" "k9s" Enter <<"EOF"
+                export KUBECONFIG=~/.kube_readonly/config
+                nice k9s
+              EOF
 
               mkdir -p ~/.config/procps; rm -f ~/.config/procps/toprc
               new_window "misc" "top" Enter <<"EOF"
