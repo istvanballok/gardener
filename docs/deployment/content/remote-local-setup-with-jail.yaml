@@ -1005,24 +1005,35 @@ spec:
               '
             EOF
 
-            new_pane "hosts entries watching" <<"EOF"
-              k get --raw "/apis/networking.istio.io/v1beta1/namespaces/shoot--local--local2/gateways?watch=1" | jq -r '
+            new_pane "hosts entries watching" Enter <<"EOF"
+              k get --raw "/apis/networking.istio.io/v1beta1/gateways?watch=1" | jq -r --unbuffered --argjson ingress2IP "$(
+                k get svc -A -o json | jq -r '
+                .items |
+                map(select(.metadata | (.namespace | test("^istio-ingress")) and .name=="istio-ingressgateway") |
+                    {(.spec.selector.istio): .status.loadBalancer.ingress[0].ip}) | add'
+              )" '
                 select(.object.metadata.name == "kube-apiserver") |
-                [.type, .object.metadata.namespace, .object.spec.selector.istio] | join(" ")
+                { type: .type,
+                  namespace: .object.metadata.namespace,
+                  istio: .object.spec.selector.istio} |
+                . +
+                (.namespace | capture("shoot--(?<project>.*)--(?<name>.*)")) +
+                {ip: $ingress2IP[.istio]} |
+                "\(.type) api.\(.name).\(.project).external.local.gardener.cloud \(.ip | sub("^172.18"; "172.17"))"
               ' | awk '
                 {
                   if ($1 == "ADDED" || $1 == "MODIFIED") {
-                    state[$2"_"$3] = true
+                    state[$2] = $3
                   } else if ($1 == "DELETED") {
-                    delete state[$2"_"$3]
+                    delete state[$2]
                   }
-                  for k in state {
-                    split(k, a, "_")
-                    print a[1], a[2]
+                  print "# local seed" > "/root/hosts.entries"
+                  for (domain in state) {
+                    print state[domain], domain > "/root/hosts.entries"
                   }
+                  close("/root/hosts.entries")
                 }
               '
-
             EOF
 
             new_window "kind-readonly" "readonly kubeconfig" Enter <<"EOF"
