@@ -944,15 +944,17 @@ spec:
             EOF
 
             new_window "virtual garden" "virtual garden" Enter <<"EOF"
-              # The virtual garden cluster's kubeconfig: 'example/operator/virtual-garden/kubeconfig'
-              # uses the endpoint: 'api.virtual-garden.local.gardener.cloud'
-              # that is mapped to '172.18.255.3', an arbitrary IP of the docker network 'kind'.
-              #   See PR g/g#10019 and 'docker network inspect 'kind'.
-              # "docker ps | sed 's/,/\n/g'" shows that '172.18.255.3:443' is mapped to the KinD node port 31443,
-              # which is the node port of the 'virtual-garden-istio-ingress/istio-ingressgateway' service.
-              # With 'socat', 172.18.255.3:443 is remapped to 172.17.0.1:443, where
-              # 172.17.0.1 is an IP in the default bridge docker network,
-              # that is going to be reachable from the cell.
+              cat <<DOC >/dev/null
+                The virtual garden cluster's kubeconfig: 'example/operator/virtual-garden/kubeconfig'
+                uses the endpoint: 'api.virtual-garden.local.gardener.cloud'
+                that is mapped to '172.18.255.3', an arbitrary IP of the docker network 'kind'.
+                  See PR g/g#10019 and 'docker network inspect 'kind'.
+                "docker ps | sed 's/,/\n/g'" shows that '172.18.255.3:443' is mapped to the KinD node port 31443,
+                which is the node port of the 'virtual-garden-istio-ingress/istio-ingressgateway' service.
+                With 'socat', 172.18.255.3:443 is remapped to 172.17.0.1:443, where
+                172.17.0.1 is an IP in the default bridge docker network,
+                that is going to be reachable from the cell.
+              DOC
               flag_wait virtual-garden-ha &&
               echo "starting socat for the virtual Garden cluster" &&
               flag_notify socat_virtual_garden &&
@@ -972,10 +974,12 @@ spec:
             EOF
 
             new_window "shoot API" "IP socat" Enter <<"EOF"
-              # The KinD cluster acts as the "local" seed.
-              # The shoot control planes are exposed via one of 4 IPs from the docker kind network that are mapped to the loopback device.
-              # To mitigate a routing issue and to control the network access from the cell, we map these to another 4 IPs from the docker bridge network,
-              # that is routeable from the cell.
+              cat <<DOC >/dev/null
+                The KinD cluster acts as the "local" seed.
+                The shoot control planes are exposed via one of 4 IPs from the docker kind network that are mapped to the loopback device.
+                To mitigate a routing issue and to control the network access from the cell, we map these to another 4 IPs from the docker bridge network,
+                that is routeable from the cell.
+              DOC
               while read internalIP exposedIP; do
                 echo "Exposing $internalIP:443 on $exposedIP:443"
                 ip addr add $exposedIP/32 dev lo
