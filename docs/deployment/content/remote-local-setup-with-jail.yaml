@@ -793,9 +793,15 @@ spec:
               k annotate garden local 'gardener.cloud/operation=reconcile'
             EOF
             new_pane "garden conditions" Enter <<"EOF"
-              watch -c "k get garden local -o yaml | yq -P -C '
-                [.status.conditions[] | del(.lastTransitionTime, .lastUpdateTime)]
-              ' | grep --color=Always -E '\"False\"| Unknown| Progressing|$'"
+              while true; do
+                k get garden -o json | jq '
+                  [.items[] |
+                   { name: .metadata.name,
+                     conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
+                ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$'
+                sleep 10s
+                clear
+              done
             EOF
             new_window "shoot lifecycle" "Create" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
