@@ -971,20 +971,17 @@ spec:
               # The shoot control planes are exposed via one of 4 IPs from the docker kind network that are mapped to the loopback device.
               # To mitigate a routing issue and to control the network access from the cell, we map these to another 4 IPs from the docker bridge network,
               # that is routeable from the cell.
-              for line in $(
+              while read internalIP exposedIP; do
+                echo "Exposing $internalIP:443 on $exposedIP:443"
+                ip addr add $exposedIP/32 dev lo
+                socat TCP-LISTEN:443,fork,reuseaddr,bind=$exposedIP TCP:$internalIP:443 &
+              done < <(
                 k get svc -A -o json | jq -r '
                   .items[] |
                   select(.metadata | (.namespace | test("^istio-ingress")) and .name=="istio-ingressgateway") |
                   .status.loadBalancer.ingress[0].ip |
-                  [., sub("^172.18"; "172.17")] |join("_")
-                '
-              ); do
-                echo $line
-                IFS=_ read -r internalIP exposedIP <<< "$line"
-                echo "Exposing $internalIP:443 on $exposedIP:443"
-                ip addr add $exposedIP/32 dev lo
-                socat TCP-LISTEN:443,fork,reuseaddr,bind=$exposedIP TCP:$internalIP:443 &
-              done &&
+                  [., sub("^172.18"; "172.17")] | join(" ")
+                ') &&
               sleep 1 &&
               jobs
             EOF
