@@ -231,6 +231,9 @@ spec:
             function flag_wait {
               [ -f sync/$1 ] || inotifywait -qq sync --include /$1$
             }
+            function flag_delete {
+              rm sync/$1
+            }
             function token {
               jq -R '
                 split(".")[1] |
