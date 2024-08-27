@@ -1089,7 +1089,7 @@ spec:
                            } else if ($1 == "DELETED") {
                              printf("flag_delete shoot_api_managedseed")
                            }
-                         }' | bash -l
+                         }' | bash -l # TODO: stty: 'standard input': Not a tty
             EOF
             new_pane "IP socat" Enter <<"EOF"
               inotifywait -m sync --include shoot_api_managedseed | ts
