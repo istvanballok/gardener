@@ -547,27 +547,12 @@ spec:
             RUN sed 's/^  //' <<"SCRIPT_EOF" > ~/prepare-cell.sh
               set -x
               source /usr/local/bin/tmux_functions.sh
-              tmux new -d -s jail -n top -x 2000 -y 2000
-              tmux select-pane -T top; mkdir -p ~/.config/procps; rm -f ~/.config/procps/toprc
-              tmux send top Enter
-              sleep 1
-              for k in z C c t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
-              new_pane "CPU limit" Enter <<"EOF"
-                nice dd if=/dev/zero of=/dev/null
-              EOF
+              tmux new -d -s jail -n demo -x 2000 -y 2000
+              tmux select-pane -T demo;
+              tmux send -- 'less ~/demo.md' Enter
 
               ##### Prepare the panes for the demo scenario here #####
 
-              new_window "demo" "demo" Enter <<"EOF"
-                less ~/demo.md
-              EOF
-
-              new_window "disk" "df" Enter <<"EOF"
-                df -h
-              EOF
-              new_pane "findmnt" Enter <<"EOF"
-                findmnt
-              EOF
               new_window "k9s" "k9s" Enter <<"EOF"
                 export KUBECONFIG=~/.kube_readonly/config
                 nice k9s
@@ -653,6 +638,27 @@ spec:
               new_window "ad-hoc" "ad-hoc" Enter <<"EOF"
                 # Use this pane for ad-hoc commands
               EOF
+
+              #### Misc ####
+
+              mkdir -p ~/.config/procps; rm -f ~/.config/procps/toprc
+              new_window "misc" "top" Enter <<"EOF"
+                top
+              EOF
+              sleep 1
+              for k in z C c t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
+
+              new_pane "demo CPU limit" Enter <<"EOF"
+                nice dd if=/dev/zero of=/dev/null
+              EOF
+
+              new_pane "disk" Enter <<"EOF"
+                df -h
+              EOF
+              new_pane "findmnt" Enter <<"EOF"
+                findmnt
+              EOF
+
               tmux select-window -t 0
               tmux select-pane -t 1
 
