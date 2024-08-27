@@ -648,18 +648,7 @@ spec:
                 # the while loop is used instead of watch to allow for scrolling a longer list in the tmux pane
                 while true; do clear; k get pods -A -o wide; sleep 10s; done
               EOF
-              new_pane "not ready pods" Enter <<"EOF"
-                export KUBECONFIG=~/.kube_readonly/config
-                nice watch "k get pods -A -o wide | awk '{split(\$3, a, \"/\"); if (a[1]!=a[2] || \$4 != \"Running\") {print}}'"
-              EOF
-              new_window "shoot pods" "pods" <<"EOF"
-                export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-                generate-admin-kubeconf.sh > /tmp/shoot.kubeconfig && watch k --kubeconfig /tmp/shoot.kubeconfig get pods -A
-              EOF
-              new_pane "not ready pods" <<"EOF"
-                export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-                generate-admin-kubeconf.sh > /tmp/shoot.kubeconfig && watch "k --kubeconfig /tmp/shoot.kubeconfig get pods -A -o wide | awk '{split(\$3, a, \"/\"); if (a[1]!=a[2] || \$4 != \"Running\") {print}}'"
-              EOF
+
               new_window "gardenctl" "gardenctl" <<"EOF"
                 gardenctl config set-garden local --kubeconfig $PWD/example/operator/virtual-garden/kubeconfig
                 eval $(gardenctl kubectl-env bash)
