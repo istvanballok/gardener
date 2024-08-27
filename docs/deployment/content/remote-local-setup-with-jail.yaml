@@ -241,6 +241,11 @@ spec:
                 fromjson |
                 (.exp,.iat,.nbf) |= todate'
             }
+            function uniq_unbuffered {
+              # like uniq --unbuffered, if uniq had an --unbuffered option
+              # compare interactively: uniq | cat; uniq_unbuffered | cat
+              awk '{if (prev!=$0) print; fflush(); prev=$0}'
+            }
             function pr {
               if [ "$#" -ne 1 ]; then
                 echo "Usage: pr <id> - checkout the HEAD of PR <id>"
@@ -467,6 +472,11 @@ spec:
               stty -ixon
               [ -n "$GCTL_SESSION_ID" ] || [ -n "$TERM_SESSION_ID" ] || export GCTL_SESSION_ID=$(uuidgen)
               cd ~/go/src/github.com/gardener/gardener
+              function uniq_unbuffered {
+                # like uniq --unbuffered, if uniq had an --unbuffered option
+                # compare interactively: uniq | cat; uniq_unbuffered | cat
+                awk '{if (prev!=$0) print; fflush(); prev=$0}'
+              }
             EOF
 
             RUN sed 's/^  //' <<"EOF" > ~/.tmux.conf
@@ -568,7 +578,7 @@ spec:
                   | jq -r --unbuffered '.status.lastOperation |
                                         [.progress, .description] |
                                         join(" ")
-                    ' | awk '{if (prev!=$0) print; fflush(); prev=$0}' \
+                    ' | uniq_unbuffered \
                   | sed --unbuffered 's/, /,\n+ /g' | ts
                   sleep 1
                 done
@@ -599,7 +609,7 @@ spec:
                                           [.progress, .description] |
                                           join(" "))
                                         ] | join(" ")
-                    ' | awk '{if (prev!=$0) print; fflush(); prev=$0}' | sed --unbuffered 's/, /,\n+ /g' | ts
+                    ' | uniq_unbuffered | sed --unbuffered 's/, /,\n+ /g' | ts
                   sleep 1
                 done
               EOF
@@ -612,7 +622,7 @@ spec:
                                           [.progress, .description] |
                                           join(" "))
                                         ] | join(" ")
-                    ' | awk '{if (prev!=$0) print; fflush(); prev=$0}' | sed --unbuffered 's/, /,\n+ /g' | ts
+                    ' | uniq_unbuffered | sed --unbuffered 's/, /,\n+ /g' | ts
                   sleep 1
                 done
               EOF
@@ -790,7 +800,7 @@ spec:
                 | jq -r --unbuffered '.status.lastOperation |
                                       [.progress, .description] |
                                       join(" ")
-                  ' | awk '{if (prev!=$0) print; fflush(); prev=$0}' \
+                  ' | uniq_unbuffered \
                 | sed --unbuffered 's/, /,\n+ /g' | ts
                 sleep 1
               done
@@ -839,7 +849,7 @@ spec:
                                          [.progress, .description] |
                                          join(" "))
                                       ] | join(" ")
-                  ' | awk '{if (prev!=$0) print; fflush(); prev=$0}' | sed --unbuffered 's/, /,\n+ /g' | ts
+                  ' | uniq_unbuffered | sed --unbuffered 's/, /,\n+ /g' | ts
                 sleep 1
               done
             EOF
@@ -853,7 +863,7 @@ spec:
                                          [.progress, .description] |
                                          join(" "))
                                       ] | join(" ")
-                  ' | awk '{if (prev!=$0) print; fflush(); prev=$0}' | sed --unbuffered 's/, /,\n+ /g' | ts
+                  ' | uniq_unbuffered | sed --unbuffered 's/, /,\n+ /g' | ts
                 sleep 1
               done
             EOF
