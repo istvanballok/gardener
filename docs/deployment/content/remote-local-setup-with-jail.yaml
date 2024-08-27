@@ -488,6 +488,62 @@ spec:
 
             ADD scripts/tmux_functions.sh /usr/local/bin/tmux_functions.sh
 
+            RUN sed 's/^  //' <<"EOF" > ~/demo.md
+              # Welcome to the Gardener Demo environment
+
+              This is a demo environment for the Gardener (https://gardener.cloud/) project
+              that allows you to explore the features and capabilities of Gardener
+              interactively.
+
+              Gardener is an open source project contributed by SAP and others that provides a
+              Kubernetes-based solution to manage Kubernetes clusters on various cloud
+              providers in a uniform way.
+
+              This demo environment is based on KinD (Kubernetes in Docker): a KinD cluster
+              acts as the "runtime Garden" cluster where the Gardener operator manages the so
+              called "virtual Garden" cluster, the Gardener API.
+
+              The Gardener API is itself a Kubernetes API with various custom resources like
+              Shoots and Seeds. End users can create Shoots (Kubernetes clusters): the control
+              plane is then managed by Gardener on a Seed cluster. The worker nodes of the
+              Shoot cluster are created in the IaaS account that is configured by the end
+              user: in this local setup that has no IaaS dependencies, the worker nodes are
+              simulated by pods in the control plane of the shoot cluster.
+
+              As said above, the KinD cluster is the runtime Garden cluster and it also acts
+              as a Seed cluster. This might be slightly confusing because in real
+              installations these roles are separated into dedicated clusters.
+
+              Gardener managed shoots can be also upgraded to a seed cluster, such that they
+              can host shoot control planes. This allows for a recursive setup where a top
+              level, non Gardener managed seed cluster (the soil cluster) manages a small set
+              of shoots that are distributed across multiple IaaS providers and geographical
+              regions. These Gardener managed shoots are then registered as seeds and the end
+              user created shoots' control planes are hosted on them, close to the IaaS and
+              region that is chosen by the end user.
+
+              ## The demo environment
+
+              This demo environment contains a much more limited, but still fully functional
+              setup that allows you to explore the features of Gardener interactively. It is
+              based on the [local setup][] that you could also deploy on your own machine. It
+              is slightly restricted compared to the regular local setup (e.g. no Internet
+              access) to avoid abusing this free environment that is provided to reduce the
+              entry barrier for developers who would like to explore Gardener without
+              installing it on their own machine.
+
+
+              The demo environment is prepared in a tmux session. You can use the mouse to
+              select panes and windows. Please check the [tmux][] documentation for more
+              keyboard shortcuts, like `CTRL+b c` to create a new window for interactive
+              exploration.
+
+              [tmux]: https://github.com/tmux/tmux/wiki
+              [local setup]: https://github.com/gardener/gardener/blob/master
+                             /docs/deployment/getting_started_locally.md#
+                             alternative-way-to-set-up-garden-and-seed-leveraging-gardener-operator-complete
+            EOF
+
             RUN sed 's/^  //' <<"SCRIPT_EOF" > ~/prepare-cell.sh
               set -x
               source /usr/local/bin/tmux_functions.sh
@@ -501,6 +557,10 @@ spec:
               EOF
 
               ##### Prepare the panes for the demo scenario here #####
+
+              new_window "demo" "demo" Enter <<"EOF"
+                less ~/demo.md
+              EOF
 
               new_window "disk" "df" Enter <<"EOF"
                 df -h
