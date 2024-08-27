@@ -980,6 +980,7 @@ spec:
                 To mitigate a routing issue and to control the network access from the cell, we map these to another 4 IPs from the docker bridge network,
                 that is routeable from the cell.
               DOC
+              flag_wait virtual-garden-ha &&
               while read internalIP exposedIP; do
                 echo "Exposing $internalIP:443 on $exposedIP:443"
                 ip addr add $exposedIP/32 dev lo
@@ -995,6 +996,7 @@ spec:
               jobs
             EOF
             new_pane "hosts entries watching" Enter <<"EOF"
+              flag_wait virtual-garden-ha &&
               while true; do
                 BOOKMARK="resourceVersion=$(cat /root/gateways.watch.bookmark 2>/dev/null)"
                 k get --raw "/apis/networking.istio.io/v1beta1/gateways?watch=1&allowWatchBookmarks=true&$BOOKMARK" | jq -r --unbuffered --argjson ingress2IP "$(
