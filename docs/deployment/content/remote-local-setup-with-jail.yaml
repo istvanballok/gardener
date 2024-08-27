@@ -672,7 +672,7 @@ spec:
               sleep 1
               for k in z C c t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
 
-              new_pane "demo CPU limit" Enter <<"EOF"
+              new_pane "demo CPU limit" <<"EOF"
                 nice dd if=/dev/zero of=/dev/null
               EOF
 
