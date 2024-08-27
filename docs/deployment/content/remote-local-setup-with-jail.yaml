@@ -642,22 +642,7 @@ spec:
                 export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
                 k annotate shoot local -n garden-local 'confirmation.gardener.cloud/deletion=true' && k delete shoot local -n garden-local
               EOF
-              new_window "managed seed" "managed seed" <<"EOF"
-                export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-                nice watch k get -A seeds,shoots,managedseeds
-              EOF
-              new_pane "create shoot" <<"EOF"
-                export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-                k apply -f example/provider-local/managedseeds/shoot-managedseed.yaml
-              EOF
-              new_pane "create managed seed" <<"EOF"
-                export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-                k apply -f example/provider-local/managedseeds/managedseed.yaml
-              EOF
-              new_pane "managed seed pods" <<"EOF"
-                export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-                generate-admin-kubeconf.sh --namespace garden --shoot-name managedseed > /tmp/shoot.kubeconfig && while true; do clear; k --kubeconfig /tmp/shoot.kubeconfig get pods -A -o wide; sleep 10s; done
-              EOF
+
               new_window "runtime&seed pods" "pods" Enter <<"EOF"
                 export KUBECONFIG=~/.kube_readonly/config
                 # the while loop is used instead of watch to allow for scrolling a longer list in the tmux pane
