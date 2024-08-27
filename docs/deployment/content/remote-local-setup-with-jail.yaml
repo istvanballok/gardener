@@ -203,6 +203,7 @@ spec:
 
           sed 's/^  //' <<"EOF" > ~/.bashrc
             [ -z "$TMUX" ] && export TERM=xterm-256color
+            set -o pipefail
             export GOPATH=~/go
             export PATH=$PATH:$GOPATH/bin:~/.krew/bin:~/go/src/github.com/gardener/gardener/hack/usage
             export XDG_CONFIG_HOME=~/.config
@@ -441,6 +442,7 @@ spec:
 
             RUN sed 's/^  //' <<"EOF" > ~/.bashrc
               [ -z "$TMUX" ] && export TERM=xterm-256color
+              set -o pipefail
               export GOPATH=~/go
               export PATH=$PATH:$GOPATH/bin:~/.krew/bin:~/go/src/github.com/gardener/gardener/hack/usage
               export XDG_CONFIG_HOME=~/.config
