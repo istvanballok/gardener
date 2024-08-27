@@ -966,6 +966,68 @@ spec:
                  https://api.virtual-garden.local.gardener.cloud/ | head
             EOF
 
+            new_window "shoot API" "IP socat" Enter <<"EOF"
+              # The KinD cluster acts as the "local" seed.
+              # The shoot control planes are exposed via one of 4 IPs from the docker kind network that are mapped to the loopback device.
+              # To mitigate a routing issue and to control the network access from the cell, we map these to another 4 IPs from the docker bridge network,
+              # that is routeable from the cell.
+              for line in $(
+                k get svc -A -o json | jq -r '
+                  .items[] |
+                  select(.metadata | (.namespace | test("^istio-ingress")) and .name=="istio-ingressgateway") |
+                  .status.loadBalancer.ingress[0].ip |
+                  [., sub("^172.18"; "172.17")] |join("_")
+                '
+              ); do
+                echo $line
+                IFS=_ read -r internalIP exposedIP <<< "$line"
+                echo "Exposing $internalIP:443 on $exposedIP:443"
+                ip addr add $exposedIP/32 dev lo
+                socat TCP-LISTEN:443,fork,reuseaddr,bind=$exposedIP TCP:$internalIP:443 &
+              done &&
+              sleep 1 &&
+              jobs
+            EOF
+            new_pane "hosts entries once" <<"EOF"
+              k get gateways -A -o json | jq -r --argjson ingress2IP "$(
+                k get svc -A -o json | jq -r -c '
+                .items |
+                map(select(.metadata | (.namespace | test("^istio-ingress")) and .name=="istio-ingressgateway") |
+                    {(.spec.selector.istio): .status.loadBalancer.ingress[0].ip}) | add'
+              )" '
+                .items |
+                map(select(.metadata.name == "kube-apiserver") |
+                    {(.metadata.namespace): (
+                        {istio: .spec.selector.istio,
+                         ip: $ingress2IP[.spec.selector.istio]} +
+                        (.metadata.namespace | capture("shoot--(?<project>.*)--(?<name>.*)")))
+                    }
+                   ) | add
+              ' | jq -r '
+                .[] | "\(.ip | sub("^172.18"; "172.17")) api.\(.name).\(.project).external.local.gardener.cloud"
+              '
+            EOF
+
+            new_pane "hosts entries watching" <<"EOF"
+              k get --raw "/apis/networking.istio.io/v1beta1/namespaces/shoot--local--local2/gateways?watch=1" | jq -r '
+                select(.object.metadata.name == "kube-apiserver") |
+                [.type, .object.metadata.namespace, .object.spec.selector.istio] | join(" ")
+              ' | awk '
+                {
+                  if ($1 == "ADDED" || $1 == "MODIFIED") {
+                    state[$2"_"$3] = true
+                  } else if ($1 == "DELETED") {
+                    delete state[$2"_"$3]
+                  }
+                  for k in state {
+                    split(k, a, "_")
+                    print a[1], a[2]
+                  }
+                }
+              '
+
+            EOF
+
             new_window "kind-readonly" "readonly kubeconfig" Enter <<"EOF"
               # The KinD cluster acts as the runtime garden cluster
               #   that contains the Garden resource and where the gardener operator deploys the virtual garden cluster
