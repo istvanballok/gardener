@@ -588,7 +588,7 @@ spec:
 
               new_window "seed&shoots" "seed&shoots" Enter <<"EOF"
                 export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-                nice watch k get -A seeds,shoots
+                nice watch k get -A seeds,managedseeds,shoots
               EOF
               new_pane "last operations seed" <<"EOF"
                 export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
