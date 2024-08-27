@@ -559,11 +559,20 @@ spec:
               EOF
               new_pane "last operations" Enter <<"EOF"
                 export KUBECONFIG=~/.kube_readonly/config
-                nice k get garden local -o json -w | jq -r --unbuffered '.status.lastOperation | [.progress, .description] | join(" ")' | awk '{if (prev!=$0) print; fflush(); prev=$0}' | sed --unbuffered 's/, /,\n+ /g' | ts
+                while true; do k get garden local -o json -w 2>/dev/null \
+                  | jq -r --unbuffered '.status.lastOperation |
+                                        [.progress, .description] |
+                                        join(" ")
+                    ' | awk '{if (prev!=$0) print; fflush(); prev=$0}' \
+                  | sed --unbuffered 's/, /,\n+ /g' | ts
+                  sleep 1
+                done
               EOF
               new_pane "garden conditions" Enter <<"EOF"
                 export KUBECONFIG=~/.kube_readonly/config
-                nice watch -c "k get garden local -o yaml | yq -P -C '[.status.conditions[] | del(.lastTransitionTime, .lastUpdateTime)]' | grep --color=Always -E '\"False\"| Unknown| Progressing|$'"
+                watch -c "k get garden local -o yaml | yq -P -C '
+                  [.status.conditions[] | del(.lastTransitionTime, .lastUpdateTime)]
+                ' | grep --color=Always -E '\"False\"| Unknown| Progressing|$'"
               EOF
               new_window "seed&shoots" "seed&shoots" Enter <<"EOF"
                 export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
