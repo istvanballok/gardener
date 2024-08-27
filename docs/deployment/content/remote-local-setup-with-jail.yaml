@@ -987,26 +987,6 @@ spec:
               sleep 1 &&
               jobs
             EOF
-            new_pane "hosts entries once" <<"EOF"
-              k get gateways -A -o json | jq -r --argjson ingress2IP "$(
-                k get svc -A -o json | jq -r '
-                .items |
-                map(select(.metadata | (.namespace | test("^istio-ingress")) and .name=="istio-ingressgateway") |
-                    {(.spec.selector.istio): .status.loadBalancer.ingress[0].ip}) | add'
-              )" '
-                .items |
-                map(select(.metadata.name == "kube-apiserver") |
-                    {(.metadata.namespace): (
-                        {istio: .spec.selector.istio,
-                         ip: $ingress2IP[.spec.selector.istio]} +
-                        (.metadata.namespace | capture("shoot--(?<project>.*)--(?<name>.*)")))
-                    }
-                   ) | add
-              ' | jq -r '
-                .[] | "\(.ip | sub("^172.18"; "172.17")) api.\(.name).\(.project).external.local.gardener.cloud"
-              '
-            EOF
-
             new_pane "hosts entries watching" Enter <<"EOF"
               while true; do
                 BOOKMARK="resourceVersion=$(cat /root/gateways.watch.bookmark 2>/dev/null)"
