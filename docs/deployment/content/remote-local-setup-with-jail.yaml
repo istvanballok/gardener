@@ -590,7 +590,7 @@ spec:
                 export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
                 nice watch k get -A seeds,managedseeds,shoots
               EOF
-              new_pane "last operations seed" <<"EOF"
+              new_pane "last operations seed" Enter <<"EOF"
                 export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
                 while true; do
                   k get seed -o json -w 2>/dev/null \
@@ -603,7 +603,7 @@ spec:
                   sleep 1
                 done
               EOF
-              new_pane "last operations shoot" <<"EOF"
+              new_pane "last operations shoot" Enter <<"EOF"
                 export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
                 while true; do
                   k get shoot -A -o json -w 2>/dev/null  \
