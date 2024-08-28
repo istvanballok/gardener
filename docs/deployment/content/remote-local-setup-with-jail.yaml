@@ -1352,7 +1352,7 @@ spec:
           cd
           mkdir -p ~/.cache/apk
           ln -s ~/.cache/apk /etc/apk/cache
-          apk add curl wget
+          apk add curl wget findutils moreutils
 
           mkdir -p ~/.cache/wget
           cd ~/.cache/wget
@@ -1365,32 +1365,41 @@ spec:
             sleep 10
           done
 
-          kubectl exec remote-local-setup-with-jail-0 -- sh -c "
-            echo \"Check the jail\"
+          echo "Trying to jump into the rls pod, jail container and then into the cell container to attach to the tmux session" | ts
+          sed 's/^  //' <<"EOF_EXEC" | xargs -d '\0' kubectl exec remote-local-setup-with-jail-0 -- sh -c | ts
+            echo "Exec into the remote local setup pod... OK"
+            echo -n "  Check the jail docker container... "
             while ! docker inspect jail >/dev/null 2>&1; do
-              echo -n .
+              echo -n ". "
               sleep 10
             done
-            echo \"Enter the jail\"
-            docker exec jail sh -c '
-              echo \"Check the cell\"
+            echo "OK"
+            echo -n "  Exec into the jail... "
+            sed 's/^  //' <<"EOF_JAIL" | xargs -d '\0' docker exec jail sh -c
+              echo "OK"
+              echo -n "    Check the cell docker container... "
               while ! docker inspect cell >/dev/null 2>&1; do
-                echo -n .
+                echo -n ". "
                 sleep 10
               done
-              echo \"Enter the cell\"
-              docker exec cell sh -c \"
-                echo \\\"Check the tmux session\\\"
+              echo "OK"
+              echo -n "    Exec into the cell... "
+              sed 's/^  //' <<"EOF_CELL" | xargs -d '\0' docker exec cell sh -c
+                echo "OK"
+                echo -n "      Wait for the cell to be ready... "
                 while [ ! -e /tmp/ready ]; do
-                  echo -n .
+                  echo -n ". "
                   sleep 10
                 done
-                echo \\\"Enter the tmux session\\\"
-                tmux ls
-              \"
-            '
-          "
+                echo "OK"
+                echo -n "      Check the tmux session... "
+                tmux ls > /dev/null
+                echo "OK"
+              EOF_CELL
+            EOF_JAIL
+          EOF_EXEC
 
+          echo "The jump worked, so marking this pod as ready: the untrusted user could attach to it."
           (sleep 3 && touch /tmp/ready) &
 
           # while true; do
