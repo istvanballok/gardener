@@ -1245,7 +1245,8 @@ spec:
           wait
         startupProbe:
           exec: {command: [cat, /tmp/ready]}
-          failureThreshold: 36
+          failureThreshold: 360 # 1h
+          periodSeconds: 10
         env: [{name: ENV, value: /root/greeting.sh}] # ash sources the ENV file
         resources:
           requests: {cpu: 14, memory: 28G}
@@ -1404,7 +1405,8 @@ spec:
           # done
         startupProbe:
           exec: {command: [cat, /tmp/ready]}
-          failureThreshold: 360
+          failureThreshold: 360 # 1h
+          periodSeconds: 10
         volumeMounts:
         - {name: home,    mountPath: /root}
   volumeClaimTemplates:
