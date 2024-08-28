@@ -1332,41 +1332,51 @@ spec:
         - -c
         - |
           set -ex -o pipefail
+
           cd
           mkdir -p ~/.cache/apk
           ln -s ~/.cache/apk /etc/apk/cache
           apk add curl wget
+
           mkdir -p ~/.cache/wget
           cd ~/.cache/wget
-          wget -N "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && cp kubectl /usr/local/bin/kubectl
+          VERSION=$(curl -sL https://dl.k8s.io/release/stable.txt)
+          wget -N "https://dl.k8s.io/release/$VERSION/bin/linux/amd64/kubectl"
+          cp kubectl /usr/local/bin/kubectl
           chmod +x /usr/local/bin/kubectl
-          while ! kubectl wait --for=condition=ready pod/remote-local-setup-with-jail-0 --timeout=-1s; do sleep 1; done
-          kubectl exec -it remote-local-setup-with-jail-0 -- sh -c "
+
+          while ! kubectl wait --for=condition=ready pod/remote-local-setup-with-jail-0 --timeout=-1s; do
+            sleep 10
+          done
+
+          kubectl exec remote-local-setup-with-jail-0 -- sh -c "
             echo \"Check the jail\"
             while ! docker inspect jail >/dev/null 2>&1; do
               echo -n .
-              sleep 1
+              sleep 10
             done
             echo \"Enter the jail\"
-            docker exec -it jail sh -c '
+            docker exec jail sh -c '
               echo \"Check the cell\"
               while ! docker inspect cell >/dev/null 2>&1; do
                 echo -n .
-                sleep 1
+                sleep 10
               done
               echo \"Enter the cell\"
-              docker exec -it cell sh -c \"
+              docker exec cell sh -c \"
                 echo \\\"Check the tmux session\\\"
                 while [ ! -e /tmp/ready ]; do
                   echo -n .
-                  sleep 1
+                  sleep 10
                 done
                 echo \\\"Enter the tmux session\\\"
                 tmux ls
               \"
             '
           "
+
           (sleep 3 && touch /tmp/ready) &
+
           # while true; do
             kubectl exec -it remote-local-setup-with-jail-0 -- bash -c "
               echo \"Check the jail\"
@@ -1408,7 +1418,7 @@ spec:
           failureThreshold: 360 # 1h
           periodSeconds: 10
         volumeMounts:
-        - {name: home,    mountPath: /root}
+        - {name: home, mountPath: /root}
   volumeClaimTemplates:
   - apiVersion: v1
     kind: PersistentVolumeClaim
