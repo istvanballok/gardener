@@ -294,6 +294,7 @@ spec:
             set -g pane-border-format " #{pane_index} #{pane_title} - #{pane_current_command} "
             set -g window-size smallest
             set -g history-limit 100000
+            set -g status-left-length 30
           EOF
 
           mkdir -p ~/go/src/github.com/gardener
@@ -489,13 +490,14 @@ spec:
               set -g pane-border-status top
               set -g pane-border-format " #{pane_index} #{pane_title} - #{pane_current_command} "
               set -g history-limit 100000
+              set -g status-left-length 30
             EOF
 
             RUN sed 's/^  //' <<"EOF" > ~/greeting.sh
               [ -n "$TMUX" ] && exit
               export LANG=C.UTF-8
               export TERM=xterm-256color
-              echo "Welcome to the jail!"
+              echo "Welcome to the Gardener Demo!"
             EOF
             ENV ENV=/home/demo/greeting.sh
 
@@ -562,7 +564,7 @@ spec:
             RUN sed 's/^  //' <<"SCRIPT_EOF" > ~/prepare-cell.sh
               set -x
               source /usr/local/bin/tmux_functions.sh
-              tmux new -d -s jail -n demo -x 2000 -y 2000
+              tmux new -d -s gardener-demo -n demo -x 2000 -y 2000
               tmux select-pane -T demo;
               tmux send -- 'less ~/demo.md' Enter
 
