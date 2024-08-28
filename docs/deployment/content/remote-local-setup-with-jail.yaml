@@ -765,14 +765,18 @@ spec:
             new_pane "make kind-operator-up" Enter <<"EOF"
               sync_kubeconfig example/gardener-local/kind/operator & sleep 1
               nice time make kind-operator-down kind-operator-up &&
+              flag_notify kind-operator-up
+            EOF
+            new_pane "wait for the KinD cluster" Enter <<"EOF"
+              flag_wait kind-operator-up &&
               time ( kubectl wait --for=jsonpath='{.status.numberReady}'=3 daemonset -A --all --timeout=-1s &
                      kubectl wait --for=condition=available deployments -A --all --timeout=-1s &
                      wait ) &&
-              flag_notify kind-operator-up
+              flag_notify kind-operator-up-ready
             EOF
             new_pane "make operator-up" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig
-              flag_wait kind-operator-up &&
+              flag_wait kind-operator-up-ready &&
               nice time make operator-up &&
               flag_notify operator-up
             EOF
