@@ -669,7 +669,7 @@ spec:
               new_window "runtime&seed pods" "pods" Enter <<"EOF"
                 export KUBECONFIG=~/.kube_readonly/config
                 # the while loop is used instead of watch to allow for scrolling a longer list in the tmux pane
-                while true; do clear; k get pods -A -o wide; sleep 10s; done
+                while true; do clear; k get pods -A -o wide | nl; sleep 10s; done
               EOF
 
               new_window "gardenctl" "gardenctl" <<"EOF"
