@@ -1407,7 +1407,7 @@ spec:
           EOF_EXEC
 
           echo "The probing worked, attaching to the tmux session now and will mark the pod as ready once tmux produced some output"
-          (while [ -s out.log ]; do sleep 1; done && touch /tmp/ready) &
+          (while [ ! -s out.log ]; do sleep 1; done && touch /tmp/ready) &
 
           cd
           echo "Jump into the rls pod, jail container and then into the cell container to attach to the tmux session"
