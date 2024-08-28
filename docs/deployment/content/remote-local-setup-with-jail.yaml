@@ -1239,8 +1239,8 @@ spec:
           end=$(date +%s)
           diff=$(( end - start ))
           elapsed=$(date -u -d @${diff} +"%T")
-          echo $elapsed > /tmp/elapsed
-          echo "Elapsed time: ${elapsed}"
+          echo $elapsed > /tmp/elapsed_until_tmux
+          echo "Elapsed time until the tmux session is prepared: ${elapsed}"
           touch /tmp/ready
           wait
         startupProbe:
