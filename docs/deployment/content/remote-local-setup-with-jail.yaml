@@ -1365,8 +1365,11 @@ spec:
             sleep 10
           done
 
+          while true; do # *** the body of the loop is not indented to be able to use nicely formatted here documents
+
           echo "Trying to jump into the rls pod, jail container and then into the cell container to attach to the tmux session" | ts
-          sed 's/^  //' <<"EOF_EXEC" | xargs -d '\0' kubectl exec remote-local-setup-with-jail-0 -- sh -c | ts
+          sed 's/^  //' <<"EOF_EXEC" | xargs -d '\0' \
+          kubectl exec remote-local-setup-with-jail-0 -- sh -c | ts
             echo "Exec into the remote local setup pod... OK"
             echo -n "  Check the jail docker container... "
             while ! docker inspect jail >/dev/null 2>&1; do
@@ -1375,7 +1378,8 @@ spec:
             done
             echo "OK"
             echo -n "  Exec into the jail... "
-            sed 's/^  //' <<"EOF_JAIL" | xargs -d '\0' docker exec jail sh -c
+            sed 's/^  //' <<"EOF_JAIL" | xargs -d '\0' \
+            docker exec jail sh -c
               echo "OK"
               echo -n "    Check the cell docker container... "
               while ! docker inspect cell >/dev/null 2>&1; do
@@ -1384,7 +1388,8 @@ spec:
               done
               echo "OK"
               echo -n "    Exec into the cell... "
-              sed 's/^  //' <<"EOF_CELL" | xargs -d '\0' docker exec cell sh -c
+              sed 's/^  //' <<"EOF_CELL" | xargs -d '\0' \
+              docker exec cell sh -c
                 echo "OK"
                 echo -n "      Wait for the cell to be ready... "
                 while [ ! -e /tmp/ready ]; do
@@ -1399,45 +1404,37 @@ spec:
             EOF_JAIL
           EOF_EXEC
 
-          echo "The jump worked, so marking this pod as ready: the untrusted user could attach to it."
-          (sleep 3 && touch /tmp/ready) &
+          echo "The probing worked, attaching to the tmux session now and will mark the pod as ready once tmux produced some output"
+          (while [ -s out.log ]; do sleep 1; done && touch /tmp/ready) &
 
-          # while true; do
-            kubectl exec -it remote-local-setup-with-jail-0 -- bash -c "
-              echo \"Check the jail\"
-              while ! docker inspect jail >/dev/null 2>&1; do
-                echo -n .
-                sleep 1
-              done
-              echo \"Start a recording\"
-              cd
-              # Record the session in a timestamped directory
-              mkdir -p script_recordings/\$(date +%Y-%m-%d_%H-%M-%S)
-              cd \$_
-              script --log-timing timing.log --log-out out.log --log-in input.log --output-limit 1MB -c \"
-                echo \\\"Enter the jail\\\"
-                docker exec -it jail sh -c '
-                  echo \\\"Check the cell\\\"
-                  while ! docker inspect cell >/dev/null 2>&1; do
-                    echo -n .
-                    sleep 1
-                  done
-                  echo \\\"Enter the cell\\\"
-                  docker exec -it cell sh -c \\\"
-                    echo \\\\\\\"Check the tmux session\\\\\\\"
-                    while [ ! -e /tmp/ready ]; do
-                      echo -n .
-                      sleep 1
-                    done
-                    echo \\\\\\\"Enter the tmux session\\\\\\\"
+          cd
+          echo "Jump into the rls pod, jail container and then into the cell container to attach to the tmux session"
+
+          sed 's/^  //' <<"EOF" | xargs -d '\0' \
+          script --log-timing timing.log --log-out out.log --log-in input.log --output-limit 100MB -c
+            sed 's/^  //' <<"EOF_EXEC" | xargs -d '\0' \
+            kubectl exec -it remote-local-setup-with-jail-0 -- sh -c
+              while ! docker inspect jail >/dev/null 2>&1; do sleep 10; done
+              mkdir -p script_recordings/$(date +%Y-%m-%d_%H-%M-%S)
+              cd $_
+              sed 's/^  //' <<"EOF_SCRIPT" | xargs -d '\0' \
+              script --log-timing timing.log --log-out out.log --log-in input.log --output-limit 10MB -c
+                sed 's/^  //' <<"EOF_JAIL" | xargs -d '\0' \
+                docker exec -it jail sh -c
+                  while ! docker inspect cell >/dev/null 2>&1; do sleep 10; done
+                  sed 's/^  //' <<"EOF_CELL" | xargs -d '\0' \
+                  docker exec -it cell sh -c
+                    while [ ! -e /tmp/ready ]; do sleep 10; done
                     export LANG=C.UTF-8
                     export TERM=xterm-256color
                     tmux a
-                  \\\"
-                '
-              \"
-            "
-          # done
+                  EOF_CELL
+                EOF_JAIL
+              EOF_SCRIPT
+            EOF_EXEC
+          EOF
+
+          done # *** while true from above, the body is not indented to be able to use nicely formatted here documents
         startupProbe:
           exec: {command: [cat, /tmp/ready]}
           failureThreshold: 360 # 1h
