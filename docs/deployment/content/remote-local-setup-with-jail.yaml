@@ -1005,7 +1005,7 @@ spec:
               flag_wait virtual-garden-ha &&
               while read internalIP exposedIP; do
                 echo "Exposing $internalIP:443 on $exposedIP:443"
-                ip addr add $exposedIP/32 dev lo
+                # ip addr add $exposedIP/32 dev lo
                 socat TCP-LISTEN:443,fork,reuseaddr,bind=$exposedIP TCP:$internalIP:443 &
               done < <(
                 k get svc -A -o json | jq -r '
