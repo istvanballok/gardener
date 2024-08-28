@@ -188,7 +188,10 @@ spec:
               echo
             fi
             if [ -f /tmp/elapsed_until_tmux ]; then
-              echo "Initialization time: $(cat /tmp/elapsed_until_tmux)"
+              echo "Initialization time until the tmux session was prepared for developers to use: $(cat /tmp/elapsed_until_tmux)"
+              if [ -f /tmp/elapsed_until_cell ]; then
+                echo "Time elapsed until the cell was prepared for untrusted users to use: $(cat /tmp/elapsed_until_cell)"
+              fi
               echo
             fi
           EOF
@@ -1164,8 +1167,10 @@ spec:
               echo "Elapsed time until the tmux session was setup: $(cat /tmp/elapsed_until_tmux)"
               flag_wait cell &&
               end=$(date +%s) &&
+              echo $end > /tmp/end-cell &&
               diff=$(( end - $(cat /tmp/start) )) &&
               elapsed=$(date -u -d @${diff} +"%T") &&
+              echo $elapsed > /tmp/elapsed_until_cell &&
               echo "Elapsed time until the cell was setup: $elapsed"
             EOF
             new_window "jail" "jail" Enter <<"EOF"
