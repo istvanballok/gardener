@@ -1193,7 +1193,9 @@ spec:
                     -v /root/go/src/github.com/gardener/gardener/example/operator/virtual-garden:/root/.kube_virtual:ro \
                     -v /mnt/inner.disk:/var/lib/docker \
                     -v /root/go/src/github.com/gardener/gardener/cell:/root/go/src/github.com/gardener/gardener/cell:ro \
-                    docker:26-dind &&
+                    --entrypoint nice \
+                    docker:26-dind \
+                    -n -9 dockerd-entrypoint.sh &&
               flag_notify jail
             EOF
             new_pane "create cell image and start it" Enter <<"EOF"
