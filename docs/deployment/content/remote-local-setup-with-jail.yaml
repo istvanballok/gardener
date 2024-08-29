@@ -22,7 +22,7 @@ spec:
           set -ex -o pipefail
           cd
           start=$(date +%s)
-          echo $start > /tmp/start
+          echo $start > /root/start
 
           mkdir -p ~/.cache/apk
           ln -s ~/.cache/apk /etc/apk/cache
@@ -1170,7 +1170,7 @@ spec:
               flag_wait cell &&
               end=$(date +%s) &&
               echo $end > /tmp/end-cell &&
-              diff=$(( end - $(cat /tmp/start) )) &&
+              diff=$(( end - $(cat /root/start) )) &&
               elapsed=$(date -u -d @${diff} +"%T") &&
               echo $elapsed > /tmp/elapsed_until_cell &&
               echo "Elapsed time until the cell was setup: $elapsed"
