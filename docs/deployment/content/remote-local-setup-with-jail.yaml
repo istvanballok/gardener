@@ -21,6 +21,7 @@ spec:
         - |
           set -ex -o pipefail
           cd
+          rm -f /root/start /root/elapsed*
           start=$(date +%s)
           echo $start > /root/start
 
@@ -187,10 +188,10 @@ spec:
               echo
               echo
             fi
-            if [ -f /tmp/elapsed_until_tmux ]; then
-              echo "Initialization time until the tmux session was prepared for developers to use: $(cat /tmp/elapsed_until_tmux)"
-              if [ -f /tmp/elapsed_until_cell ]; then
-                echo "Time elapsed until the cell was prepared for untrusted users to use: $(cat /tmp/elapsed_until_cell)"
+            if [ -f /root/elapsed_until_tmux ]; then
+              echo "Initialization time until the tmux session was prepared for developers to use: $(cat /root/elapsed_until_tmux)"
+              if [ -f /root/elapsed_until_cell ]; then
+                echo "Time elapsed until the cell was prepared for untrusted users to use: $(cat /root/elapsed_until_cell)"
               fi
               echo
             fi
@@ -1166,13 +1167,13 @@ spec:
               k --kubeconfig ~/.kube/readonly/export/config auth can-i create pods
             EOF
             new_window "timing" "timing" Enter <<"EOF"
-              echo "Elapsed time until the tmux session was setup: $(cat /tmp/elapsed_until_tmux)"
+              echo "Elapsed time until the tmux session was setup: $(cat /root/elapsed_until_tmux)"
               flag_wait cell &&
               end=$(date +%s) &&
               echo $end > /tmp/end-cell &&
               diff=$(( end - $(cat /root/start) )) &&
               elapsed=$(date -u -d @${diff} +"%T") &&
-              echo $elapsed > /tmp/elapsed_until_cell &&
+              echo $elapsed > /root/elapsed_until_cell &&
               echo "Elapsed time until the cell was setup: $elapsed"
             EOF
             new_window "jail" "jail" Enter <<"EOF"
@@ -1257,7 +1258,7 @@ spec:
           end=$(date +%s)
           diff=$(( end - start ))
           elapsed=$(date -u -d @${diff} +"%T")
-          echo $elapsed > /tmp/elapsed_until_tmux
+          echo $elapsed > /root/elapsed_until_tmux
           echo "Elapsed time until the tmux session is prepared: ${elapsed}"
           touch /tmp/ready
           wait
