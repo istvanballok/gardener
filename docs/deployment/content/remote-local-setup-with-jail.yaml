@@ -592,7 +592,7 @@ spec:
               tmux new -d -s gardener-demo -n demo -x 2000 -y 2000
               tmux select-pane -T demo;
               send_commands <<"EOF"
-                bat ~/welcome.md
+                cat ~/welcome.md
                 k get shoots # Shoots are the Kubernetes clusters that are managed by Gardener
                 k apply -f example/provider-local/shoot.yaml # Create your first shoot
               EOF
