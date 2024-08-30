@@ -489,7 +489,7 @@ spec:
               complete -o default -F __start_gardenctl g
               source /usr/local/bin/kube-ps1.sh
               source /usr/share/git-core/git-prompt.sh
-              export PS1='[\w $(printf "$(kube_ps1)")] $(__git_ps1 "(%s)") [$(date +%H:%M)]\$ '
+              export PS1='[\w $(printf "$(kube_ps1)")] $(__git_ps1 "(%s)")\n\$ '
               stty -ixon
               [ -n "$GCTL_SESSION_ID" ] || [ -n "$TERM_SESSION_ID" ] || export GCTL_SESSION_ID=$(uuidgen)
               cd ~/go/src/github.com/gardener/gardener
