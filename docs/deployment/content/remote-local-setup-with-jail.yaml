@@ -1400,8 +1400,11 @@ spec:
                   sleep 10
                 done
                 echo "      OK"
-                echo "      Check the tmux session..."
-                tmux ls > /dev/null
+                echo "      Wait for the tmux session..."
+                while ! tmux ls 2>/dev/null | grep demo; do
+                  echo "      ."
+                  sleep 10
+                done
                 echo "      OK"
               EOF_CELL
             EOF_JAIL
@@ -1439,7 +1442,7 @@ spec:
                     if [ -e /tmp/ready ]; then
                       export LANG=C.UTF-8
                       export TERM=xterm-256color
-                      tmux a
+                      tmux a -t demo
                       echo "*** tmux exited"
                     fi
                   EOF_CELL
