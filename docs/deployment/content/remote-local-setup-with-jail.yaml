@@ -1450,7 +1450,7 @@ spec:
                 done
                 echo "      OK"
                 echo "      Wait for the tmux session..."
-                while ! tmux ls 2>/dev/null | grep demo; do
+                while ! tmux ls 2>/dev/null | grep gardener-demo; do
                   echo "      ."
                   sleep 10
                 done
@@ -1491,7 +1491,7 @@ spec:
                     if [ -e /tmp/ready ]; then
                       export LANG=C.UTF-8
                       export TERM=xterm-256color
-                      tmux a -t demo
+                      tmux a -t gardener-demo
                       echo "*** tmux exited"
                     fi
                   EOF_CELL
