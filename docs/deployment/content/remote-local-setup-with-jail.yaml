@@ -30,12 +30,18 @@ spec:
 
           apk add apache2-utils bash bash-completion bat bind-tools brotli conntrack-tools       \
                   coreutils curl diffutils dnsmasq docker-bash-completion findutils fzf g++ gawk \
-                  gcompat git git-prompt go grep helm inotify-tools jq k9s less lsof make mandoc \
-                  mc moreutils mount ncurses neovim openssl parallel procps sed socat strace tar \
+                  gcompat git git-prompt grep helm inotify-tools jq k9s less lsof make mandoc mc \
+                  moreutils mount ncurses neovim openssl parallel procps sed socat strace tar    \
                   tcpdump tmux tmux-doc tzdata util-linux vim wget yq
 
           mkdir -p ~/.cache/wget
           cd ~/.cache/wget
+          echo golang
+               VERSION=$(curl -sL https://golang.org/VERSION?m=text | awk 'NR==1{print}')
+               wget -N "https://go.dev/dl/$VERSION.linux-amd64.tar.gz"
+               tar -C /usr/local -xzf go1.*.linux-amd64.tar.gz
+               ln -s /usr/local/go/bin/go /usr/local/bin/go
+               ln -s /usr/local/go/bin/gofmt /usr/local/bin/gofmt
           echo gardenctl
                VERSION=$(curl -sL https://raw.githubusercontent.com/gardener/gardenctl-v2/master/LATEST)
                wget -N "https://github.com/gardener/gardenctl-v2/releases/download/$VERSION/gardenctl_v2_linux_amd64"
@@ -379,10 +385,16 @@ spec:
           sed 's/^  //' <<DOCKERFILE > ~/go/src/github.com/gardener/gardener/cell/Dockerfile
             FROM alpine:3.20
             RUN apk add bash bash-completion bat bind-tools brotli conntrack-tools coreutils curl       \\
-                        diffutils docker-bash-completion findutils fzf gawk gcompat git git-prompt go   \\
-                        grep helm inotify-tools jq k9s less lsof make mandoc mc moreutils mount ncurses \\
+                        diffutils docker-bash-completion findutils fzf gawk gcompat git git-prompt grep \\
+                        helm inotify-tools jq k9s less lsof make mandoc mc moreutils mount ncurses      \\
                         neovim openssl parallel procps sed tar tcpdump tmux tmux-doc tzdata util-linux  \\
                         vim wget yq
+            RUN echo golang                                                                                                  && \\
+                     VERSION=$(curl -sL https://golang.org/VERSION?m=text | awk 'NR==1{print}')                              && \\
+                     wget "https://go.dev/dl/\$VERSION.linux-amd64.tar.gz"                                                   && \\
+                     tar -C /usr/local -xzf go1.*.linux-amd64.tar.gz                                                         && \\
+                     ln -s /usr/local/go/bin/go /usr/local/bin/go                                                            && \\
+                     ln -s /usr/local/go/bin/gofmt /usr/local/bin/gofmt
             RUN echo gardenlogin                                                                                             && \\
                      VERSION=$(curl -sL https://raw.githubusercontent.com/gardener/gardenlogin/master/LATEST)                && \\
                      wget "https://github.com/gardener/gardenlogin/releases/download/\$VERSION/gardenlogin_linux_amd64"      && \\
@@ -458,6 +470,7 @@ spec:
             RUN sed 's/^  //' <<"EOF" > ~/.bashrc
               [ -z "$TMUX" ] && export TERM=xterm-256color
               set -o pipefail
+              export PATH=/usr/local/go/bin:$PATH
               export GOPATH=~/go
               export PATH=$PATH:$GOPATH/bin:~/.krew/bin:~/go/src/github.com/gardener/gardener/hack/usage
               export XDG_CONFIG_HOME=~/.config
