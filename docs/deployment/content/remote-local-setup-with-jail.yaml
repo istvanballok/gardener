@@ -955,9 +955,9 @@ spec:
                 while k --kubeconfig /tmp/managedseed.kubeconfig get pods -A -o wide | nl; do sleep 10s; clear; done
               done
             EOF
-            # TODO: how to connect to the API server?
-            # Note: regular shoots do not work due to nesting overlayfs, see dmesg + the managed seed is not HA because it has only one node
             new_pane "workerless shoot on managed seed" Enter <<"EOF"
+              # Note: regular shoots do not work due to nesting overlayfs, see errors in dmesg
+              # Note: the managed seed has 1 node and no zones, so it is not HA
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               time flag_wait managedseed-seed-ready &&
               k apply -f <(yq '.metadata.name="local-wl-ms" |
