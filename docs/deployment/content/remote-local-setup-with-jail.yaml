@@ -593,8 +593,7 @@ spec:
               tmux select-pane -T demo;
               send_commands <<"EOF"
                 cat ~/welcome.md
-                k get shoots # Shoots are the Kubernetes clusters that are managed by Gardener
-                k apply -f example/provider-local/shoot.yaml # Create your first shoot
+                k apply -f example/provider-local/shoot.yaml # Create your first shoot, a Kubernetes cluster managed by Gardener
               EOF
 
               tmux new -d -s advanced -n demo -x 2000 -y 2000
@@ -1199,13 +1198,13 @@ spec:
             new_window "timing" "timing" Enter <<"EOF"
               while [ ! -f /root/elapsed_until_tmux ]; do sleep 1; done &&
               echo "Elapsed time until the tmux session was setup: $(cat /root/elapsed_until_tmux)" &&
-              flag_wait cell &&
+              flag_wait cell-ready &&
               end=$(date +%s) &&
               echo $end > /tmp/end-cell &&
               diff=$(( end - $(cat /root/start) )) &&
               elapsed=$(date -u -d @${diff} +"%T") &&
               echo $elapsed > /root/elapsed_until_cell &&
-              echo "Elapsed time until the cell was setup: $elapsed"
+              echo "Elapsed time until the cell was ready: $elapsed"
             EOF
             new_window "jail" "jail" Enter <<"EOF"
               if [ ! -f ~/inner.disk ]; then
@@ -1278,10 +1277,12 @@ spec:
               JAIL
             EOF
             new_window "cell" "cell" Enter <<"EOF"
+              flag_wait cell &&
               until docker exec jail sh -c "docker exec cell ls /tmp/ready" >/dev/null 2>&1; do sleep 1; done &&
-              docker exec -it jail sh -c "docker exec -it cell tmux -u a"
+              flag_notify cell-ready &&
+              docker exec -it jail sh -c "docker exec -it cell tmux -u a -t demo"
             EOF
-            # tmux select-window -t 0
+            tmux select-window -t 0
             tmux select-pane -t 1
           SCRIPT_EOF
 
