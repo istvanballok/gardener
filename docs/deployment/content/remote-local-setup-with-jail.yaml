@@ -1220,8 +1220,12 @@ spec:
               echo "Elapsed time until the cell was ready: $elapsed"
             EOF
             new_window "jail" "jail" Enter <<"EOF"
+              SIZE=8192 # 8GB
+              if [ -f ~/inner.disk ] && [ $(stat -c%s ~/inner.disk) -lt $(( $SIZE * 1024 * 1024 )) ]; then
+                rm ~/inner.disk
+              fi
               if [ ! -f ~/inner.disk ]; then
-                dd if=/dev/zero of=~/inner.disk bs=1M count=4096
+                dd if=/dev/zero of=~/inner.disk bs=1M count=$SIZE
                 mkfs.ext4 ~/inner.disk
               fi
               mkdir /mnt/inner.disk
