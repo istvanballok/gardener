@@ -219,6 +219,7 @@ spec:
             export HISTTIMEFORMAT="%F %T "
             export HISTCONTROL=ignorespace
             export PROMPT_COMMAND='history -a'
+            export BAT_THEME="gruvbox-light" # assuming a light terminal theme
             shopt -s histappend
             source /usr/share/bash-completion/completions/kubectl
             source /usr/share/bash-completion/completions/gardenctl
@@ -467,6 +468,7 @@ spec:
               export HISTTIMEFORMAT="%F %T "
               export HISTCONTROL=ignorespace
               export PROMPT_COMMAND='history -a'
+              export BAT_THEME="gruvbox-light" # assuming a light terminal theme
               shopt -s histappend
               source /usr/share/bash-completion/completions/kubectl
               source /usr/share/bash-completion/completions/gardenctl
@@ -478,6 +480,7 @@ spec:
               stty -ixon
               [ -n "$GCTL_SESSION_ID" ] || [ -n "$TERM_SESSION_ID" ] || export GCTL_SESSION_ID=$(uuidgen)
               cd ~/go/src/github.com/gardener/gardener
+              export KUBECONFIG=~/go/src/github.com/gardener/gardener/example/operator/virtual-garden/kubeconfig
               function uniq_unbuffered {
                 # like uniq --unbuffered, if uniq had an --unbuffered option
                 # compare interactively: uniq | cat; uniq_unbuffered | cat
@@ -509,6 +512,23 @@ spec:
             RUN mkdir -p ~/go/src/github.com/gardener/gardener
 
             ADD scripts/tmux_functions.sh /usr/local/bin/tmux_functions.sh
+
+            RUN sed 's/^  //' <<"EOF" > ~/welcome.md
+              # Welcome to the Gardener Demo environment
+
+              This is a demo environment for the [Gardener][] project that
+              allows you to explore the features and capabilities of Gardener
+              interactively.
+
+              Gardener is an open source project contributed by SAP and others
+              that provides a Kubernetes-based solution to manage Kubernetes
+              clusters on various cloud providers in a uniform way.
+
+              Please follow the step by step instructions on the side to explore
+              the features of Gardener interactively.
+
+              [Gardener]: https://gardener.cloud/
+            EOF
 
             RUN sed 's/^  //' <<"EOF" > ~/demo.md
               # Welcome to the Gardener Demo environment
@@ -571,7 +591,17 @@ spec:
               source /usr/local/bin/tmux_functions.sh
               tmux new -d -s gardener-demo -n demo -x 2000 -y 2000
               tmux select-pane -T demo;
-              tmux send -- 'less ~/demo.md' Enter
+              send_commands <<"EOF"
+                bat ~/welcome.md
+                k get shoots # Shoots are the Kubernetes clusters that are managed by Gardener
+                k apply -f example/provider-local/shoot.yaml # Create your first shoot
+              EOF
+
+              tmux new -d -s advanced -n demo -x 2000 -y 2000
+              tmux select-pane -T demo;
+              send_commands Enter <<"EOF"
+                less ~/demo.md
+              EOF
 
               ##### Prepare the panes for the demo scenario here #####
 
