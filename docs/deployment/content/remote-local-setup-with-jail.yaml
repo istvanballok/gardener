@@ -1197,7 +1197,8 @@ spec:
               k --kubeconfig ~/.kube/readonly/export/config auth can-i create pods
             EOF
             new_window "timing" "timing" Enter <<"EOF"
-              echo "Elapsed time until the tmux session was setup: $(cat /root/elapsed_until_tmux)"
+              while [ ! -f /root/elapsed_until_tmux ]; do sleep 1; done &&
+              echo "Elapsed time until the tmux session was setup: $(cat /root/elapsed_until_tmux)" &&
               flag_wait cell &&
               end=$(date +%s) &&
               echo $end > /tmp/end-cell &&
