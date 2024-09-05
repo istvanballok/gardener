@@ -1392,7 +1392,7 @@ spec:
       serviceAccountName: cell-exec
       terminationGracePeriodSeconds: 1
       containers:
-      - name: alpine
+      - name: dev
         image: alpine:3.20
         stdin: true
         tty: true
