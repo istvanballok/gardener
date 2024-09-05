@@ -1548,44 +1548,44 @@ subjects:
 - kind: ServiceAccount
   name: cell-attach
 ---
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: attach-test
-spec:
-  replicas: 1
-  selector: {matchLabels: {app: attach-test}}
-  template:
-    metadata: {labels: {app: attach-test}}
-    spec:
-      terminationGracePeriodSeconds: 1
-      containers:
-      - name: alpine
-        image: alpine:3.20
-        stdin: true
-        tty: true
-        command:
-        - /bin/sh
-        - -c
-        - |
-          set -ex -o pipefail
-          sh
-          # https://www.reddit.com/r/kubernetes/comments/1d0isbq/detach_from_running_pod/?rdt=58317
-          # https://github.com/kubernetes/kubectl/issues/1011
-          # kubectl does not support currently to detach from the pod after attaching to it.
-          #
-          # The docker cli supports detaching from a container
-          # with the ctrl-p ctrl-q escape sequence by default.
-          # This is even configurable with the --detach-keys flag.
-          #
-          # For kubectl, the mitigation is to kill the kubectl process
-          # from another terminal, e.g. `pkill kubectl`.
-          # The session is preserved in this case, and it can be attached to again.
-          # Test this by typing e.g. `echo hi` without issuing the command.
-          # After killing the kubectl process and reattaching to the pod,
-          # the typed text is still there.
-          #
-          # Hence for the web terminal, maybe the correct way to detach the session is to close the terminal emulator itself.
+# apiVersion: apps/v1
+# kind: StatefulSet
+# metadata:
+#   name: attach-test
+# spec:
+#   replicas: 1
+#   selector: {matchLabels: {app: attach-test}}
+#   template:
+#     metadata: {labels: {app: attach-test}}
+#     spec:
+#       terminationGracePeriodSeconds: 1
+#       containers:
+#       - name: alpine
+#         image: alpine:3.20
+#         stdin: true
+#         tty: true
+#         command:
+#         - /bin/sh
+#         - -c
+#         - |
+#           set -ex -o pipefail
+#           sh
+#           # https://www.reddit.com/r/kubernetes/comments/1d0isbq/detach_from_running_pod/?rdt=58317
+#           # https://github.com/kubernetes/kubectl/issues/1011
+#           # kubectl does not support currently to detach from the pod after attaching to it.
+#           #
+#           # The docker cli supports detaching from a container
+#           # with the ctrl-p ctrl-q escape sequence by default.
+#           # This is even configurable with the --detach-keys flag.
+#           #
+#           # For kubectl, the mitigation is to kill the kubectl process
+#           # from another terminal, e.g. `pkill kubectl`.
+#           # The session is preserved in this case, and it can be attached to again.
+#           # Test this by typing e.g. `echo hi` without issuing the command.
+#           # After killing the kubectl process and reattaching to the pod,
+#           # the typed text is still there.
+#           #
+#           # Hence for the web terminal, maybe the correct way to detach the session is to close the terminal emulator itself.
 
 # k --as system:serviceaccount:<ns>:cell-attach attach -it cell-exec-0
 # get ready time for the cell-exec
