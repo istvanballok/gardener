@@ -1296,7 +1296,7 @@ spec:
               flag_wait cell &&
               until docker exec jail sh -c "docker exec cell ls /tmp/ready" >/dev/null 2>&1; do sleep 1; done &&
               flag_notify cell-ready &&
-              docker exec -it jail sh -c "docker exec -it cell tmux -u a -t demo"
+              docker exec -it jail sh -c "docker exec -it cell tmux -u a -t gardener-demo"
             EOF
             tmux select-window -t 0
             tmux select-pane -t 1
