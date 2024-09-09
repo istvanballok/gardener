@@ -496,7 +496,6 @@ spec:
               stty -ixon
               [ -n "$GCTL_SESSION_ID" ] || [ -n "$TERM_SESSION_ID" ] || export GCTL_SESSION_ID=$(uuidgen)
               cd ~/go/src/github.com/gardener/gardener
-              export KUBECONFIG=~/go/src/github.com/gardener/gardener/example/operator/virtual-garden/kubeconfig
               function uniq_unbuffered {
                 # like uniq --unbuffered, if uniq had an --unbuffered option
                 # compare interactively: uniq | cat; uniq_unbuffered | cat
@@ -1296,6 +1295,48 @@ spec:
                 CELL
               JAIL
             EOF
+            new_pane "Merge the garden and the KinD kube configs" Enter <<"EOF"
+              flag_wait cell &&
+              sed 's/^  //' <<"JAIL" | xargs -d '\0' docker exec jail sh -c |& ts
+                echo "Starting to merge the garden and the KinD kube configs"
+                sed 's/^  //' <<"CELL" | xargs -d '\0' docker exec -u root cell sh -c
+                  mkdir -p /home/demo/.kube
+                  inotifywait -m -e close_write /home/demo/go/src/github.com/gardener/gardener/example/operator/virtual-garden --include '/kubeconfig$' \
+                  | while read line; do
+                      echo "Detected a change in the virtual garden kubeconfig"
+                      touch ~/.kubeconfig_changed
+                    done & \
+                  inotifywait -m -e close_write /home/demo/.kube_readonly --include '/config$' \
+                  | while read line; do
+                      echo "Detected a change in the runtime+seed (KinD) kubeconfig"
+                      touch ~/.kubeconfig_changed
+                    done & \
+                  inotifywait -m -e close_write ~ --include '/.kubeconfig_changed$' 2>&1 \
+                  | grep --line-buffered -E 'Watches established.|CLOSE_WRITE' \
+                  | while read line; do
+                      echo "Merging the kubeconfigs"
+                      jq -s '
+                        (.[-1] | pick(.apiVersion, .kind)) +
+                        {users:    .[1:] | map(.users)     | add,
+                         clusters: .[1:] | map(.clusters)  | add,
+                         contexts: map(.contexts | arrays) | add | .[0:2],
+                         "current-context": ((.[0]."current-context") ? // "garden")}
+                      ' <({ cat /home/demo/.kube/config 2>/dev/null || echo '{}'; } | yq -o json) \
+                        <(yq -o json /home/demo/go/src/github.com/gardener/gardener/example/operator/virtual-garden/kubeconfig | jq '
+                          .contexts[0].context.namespace = "garden-local"
+                        ') \
+                        <(yq -o json /home/demo/.kube_readonly/config | jq '
+                          .contexts[0].context.namespace = "garden"
+                        ') | yq -P \
+                      > /home/demo/.kube/config.tmp
+                      chown demo /home/demo/.kube/config.tmp
+                      mv /home/demo/.kube/config.tmp /home/demo/.kube/config
+                    done
+                CELL
+              JAIL
+            EOF
+
+
             new_window "cell" "cell" Enter <<"EOF"
               flag_wait cell &&
               until docker exec jail sh -c "docker exec cell ls /tmp/ready" >/dev/null 2>&1; do sleep 1; done &&
