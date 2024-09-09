@@ -1288,11 +1288,11 @@ spec:
                     -n -9 dockerd-entrypoint.sh &&
               flag_notify jail
             EOF
-            new_pane "create cell image and start it" Enter <<"EOF"
+            new_pane "create cell image" Enter <<"EOF"
               flag_wait virtual-garden-ha &&
               flag_wait jail &&
               until docker exec jail docker ps >/dev/null 2>&1; do sleep 1; done &&
-              time sed 's/^  //' <<"JAIL" | xargs -d '\0' docker exec jail sh -c && flag_notify cell
+              time sed 's/^  //' <<"JAIL" | xargs -d '\0' docker exec jail sh -c && flag_notify cell-image
                 mkdir -p ~/cache/apk
                 [ -e /etc/apk/cache ] || ln -s ~/cache/apk /etc/apk/cache
                 apk add findutils
@@ -1305,6 +1305,12 @@ spec:
                 echo "Image list and disk usage"
                 docker images
                 docker system df
+              JAIL
+            EOF
+            new_pane "start the cell image" Enter <<"EOF"
+              flag_wait offline &&
+              flag_wait cell-image &&
+              time sed 's/^  //' <<"JAIL" | xargs -d '\0' docker exec jail sh -c && flag_notify cell
                 echo "Start the cell container"
                 # https://docs.docker.com/engine/reference/run/#runtime-constraints-on-resources
                 docker run -d --rm --name cell \
