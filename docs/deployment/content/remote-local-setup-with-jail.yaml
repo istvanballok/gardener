@@ -757,7 +757,7 @@ spec:
 
               echo "The tmux session is prepared. To attach to it, run 'tmux a'."
               touch /tmp/ready
-              sleep 24h & # self destroy after 24 hours
+              sleep inf & # do not self destroy
               wait
             SCRIPT_EOF
 
