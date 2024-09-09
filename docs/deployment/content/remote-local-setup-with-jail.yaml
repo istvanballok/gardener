@@ -1040,6 +1040,23 @@ spec:
               # Use this pane for ad-hoc commands
             EOF
 
+            new_window "offline" "offline" Enter <<"EOF"
+              flag_wait shoot-ha-ready-deleted && # managedseed-nested-shoot-ready-deleted once the workerless shoot bug is fixed
+              DEVICE=$(ip -o link show | awk -F': ' '{print $2}' | grep br-) &&
+              iptables  -I FORWARD -i $DEVICE -o eth0 -j REJECT -p tcp --reject-with tcp-reset &&
+              iptables  -I FORWARD -i $DEVICE -o eth0 -j REJECT -p udp --reject-with icmp-port-unreachable &&
+              ip6tables -I FORWARD -i $DEVICE -o eth0 -j REJECT -p tcp --reject-with tcp-reset &&
+              ip6tables -I FORWARD -i $DEVICE -o eth0 -j REJECT -p udp --reject-with icmp6-port-unreachable &&
+              flag_notify offline
+            EOF
+            new_pane "online" <<"EOF"
+              DEVICE=$(ip -o link show | awk -F': ' '{print $2}' | grep br-) &&
+              iptables  -D FORWARD -i $DEVICE -o eth0 -j REJECT -p tcp --reject-with tcp-reset &&
+              iptables  -D FORWARD -i $DEVICE -o eth0 -j REJECT -p udp --reject-with icmp-port-unreachable &&
+              ip6tables -D FORWARD -i $DEVICE -o eth0 -j REJECT -p tcp --reject-with tcp-reset &&
+              ip6tables -D FORWARD -i $DEVICE -o eth0 -j REJECT -p udp --reject-with icmp6-port-unreachable
+            EOF
+
             new_window "virtual garden" "virtual garden" Enter <<"EOF"
               cat <<DOC >/dev/null
                 The virtual garden cluster's kubeconfig: 'example/operator/virtual-garden/kubeconfig'
