@@ -20,6 +20,10 @@ spec:
         - -c
         - |
           set -ex -o pipefail
+          if [ $(df /root | awk '/sdb/ {print $4}') -lt $((100 * 1024 * 1024)) ]; then
+            echo "Less than 10 GB left, wiping the persistent disk"
+            find /root -mindepth 2 -maxdepth 2 -exec rm -rf '{}' \;
+          fi
           cd
           rm -f /root/start /root/elapsed*
           start=$(date +%s)
