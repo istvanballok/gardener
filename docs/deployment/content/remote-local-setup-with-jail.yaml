@@ -1258,6 +1258,9 @@ spec:
               flag_wait jail &&
               until docker exec jail docker ps >/dev/null 2>&1; do sleep 1; done &&
               time sed 's/^  //' <<"JAIL" | xargs -d '\0' docker exec jail sh -c && flag_notify cell
+                mkdir -p ~/cache/apk
+                [ -e /etc/apk/cache ] || ln -s ~/cache/apk /etc/apk/cache
+                apk add findutils
                 until docker ps >/dev/null 2>&1; do sleep 1; done
                 cd /root/go/src/github.com/gardener/gardener/cell
                 echo "Build the cell image"
@@ -1285,9 +1288,6 @@ spec:
               flag_wait cell &&
               sed 's/^  //' <<"JAIL" | xargs -d '\0' docker exec jail sh -c
                 echo "Starting to add the entries from /root/hosts.entries to /etc/hosts in the cell"
-                mkdir -p ~/cache/apk
-                [ -e /etc/apk/cache ] || ln -s ~/cache/apk /etc/apk/cache
-                apk add findutils
                 sed 's/^  //' <<"CELL" | xargs -d '\0' docker exec -u root cell sh -c
                   inotifywait -m -e close_write /etc/hosts.entries 2>&1 \
                   | grep --line-buffered -E 'Watches established.|CLOSE_WRITE' \
