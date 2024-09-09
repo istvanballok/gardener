@@ -35,8 +35,8 @@ spec:
           apk add apache2-utils bash bash-completion bat bind-tools brotli conntrack-tools       \
                   coreutils curl diffutils dnsmasq docker-bash-completion findutils fzf g++ gawk \
                   gcompat git git-prompt grep helm inotify-tools jq k9s less lsof make mandoc mc \
-                  moreutils mount ncurses neovim openssl parallel procps sed socat strace tar    \
-                  tcpdump tmux tmux-doc tzdata util-linux vim wget yq
+                  moreutils mount ncurses neovim openssl parallel procps sed socat strace        \
+                  sysstat tar tcpdump tmux tmux-doc tzdata util-linux vim wget yq
 
           mkdir -p ~/.cache/wget
           cd ~/.cache/wget
@@ -391,8 +391,8 @@ spec:
             RUN apk add bash bash-completion bat bind-tools brotli conntrack-tools coreutils curl       \\
                         diffutils docker-bash-completion findutils fzf gawk gcompat git git-prompt grep \\
                         helm inotify-tools jq k9s less lsof make mandoc mc moreutils mount ncurses      \\
-                        neovim openssl parallel procps sed tar tcpdump tmux tmux-doc tzdata util-linux  \\
-                        vim wget yq
+                        neovim openssl parallel procps sed sysstat tar tcpdump tmux tmux-doc tzdata     \\
+                        util-linux vim wget yq
             RUN echo golang                                                                                                  && \\
                      VERSION=$(curl -sL https://golang.org/VERSION?m=text | awk 'NR==1{print}')                              && \\
                      wget "https://go.dev/dl/\$VERSION.linux-amd64.tar.gz"                                                   && \\
@@ -741,6 +741,9 @@ spec:
               new_window "misc" "top" Enter <<"EOF"
                 top
               EOF
+              new_pane "sar" Enter <<"EOF"
+                sar -B 10
+              EOF
               sleep 1
               for k in z C c t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
 
@@ -810,10 +813,13 @@ spec:
             mkdir -p ~/.kube
             echo '{"current-context": "kind-gardener-operator-local"}' > ~/.kube/config
             source /usr/local/bin/tmux_functions.sh
-            tmux new -d -s operator-complete -n make -x 2000 -y 2000
+            tmux new -d -s operator-complete -n stats -x 2000 -y 2000
             tmux select-pane -T top; mkdir -p ~/.config/procps; rm -f ~/.config/procps/toprc
             for k in top Enter z C c i t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
-            new_pane "make kind-operator-up" Enter <<"EOF"
+            new_pane "sar" Enter <<"EOF"
+              sar -B 10
+            EOF
+            new_window "make" "make kind-operator-up" Enter <<"EOF"
               sync_kubeconfig example/gardener-local/kind/operator & sleep 1
               nice time make kind-operator-down kind-operator-up &&
               flag_notify kind-operator-up
@@ -1343,8 +1349,8 @@ spec:
               flag_notify cell-ready &&
               docker exec -it jail sh -c "docker exec -it cell tmux -u a -t gardener-demo"
             EOF
-            tmux select-window -t 0
-            tmux select-pane -t 1
+            tmux select-window -t 1
+            tmux select-pane -t 0
           SCRIPT_EOF
 
           chmod +x /usr/local/bin/prepare-*.sh
