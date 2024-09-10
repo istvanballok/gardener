@@ -508,6 +508,13 @@ spec:
                 # compare interactively: uniq | cat; uniq_unbuffered | cat
                 awk '{if (prev!=$0) print; fflush(); prev=$0}'
               }
+              function token {
+                jq -R '
+                  split(".")[1] |
+                  @base64d |
+                  fromjson |
+                  (.exp,.iat,.nbf) |= todate'
+              }
             EOF
 
             RUN sed 's/^  //' <<"EOF" > ~/.tmux.conf
