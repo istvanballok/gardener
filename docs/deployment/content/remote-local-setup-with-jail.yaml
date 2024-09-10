@@ -834,6 +834,11 @@ spec:
             new_pane "sar" Enter <<"EOF"
               while true; do sar -B -q LOAD -r -u -w -h 60 60; sleep 1m; done
             EOF
+            new_horizontal_pane "man" Enter <<"EOF"
+              man sar | sed -n '
+                1,5p; 98,141p; 1294,1298p; 1360,1386p; 1437,1512p; 1552,1602p; 1629,1636p;
+              ' | grep --color=Always -P '^              (?!following|that|values|are)[a-z%][^ ]*|$'
+            EOF
             new_window "make" "make kind-operator-up" Enter <<"EOF"
               sync_kubeconfig example/gardener-local/kind/operator & sleep 1
               nice time make kind-operator-down kind-operator-up &&
