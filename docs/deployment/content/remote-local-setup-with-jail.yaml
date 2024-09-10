@@ -1106,6 +1106,10 @@ spec:
               # Use this pane for ad-hoc commands
             EOF
 
+            new_window "image preload" "alpine" Enter <<"EOF"
+              # k create pod -n default --image=alpine --restart=Never -- /bin/sleep 1d
+              # pull alpine, tag with localhost:5001, push it, it can be pulled via gardener..adf.a.sdf.
+            EOF
 
             new_window "offline" "offline" Enter <<"EOF"
               flag_wait shoot-ha-ready-deleted && # managedseed-nested-shoot-ready-deleted once the workerless shoot bug is fixed
