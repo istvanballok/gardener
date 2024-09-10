@@ -917,7 +917,6 @@ spec:
               time flag_wait shoot-ha-ready &&
               k annotate shoot local -n garden-local 'confirmation.gardener.cloud/deletion=true' &&
               k delete shoot local -n garden-local &&
-              k wait shoot local -n garden-local --for=delete --timeout=-1s &&
               flag_notify shoot-ha-ready-deleted
             EOF
             new_window "seed&shoots" "seed&shoots" Enter <<"EOF"
