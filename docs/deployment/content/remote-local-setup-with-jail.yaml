@@ -1189,6 +1189,7 @@ spec:
               flag_wait virtual-garden-ha &&
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig &&
               rm -f /root/seed.watch.bookmark &&
+              export -f flag_notify flag_delete &&
               while true; do
                 BOOKMARK="resourceVersion=$(cat /root/seed.watch.bookmark 2>/dev/null)"
                 k get --raw "/apis/core.gardener.cloud/v1beta1/seeds?watch=1&allowWatchBookmarks=true&$BOOKMARK" | jq -r --unbuffered '
@@ -1223,7 +1224,7 @@ spec:
                            } else if ($1 == "DELETED") {
                              printf("flag_delete shoot_api_managedseed")
                            }
-                         }' | bash -l # TODO: stty: 'standard input': Not a tty
+                         }' | bash
             EOF
             new_pane "IP socat" Enter <<"EOF"
               inotifywait -m sync --include shoot_api_managedseed | ts
