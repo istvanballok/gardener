@@ -832,7 +832,7 @@ spec:
             tmux select-pane -T top; mkdir -p ~/.config/procps; rm -f ~/.config/procps/toprc
             for k in top Enter z C c i t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
             new_pane "sar" Enter <<"EOF"
-              sar -B 10
+              while true; do sar -B -q LOAD -r -u -w -h 60 60; sleep 1m; done
             EOF
             new_window "make" "make kind-operator-up" Enter <<"EOF"
               sync_kubeconfig example/gardener-local/kind/operator & sleep 1
