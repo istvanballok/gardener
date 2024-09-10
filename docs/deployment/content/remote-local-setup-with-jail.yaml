@@ -318,9 +318,9 @@ spec:
           [ -d gardener/.git ] || git clone -q https://github.com/gardener/gardener
           cd gardener
           git fetch
-          if [[ $NAMESPACE == demo* ]]; then
+          if [[ $NAMESPACE == "demo*" ]]; then
             git checkout $(git tag | sort -V | tail -n 1)
-          elif [[ $NAMESPACE == test* ]]; then
+          elif [[ $NAMESPACE == "test*" ]]; then
             git checkout master
             git reset --hard origin/master
           else
