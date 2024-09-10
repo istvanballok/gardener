@@ -1293,8 +1293,9 @@ spec:
                            }
                          }' | bash
             EOF
-            new_pane "IP socat" Enter <<"EOF"
-              inotifywait -m sync --include shoot_api_managedseed | ts
+            new_pane "WIP - IP socat" Enter <<"EOF"
+              # TODO add some port forwards to allow to talk to the API server in the managed seed...
+              inotifywait -m sync -e close_write --include shoot_api_managedseed | ts
             EOF
 
             new_window "kind-readonly" "readonly kubeconfig" Enter <<"EOF"
