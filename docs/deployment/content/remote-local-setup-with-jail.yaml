@@ -1095,6 +1095,18 @@ spec:
                 --resolve api.virtual-garden.local.gardener.cloud:443:172.17.0.1 \
                  https://api.virtual-garden.local.gardener.cloud/ | head
             EOF
+            new_pane "token refresh" Enter <<"EOF"
+              flag_wait virtual-garden-ha &&
+              while true; do
+                kubectl -n garden get secret gardener -w --no-headers | \
+                  while read line; do
+                    echo "Regenerating the kubeconfig of the virtual garden cluster"
+                    kubectl -n garden get secret gardener -o jsonpath={.data.kubeconfig} \
+                    | base64 -d > $PWD/example/operator/virtual-garden/kubeconfig
+                  done
+                sleep 10
+              done | ts
+            EOF
 
             new_window "shoot API" "IP socat" Enter <<"EOF"
               cat <<DOC >/dev/null
