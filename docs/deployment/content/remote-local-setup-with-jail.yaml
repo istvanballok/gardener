@@ -384,8 +384,7 @@ spec:
           cd cell
           if [ -d gardener/.git ]; then
             cd gardener
-            git fetch --tags
-            git fetch origin HEAD
+            git fetch origin HEAD --tags
             git checkout FETCH_HEAD
             cd -
           else
