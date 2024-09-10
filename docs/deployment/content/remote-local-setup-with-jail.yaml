@@ -318,7 +318,14 @@ spec:
           [ -d gardener/.git ] || git clone -q https://github.com/gardener/gardener
           cd gardener
           git fetch
-          git checkout $(git tag | sort -V | tail -n 1)
+          if [[ $NAMESPACE == demo* ]]; then
+            git checkout $(git tag | sort -V | tail -n 1)
+          elif [[ $NAMESPACE == test* ]]; then
+            git checkout master
+            git reset --hard origin/master
+          else
+            true # do not change the currently checked out commit
+          fi
 
           nice dockerd-entrypoint.sh 2>&1 | tee ~/.dockerd.log &
           until docker ps >/dev/null 2>&1; do sleep 1; done
@@ -378,7 +385,8 @@ spec:
           if [ -d gardener/.git ]; then
             cd gardener
             git fetch --tags
-            git checkout $(git tag | sort -V | tail -n 1)
+            git fetch origin HEAD
+            git checkout FETCH_HEAD
             cd -
           else
             git clone ~/go/src/github.com/gardener/gardener gardener
@@ -1408,7 +1416,9 @@ spec:
           exec: {command: [cat, /tmp/ready]}
           failureThreshold: 360 # 1h
           periodSeconds: 10
-        env: [{name: ENV, value: /root/greeting.sh}] # ash sources the ENV file
+        env:
+        - {name: ENV, value: /root/greeting.sh} # ash sources the ENV file
+        - {name: NAMESPACE, valueFrom: {fieldRef: {fieldPath: metadata.namespace}}}
         resources:
           requests: {cpu: 14, memory: 28G}
           limits:   {cpu: 14, memory: 28G}
