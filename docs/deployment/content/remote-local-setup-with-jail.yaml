@@ -749,7 +749,7 @@ spec:
                 top
               EOF
               new_pane "sar" Enter <<"EOF"
-                while true; do sar -B -q LOAD -r -u -w -h 60 60; done
+                while true; do sar -B -q LOAD -r -u -w -h 60 60; sleep 1m; done
               EOF
               sleep 1
               for k in z C c t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
@@ -990,6 +990,7 @@ spec:
               while true; do
                 generate-admin-kubeconf.sh --namespace garden --shoot-name managedseed > /tmp/managedseed.kubeconfig
                 while k --kubeconfig /tmp/managedseed.kubeconfig get pods -A -o wide | nl; do sleep 10s; clear; done
+                sleep 10s
               done
             EOF
             new_pane "workerless shoot on managed seed" Enter <<"EOF"
@@ -1025,6 +1026,7 @@ spec:
               while true; do
                 generate-admin-kubeconf.sh > /tmp/shoot.kubeconfig
                 yes | watch -e k --kubeconfig /tmp/shoot.kubeconfig get pods -A
+                sleep 10s
               done
             EOF
             new_pane "not ready pods" Enter <<"EOF"
@@ -1142,6 +1144,8 @@ spec:
                     "\(.type) \(.resourceVersion) api.\(.name).\(.project).external.local.gardener.cloud \(.ip | sub("^172.18"; "172.17"))"
                   end
                 '
+                echo "Restarting the watch" >&2
+                sleep 10s
               done | awk -v bookmark=/root/gateways.watch.bookmark \
                          -v entries=/root/hosts.entries '
                          {
@@ -1187,6 +1191,8 @@ spec:
                     "\(.type) \(.resourceVersion) \(.name)"
                   end
                 '
+                echo "Restarting the watch" >&2
+                sleep 10s
               done | awk -v bookmark=/root/seed.watch.bookmark '
                          {
                            if ($1 != "ADDED") {
