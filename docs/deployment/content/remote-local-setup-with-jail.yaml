@@ -1162,13 +1162,15 @@ spec:
             new_pane "token refresh" Enter <<"EOF"
               flag_wait virtual-garden-ha &&
               while true; do
+                echo "Starting to watch the gardener secret"
                 kubectl -n garden get secret gardener -w --no-headers | \
                   while read line; do
                     echo "Regenerating the kubeconfig of the virtual garden cluster"
                     kubectl -n garden get secret gardener -o jsonpath={.data.kubeconfig} \
                     | base64 -d > $PWD/example/operator/virtual-garden/kubeconfig
                   done
-                sleep 10
+                echo "The watch was interrupted, restarting in 10s"
+                sleep 10s
               done | ts
             EOF
 
@@ -1220,7 +1222,7 @@ spec:
                     "\(.type) \(.resourceVersion) api.\(.name).\(.project).external.local.gardener.cloud \(.ip | sub("^172.18"; "172.17"))"
                   end
                 '
-                echo "Restarting the watch" >&2
+                echo "Restarting the watch" | ts >&2
                 sleep 10s
               done | awk -v bookmark=/root/gateways.watch.bookmark \
                          -v entries=/root/hosts.entries '
@@ -1246,7 +1248,8 @@ spec:
                              print state[domain], domain > entries
                            }
                            close(entries)
-                         }'
+                           print "regenerated the hosts.entries file"
+                         }' | ts
             EOF
 
             new_window "managed seed shoot API" "wait for the managed seed" Enter <<"EOF"
@@ -1268,7 +1271,7 @@ spec:
                     "\(.type) \(.resourceVersion) \(.name)"
                   end
                 '
-                echo "Restarting the watch" >&2
+                echo "Restarting the watch" | ts >&2
                 sleep 10s
               done | awk -v bookmark=/root/seed.watch.bookmark '
                          {
@@ -1341,6 +1344,7 @@ spec:
               echo "can-i create pods?" &&
               k --kubeconfig ~/.kube/readonly/export/config auth can-i create pods
             EOF
+
             new_window "timing" "timing" Enter <<"EOF"
               while [ ! -f /root/elapsed_until_tmux ]; do sleep 1; done &&
               echo "Elapsed time until the tmux session was setup: $(cat /root/elapsed_until_tmux)" &&
@@ -1352,6 +1356,7 @@ spec:
               echo $elapsed > /root/elapsed_until_cell &&
               echo "Elapsed time until the cell was ready: $elapsed"
             EOF
+
             new_window "jail" "jail" Enter <<"EOF"
               SIZE=8192 # 8GB
               if [ -f ~/inner.disk ] && [ $(stat -c%s ~/inner.disk) -lt $(( $SIZE * 1024 * 1024 )) ]; then
