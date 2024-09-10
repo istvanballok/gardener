@@ -1237,7 +1237,7 @@ spec:
               kubectl apply -f ~/.kube/readonly/resources.yaml &&
               mkdir -p ~/.kube/readonly/export &&
               yq ~/.kube/config -o json \
-              | jq --arg token "$(kubectl -n default create token readonly --duration 48h)" --arg SAN "$SAN" '
+              | jq --arg token "$(kubectl -n default create token readonly --duration 672h)" --arg SAN "$SAN" '
                 .clusters[0].cluster.server = "https://\($SAN):44444" |
                 .users[0].user={token: $token} |
                 .contexts[0].context.namespace = "garden"
