@@ -1503,6 +1503,7 @@ spec:
               time sed 's/^  //' <<"JAIL" | xargs -d '\0' docker exec jail sh -c |& ts && flag_notify cell-tested
                 sed 's/^  //' <<"CELL" | xargs -d '\0' docker exec cell sh -c
                   set -ex -o pipefail
+                  while [ ! -f ~/.kube/config ]; do sleep 1; done
                   cd /home/demo/go/src/github.com/gardener/gardener
                   k apply -f example/provider-local/shoot.yaml
                   time k -n garden-local wait shoot local --for=condition=SystemComponentsHealthy --timeout=-1s
