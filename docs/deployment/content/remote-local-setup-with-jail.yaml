@@ -421,6 +421,7 @@ spec:
           fi
           mkdir -p scripts
           cp /usr/local/bin/tmux_functions.sh scripts
+          cp /usr/local/bin/is_tmux_window_shown.sh scripts
 
           sed 's/^  //' <<DOCKERFILE > ~/go/src/github.com/gardener/gardener/cell/Dockerfile
             FROM alpine:3.20
@@ -545,6 +546,15 @@ spec:
                   fromjson |
                   (.exp,.iat,.nbf) |= todate'
               }
+              function is_tmux_window_shown {
+                if [ ! -f /root/disable_tmux_optimization ]; then
+                  if [ $(tmux display-message -p -t $TMUX_PANE '#{window_active_clients}') -eq 0 ]; then
+                    echo "The tmux window was not shown recently so some commands are skipped..." >&2
+                    echo "Please wait a bit..." >&2
+                    return 1
+                  fi
+                fi
+              }
             EOF
 
             RUN sed 's/^  //' <<"EOF" > ~/.tmux.conf
@@ -571,6 +581,7 @@ spec:
             RUN mkdir -p ~/go/src/github.com/gardener/gardener
 
             ADD scripts/tmux_functions.sh /usr/local/bin/tmux_functions.sh
+            ADD scripts/is_tmux_window_shown.sh /usr/local/bin/is_tmux_window_shown.sh
 
             RUN sed 's/^  //' <<"EOF" > ~/welcome.md
               # Welcome to the Gardener Demo environment
@@ -668,7 +679,7 @@ spec:
 
               new_window "garden" "garden" Enter <<"EOF"
                 export KUBECONFIG=~/.kube_readonly/config
-                nice watch k get garden
+                nice watch is_tmux_window_shown.sh "&&" k get garden
               EOF
               new_pane "last operations" Enter <<"EOF"
                 export KUBECONFIG=~/.kube_readonly/config
@@ -684,19 +695,20 @@ spec:
               new_pane "garden conditions" Enter <<"EOF"
                 export KUBECONFIG=~/.kube_readonly/config
                 while true; do
+                  clear
+                  is_tmux_window_shown &&
                   k get garden -o json | jq '
                     [.items[] |
                     { name: .metadata.name,
                       conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
                   ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl
                   sleep 10s
-                  clear
                 done
               EOF
 
               new_window "seed&shoots" "seed&shoots" Enter <<"EOF"
                 export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-                nice watch k get -A seeds,managedseeds,shoots
+                nice watch is_tmux_window_shown.sh "&&" k get -A seeds,managedseeds,shoots
               EOF
               new_pane "last operations seed" Enter <<"EOF"
                 export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
@@ -727,25 +739,27 @@ spec:
               new_pane "seed conditions" Enter <<"EOF"
                 export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
                 while true; do
+                  clear
+                  is_tmux_window_shown &&
                   k get seeds -o json | jq '
                     [.items[] |
                     { name: .metadata.name,
                       conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
                   ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl
                   sleep 10s
-                  clear
                 done
               EOF
               new_horizontal_pane "shoot conditions" Enter <<"EOF"
                 export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
                 while true; do
+                  clear
+                  is_tmux_window_shown &&
                   k get shoots -A -o json | jq '
                     [.items[] |
                     { name: [.metadata.namespace, .metadata.name] | join("/"),
                       conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
                   ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl
                   sleep 10s
-                  clear
                 done
               EOF
 
@@ -765,7 +779,12 @@ spec:
               new_window "runtime&seed pods" "pods" Enter <<"EOF"
                 export KUBECONFIG=~/.kube_readonly/config
                 # the while loop is used instead of watch to allow for scrolling a longer list in the tmux pane
-                while true; do clear; k get pods -A -o wide | nl; sleep 10s; done
+                while true; do
+                  clear
+                  is_tmux_window_shown &&
+                  k get pods -A -o wide | nl
+                  sleep 10s
+                done
               EOF
 
               new_window "gardenctl" "gardenctl" <<"EOF"
