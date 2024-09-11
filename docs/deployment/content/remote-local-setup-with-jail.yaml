@@ -361,13 +361,13 @@ spec:
               wait_for_prompt
               IFS= read -r line
               line=$(echo "$line" | sed 's/^  //')
-              tmux send -- "$line;"
+              tmux send -- "$line"
               wait_for_line "$line"
               while IFS= read -r line; do
                 line=$(echo "$line" | sed 's/^  //')
                 tmux send Enter
                 wait_for_prompt
-                tmux send -- "$line;"
+                tmux send -- "$line"
                 wait_for_line "$line"
               done
               tmux send -- "$@"
