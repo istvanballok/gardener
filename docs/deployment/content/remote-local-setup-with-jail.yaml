@@ -1554,7 +1554,7 @@ spec:
                         k wait --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot local --timeout=-1s
                         k -n garden-local wait shoot local --for=condition=SystemComponentsHealthy --timeout=-1s)
                   # access the shoot
-                  eval $(gardenctl kubectl-env bash)
+                  eval $(gardenctl kubectl-env bash || echo false)
                   gardenctl target --garden local --shoot local
                   k get pods -A
                   echo "ctr -n k8s.io image list" | k node-shell $(k get nodes --no-headers | awk '{print $1}') \
