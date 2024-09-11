@@ -902,7 +902,10 @@ spec:
                 .spec.virtualCluster.controlPlane.highAvailability = {}
               ' | k apply -f - &&
               time ( kubectl wait --for=jsonpath='{.status.lastOperation.state}'=Processing garden local --timeout=-1s &&
-                     kubectl wait --for=jsonpath='{.status.lastOperation.state}'=Succeeded garden local --timeout=-1s ) &&
+                     kubectl wait --for=jsonpath='{.status.lastOperation.state}'=Succeeded garden local --timeout=-1s &&
+                     kubectl wait --for=condition=VirtualComponentsHealthy garden local --timeout=-1s &&
+                     kubectl wait --for=condition=RuntimeComponentsHealthy garden local --timeout=-1s &&
+                     kubectl wait --for=condition=VirtualGardenAPIServerAvailable garden local --timeout=-1s) &&
               flag_notify virtual-garden-ha
             EOF
             new_window "garden" "garden" Enter <<"EOF"
