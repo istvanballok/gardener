@@ -1167,7 +1167,7 @@ spec:
               mkdir -p ~/script_recordings
               cd ~/script_recordings/
               LATEST=$(ls -t | head -n 1 | grep '$') &&
-              scriptreplay --log-timing $LATEST/timing.log --log-out LATEST/out.log
+              scriptreplay --log-timing $LATEST/timing.log --log-out $LATEST/out.log
             EOF
 
             new_window "image preload" "image preload" Enter <<"EOF"
