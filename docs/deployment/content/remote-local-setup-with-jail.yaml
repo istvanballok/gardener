@@ -802,7 +802,6 @@ spec:
               #### Misc ####
 
               new_window "k9s" "k9s" <<"EOF"
-                export KUBECONFIG=~/.kube_readonly/config
                 nice k9s
               EOF
 
