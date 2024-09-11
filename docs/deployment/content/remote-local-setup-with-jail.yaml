@@ -925,14 +925,18 @@ spec:
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               time flag_wait virtual-garden-ha &&
               k apply -f example/provider-local/shoot.yaml &&
-              time k -n garden-local wait shoot local --for=condition=SystemComponentsHealthy --timeout=-1s &&
+              time (k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Processing shoot local --timeout=-1s
+                    k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot local --timeout=-1s
+                    k -n garden-local wait shoot local --for=condition=SystemComponentsHealthy --timeout=-1s) &&
               flag_notify shoot-ready
             EOF
             new_pane "HA" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               time flag_wait shoot-ready &&
               k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type="zone"' example/provider-local/shoot.yaml) &&
-              time k -n garden-local wait shoot local --for=condition=SystemComponentsHealthy --timeout=-1s &&
+              time (k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Processing shoot local --timeout=-1s
+                    k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot local --timeout=-1s
+                    k -n garden-local wait shoot local --for=condition=SystemComponentsHealthy --timeout=-1s) &&
               flag_notify shoot-ha-ready
             EOF
             new_pane "Reconcile" <<"EOF"
@@ -1008,7 +1012,9 @@ spec:
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               time flag_wait virtual-garden-ha &&
               k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type="zone"' example/provider-local/managedseeds/shoot-managedseed.yaml) &&
-              time k -n garden wait shoot managedseed --for=condition=SystemComponentsHealthy --timeout=-1s &&
+              time (k wait -n garden --for=jsonpath='{.status.lastOperation.state}'=Processing shoot managedseed --timeout=-1s
+                    k wait -n garden --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot managedseed --timeout=-1s
+                    k -n garden wait shoot managedseed --for=condition=SystemComponentsHealthy --timeout=-1s) &&
               flag_notify managedseed-shoot-ready
             EOF
             new_pane "create managed seed" Enter <<"EOF"
@@ -1043,7 +1049,9 @@ spec:
               k apply -f <(yq '.metadata.name="local-wl-ms" |
                                .spec.seedName="managedseed" |
                                .spec.networking.services="10.6.0.0/16"' example/provider-local/shoot-workerless.yaml) &&
-              time k -n garden-local wait shoot local-wl-ms --for=condition=SystemComponentsHealthy --timeout=-1s &&
+              time (k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Processing shoot local-wl-ms --timeout=-1s
+                    k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot local-wl-ms --timeout=-1s
+                    k -n garden-local wait shoot local-wl-ms --for=condition=SystemComponentsHealthy --timeout=-1s) &&
               flag_notify managedseed-nested-shoot-ready
             EOF
             new_pane "delete workerless shoot on managed seed" Enter <<"EOF"
