@@ -1718,7 +1718,7 @@ spec:
           cd
           mkdir -p ~/.cache/apk
           ln -s ~/.cache/apk /etc/apk/cache
-          apk add curl findutils moreutils util-linux-misc wget
+          apk add curl findutils moreutils util-linux-misc wget | cat
 
           mkdir -p ~/.cache/wget
           cd ~/.cache/wget
