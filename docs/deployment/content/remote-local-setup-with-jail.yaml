@@ -357,20 +357,29 @@ spec:
               while ! tmux capture-pane -p | grep -v ^$ | tail -n 1 | grep -F -- "$1" >/dev/null; do sleep .3; done
             }
 
+            function send_line {
+              # tmux send does not send the last character if it's a semicolon. It either needs to be escaped or duplicated.
+              if [[ "$1" == *';' ]]; then
+                tmux send -- "$1;"
+              else
+                tmux send -- "$1"
+              fi
+            }
+
             function send_commands {
               wait_for_prompt
               IFS= read -r line
               line=$(echo "$line" | sed 's/^  //')
-              tmux send -- "$line"
+              send_line "$line"
               wait_for_line "$line"
               while IFS= read -r line; do
                 line=$(echo "$line" | sed 's/^  //')
                 tmux send Enter
                 wait_for_prompt
-                tmux send -- "$line"
+                send_line "$line"
                 wait_for_line "$line"
               done
-              tmux send -- "$@"
+              send_line "$@"
             }
 
             function new_window {
