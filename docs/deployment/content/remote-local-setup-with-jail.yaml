@@ -628,11 +628,14 @@ spec:
               entry barrier for developers who would like to explore Gardener without
               installing it on their own machine.
 
-
               The demo environment is prepared in a tmux session. You can use the mouse to
               select panes and windows. Please check the [tmux][] documentation for more
               keyboard shortcuts, like `CTRL+b c` to create a new window for interactive
               exploration.
+
+              The demo environment does not have Internet access, but you can use a local
+              container registry to pull the alpine and nginx images as
+              `localhost:5001/alpine:latest` and `localhost:5001/nginx:latest`.
 
               [tmux]: https://github.com/tmux/tmux/wiki
               [local setup]: https://github.com/gardener/gardener/blob/master
@@ -1115,9 +1118,13 @@ spec:
               # Use this pane for ad-hoc commands
             EOF
 
-            new_window "image preload" "alpine" Enter <<"EOF"
-              # k create pod -n default --image=alpine --restart=Never -- /bin/sleep 1d
-              # pull alpine, tag with localhost:5001, push it, it can be pulled via gardener..adf.a.sdf.
+            new_window "image preload" "image preload" Enter <<"EOF"
+              flag_wait operator-up &&
+              for i in alpine:latest nginx:latest; do
+                docker pull $i
+                docker tag $i localhost:5001/$i
+                docker push localhost:5001/$i
+              done
             EOF
 
             new_window "offline" "offline" Enter <<"EOF"
