@@ -251,10 +251,12 @@ spec:
               rm sync/$1
             }
             function is_tmux_window_shown {
-              if [ $(tmux display-message -p -t $TMUX_PANE '#{window_active_clients}') -eq 0 ]; then
-                echo "The tmux window was not shown recently so some commands are skipped..." >&2
-                echo "Please wait a bit..." >&2
-                return 1
+              if [ ! -f /root/disable_tmux_optimization ]; then
+                if [ $(tmux display-message -p -t $TMUX_PANE '#{window_active_clients}') -eq 0 ]; then
+                  echo "The tmux window was not shown recently so some commands are skipped..." >&2
+                  echo "Please wait a bit..." >&2
+                  return 1
+                fi
               fi
             }
             function token {
@@ -338,10 +340,12 @@ spec:
           until docker ps >/dev/null 2>&1; do sleep 1; done
 
           sed 's/^  //' <<"SCRIPT_EOF" > /usr/local/bin/is_tmux_window_shown.sh
-            if [ $(tmux display-message -p -t $TMUX_PANE '#{window_active_clients}') -eq 0 ]; then
-              echo "The tmux window was not shown recently so some commands are skipped..." >&2
-              echo "Please wait a bit..." >&2
-              return 1
+            if [ ! -f /root/disable_tmux_optimization ]; then
+              if [ $(tmux display-message -p -t $TMUX_PANE '#{window_active_clients}') -eq 0 ]; then
+                echo "The tmux window was not shown recently so some commands are skipped..." >&2
+                echo "Please wait a bit..." >&2
+                return 1
+              fi
             fi
           SCRIPT_EOF
           chmod +x /usr/local/bin/is_tmux_window_shown.sh
