@@ -1113,7 +1113,6 @@ spec:
 
             new_window "offline" "offline" Enter <<"EOF"
               flag_wait shoot-ha-ready-deleted && # managedseed-nested-shoot-ready-deleted once the workerless shoot bug is fixed
-              set -e
               DEVICE=$(ip -o link show | awk -F': ' '{print $2}' | grep br-) &&
               for i in docker0 $DEVICE; do
                 iptables  -I FORWARD -i $i -o eth0 -j REJECT -p tcp --reject-with tcp-reset
@@ -1124,7 +1123,6 @@ spec:
               flag_notify offline
             EOF
             new_pane "online" <<"EOF"
-              set -e
               DEVICE=$(ip -o link show | awk -F': ' '{print $2}' | grep br-) &&
               for i in docker0 $DEVICE; do
                 iptables  -D FORWARD -i $i -o eth0 -j REJECT -p tcp --reject-with tcp-reset
