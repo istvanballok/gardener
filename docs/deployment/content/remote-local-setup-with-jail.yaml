@@ -1521,8 +1521,7 @@ spec:
                 echo "Starting to merge the garden and the KinD kube configs"
                 sed 's/^  //' <<"CELL" | xargs -d '\0' docker exec -u root cell sh -c
                   mkdir -p /home/demo/.kube
-                  mkdir -p /home/demo/.kube/cache
-                  chown demo /home/demo/.kube/cache
+                  chown demo /home/demo/.kube
                   inotifywait -m -e close_write /home/demo/go/src/github.com/gardener/gardener/example/operator/virtual-garden --include '/kubeconfig$' \
                   | while read line; do
                       echo "Detected a change in the virtual garden kubeconfig"
