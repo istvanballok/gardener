@@ -809,11 +809,11 @@ spec:
               new_window "misc" "top" Enter <<"EOF"
                 top
               EOF
+              sleep 1
+              for k in z C c t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
               new_pane "sar" Enter <<"EOF"
                 while true; do sar -B -q LOAD -r -u -w -h 60 60; sleep 1m; done
               EOF
-              sleep 1
-              for k in z C c t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
 
               new_pane "demo CPU limit" <<"EOF"
                 nice dd if=/dev/zero of=/dev/null
