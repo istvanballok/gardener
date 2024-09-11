@@ -919,6 +919,7 @@ spec:
                                       join(" ")
                   ' | uniq_unbuffered \
                 | sed --unbuffered 's/, /,\n+ /g' | ts
+                echo "Restarting the watch" >&2
                 sleep 10s
               done
             EOF
@@ -981,6 +982,7 @@ spec:
                                          join(" "))
                                       ] | join(" ")
                   ' | uniq_unbuffered | sed --unbuffered 's/, /,\n+ /g' | ts
+                echo "Restarting the watch" >&2
                 sleep 10s
               done
             EOF
@@ -995,6 +997,7 @@ spec:
                                          join(" "))
                                       ] | join(" ")
                   ' | uniq_unbuffered | sed --unbuffered 's/, /,\n+ /g' | ts
+                echo "Restarting the watch" >&2
                 sleep 10s
               done
             EOF
