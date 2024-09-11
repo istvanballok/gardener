@@ -1201,17 +1201,32 @@ spec:
             EOF
             new_pane "token refresh" Enter <<"EOF"
               flag_wait virtual-garden-ha &&
+              rm -f /root/secrets.watch.bookmark &&
               while true; do
-                echo "Starting to watch the gardener secret"
-                kubectl -n garden get secret gardener -w --no-headers | \
-                  while read line; do
-                    echo "Regenerating the kubeconfig of the virtual garden cluster"
-                    kubectl -n garden get secret gardener -o jsonpath={.data.kubeconfig} \
-                    | base64 -d > $PWD/example/operator/virtual-garden/kubeconfig
-                  done
-                echo "The watch was interrupted, restarting in 10s"
+                BOOKMARK="resourceVersion=$(cat /root/secrets.watch.bookmark 2>/dev/null)"
+                k get --raw "/api/v1/namespaces/garden/secrets?fieldSelector=metadata.name=gardener&watch=1&allowWatchBookmarks=true&$BOOKMARK" | jq -r --unbuffered '
+                  "\(.type) \(.object.metadata.resourceVersion) \(.object.data.kubeconfig)"
+                '
+                echo "Restarting the watch" | ts >&2
                 sleep 10s
-              done | ts
+              done | awk -v bookmark=/root/secrets.watch.bookmark \
+                         -v kubeconfig=$PWD/example/operator/virtual-garden/kubeconfig '
+                         {
+                           if ($1 != "ADDED") {
+                             pastInitialListing = 1
+                           }
+                           if (pastInitialListing) {
+                             print $2 > bookmark ".wip"
+                             close(bookmark ".wip")
+                             system(sprintf("mv %s.wip %s", bookmark, bookmark))
+                           }
+                           if ($1 == "BOOKMARK") {
+                             next
+                           }
+                           print "Updating the kubeconfig"
+                           system(sprintf("echo %s | base64 -d > %s.wip", $3, kubeconfig))
+                           system(sprintf("mv %s.wip %s", kubeconfig, kubeconfig))
+                         }' | ts
             EOF
 
             new_window "shoot API" "IP socat" Enter <<"EOF"
