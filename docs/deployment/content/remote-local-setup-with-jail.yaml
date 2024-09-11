@@ -238,7 +238,7 @@ spec:
             source /usr/local/bin/kube-ps1.sh
             source /usr/share/git-core/git-prompt.sh
             export PS1='[\w $(printf "$(kube_ps1)")] $(__git_ps1 "(%s)") [$(date +%H:%M)]\$ '
-            stty -ixon
+            [ -t 0 ] && stty -ixon
             [ -n "$GCTL_SESSION_ID" ] || [ -n "$TERM_SESSION_ID" ] || export GCTL_SESSION_ID=$(uuidgen)
             cd ~/go/src/github.com/gardener/gardener
             function flag_notify {
@@ -530,7 +530,7 @@ spec:
               source /usr/local/bin/kube-ps1.sh
               source /usr/share/git-core/git-prompt.sh
               export PS1='[\w $(printf "$(kube_ps1)")] $(__git_ps1 "(%s)")\n\$ '
-              stty -ixon
+              [ -t 0 ] && stty -ixon
               [ -n "$GCTL_SESSION_ID" ] || [ -n "$TERM_SESSION_ID" ] || export GCTL_SESSION_ID=$(uuidgen)
               cd ~/go/src/github.com/gardener/gardener
               function uniq_unbuffered {
@@ -1538,8 +1538,8 @@ spec:
 
             new_window "cell-test" "cell-test" Enter <<"EOF"
               flag_wait cell &&
-              time sed 's/^  //' <<"JAIL" | xargs -d '\0' docker exec jail sh -c |& ts && flag_notify cell-tested
-                sed 's/^  //' <<"CELL" | xargs -d '\0' docker exec cell bash -c
+              time sed 's/^  //' <<"JAIL" | xargs -0 docker exec jail sh -c |& ts && flag_notify cell-tested
+                sed 's/^  //' <<"CELL" | xargs -0 docker exec cell bash -l -c
                   set -ex -o pipefail
                   while [ ! -f ~/.kube/config ]; do sleep 1; done
                   cd /home/demo/go/src/github.com/gardener/gardener
