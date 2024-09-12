@@ -236,6 +236,7 @@ spec:
             export HISTCONTROL=ignorespace
             export PROMPT_COMMAND='history -a'
             export BAT_THEME="gruvbox-light" # assuming a light terminal theme
+            export KUBECTL_NODE_SHELL_IMAGE=localhost:5001/alpine:latest
             shopt -s histappend
             source /usr/share/bash-completion/completions/kubectl
             source /usr/share/bash-completion/completions/gardenctl
