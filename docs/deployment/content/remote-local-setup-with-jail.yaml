@@ -22,7 +22,9 @@ spec:
           set -ex -o pipefail
           echo "Disk usage"
           df -h
-          du -sh ~/.cache/* /var/lib/docker/* ~/go/src/github.com/gardener/gardener/{dev,cell/*}
+          du -sh ~/.cache/* /var/lib/docker/* \
+                 ~/go/src/github.com/gardener/gardener/dev \
+                 ~/go/src/github.com/gardener/gardener/cell/* || true
           if [ $(df /root | awk '/sdb/ {print $4}') -lt $((10 * 1024 * 1024)) ]; then
             echo "Less than 10 GB left on the persistent volume"
             # Don't self heal, let a person investigate what filled up the disk
