@@ -1749,33 +1749,29 @@ spec:
           sed 's/^  //' <<"EOF_EXEC" | xargs -0 \
           kubectl exec remote-local-setup-with-jail-0 -- sh -c | ts
             echo "Exec-ed into the remote local setup pod"
-            echo "  Wait for the jail docker container..."
-            while ! docker inspect jail >/dev/null 2>&1; do
-              echo "  ."
+            while ! docker ps -f name=jail | grep jail; do
+              echo "  Wait for the jail docker container..."
               sleep 10
             done
             echo "  OK"
             sed 's/^  //' <<"EOF_JAIL" | xargs -0 \
             docker exec jail sh -c
               echo "    Exec-ed into the jail container"
-              echo "    Wait for the cell docker container..."
-              while ! docker inspect cell >/dev/null 2>&1; do
-                echo "    ."
+              while ! docker ps -f name=cell | grep cell; do
+                echo "    Wait for the cell docker container..."
                 sleep 10
               done
               echo "    OK"
               sed 's/^  //' <<"EOF_CELL" | xargs -0 \
               docker exec cell sh -c
                 echo "      Exec-ed into the cell container"
-                echo "      Wait for the cell to be ready..."
                 while [ ! -e /tmp/ready ]; do
-                  echo "      ."
+                  echo "      Wait for the cell to be ready..."
                   sleep 10
                 done
                 echo "      OK"
-                echo "      Wait for the tmux session..."
                 while ! tmux ls 2>/dev/null | grep gardener-demo; do
-                  echo "      ."
+                  echo "      Wait for the tmux session..."
                   sleep 10
                 done
                 echo "      OK"
