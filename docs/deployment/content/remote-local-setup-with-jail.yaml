@@ -1825,7 +1825,7 @@ spec:
           EOF
         startupProbe:
           exec: {command: [cat, /tmp/ready]}
-          failureThreshold: 360 # 1h
+          failureThreshold: 720 # 2h
           periodSeconds: 10
         volumeMounts:
         - {name: home, mountPath: /root}
