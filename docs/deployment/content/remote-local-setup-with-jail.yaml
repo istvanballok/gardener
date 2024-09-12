@@ -259,15 +259,6 @@ spec:
             function flag_delete {
               rm sync/$1
             }
-            function is_tmux_window_shown {
-              if [ ! -f /root/disable_tmux_optimization ]; then
-                if [ $(tmux display-message -p -t $TMUX_PANE '#{window_active_clients}') -eq 0 ]; then
-                  echo "The tmux window was not shown recently so some commands are skipped..." >&2
-                  echo "Please wait a bit..." >&2
-                  return 1
-                fi
-              fi
-            }
             function token {
               jq -R '
                 split(".")[1] |
@@ -555,15 +546,6 @@ spec:
                   fromjson |
                   (.exp,.iat,.nbf) |= todate'
               }
-              function is_tmux_window_shown {
-                if [ ! -f /root/disable_tmux_optimization ]; then
-                  if [ $(tmux display-message -p -t $TMUX_PANE '#{window_active_clients}') -eq 0 ]; then
-                    echo "The tmux window was not shown recently so some commands are skipped..." >&2
-                    echo "Please wait a bit..." >&2
-                    return 1
-                  fi
-                fi
-              }
             EOF
 
             RUN sed 's/^  //' <<"EOF" > ~/.tmux.conf
@@ -706,7 +688,7 @@ spec:
                 export KUBECONFIG=~/.kube_readonly/config
                 while true; do
                   clear
-                  is_tmux_window_shown &&
+                  is_tmux_window_shown.sh &&
                   k get garden -o json | jq '
                     [.items[] |
                     { name: .metadata.name,
@@ -752,7 +734,7 @@ spec:
                 export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
                 while true; do
                   clear
-                  is_tmux_window_shown &&
+                  is_tmux_window_shown.sh &&
                   k get seeds -o json | jq '
                     [.items[] |
                     { name: .metadata.name,
@@ -765,7 +747,7 @@ spec:
                 export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
                 while true; do
                   clear
-                  is_tmux_window_shown &&
+                  is_tmux_window_shown.sh &&
                   k get shoots -A -o json | jq '
                     [.items[] |
                     { name: [.metadata.namespace, .metadata.name] | join("/"),
@@ -793,7 +775,7 @@ spec:
                 # the while loop is used instead of watch to allow for scrolling a longer list in the tmux pane
                 while true; do
                   clear
-                  is_tmux_window_shown &&
+                  is_tmux_window_shown.sh &&
                   k get pods -A -o wide | nl
                   sleep 10s
                 done
@@ -959,7 +941,7 @@ spec:
             new_pane "garden conditions" Enter <<"EOF"
               while true; do
                 clear
-                is_tmux_window_shown &&
+                is_tmux_window_shown.sh &&
                 k get garden -o json | jq '
                   [.items[] |
                    { name: .metadata.name,
@@ -1035,7 +1017,7 @@ spec:
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               while true; do
                 clear
-                is_tmux_window_shown &&
+                is_tmux_window_shown.sh &&
                 k get seeds -o json | jq '
                   [.items[] |
                    { name: .metadata.name,
@@ -1048,7 +1030,7 @@ spec:
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               while true; do
                 clear
-                is_tmux_window_shown &&
+                is_tmux_window_shown.sh &&
                 k get shoots -A -o json | jq '
                   [.items[] |
                    { name: [.metadata.namespace, .metadata.name] | join("/"),
@@ -1078,10 +1060,10 @@ spec:
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               time flag_wait managedseed-seed-ready &&
               while true; do
-                if is_tmux_window_shown; then
+                if is_tmux_window_shown.sh; then
                   bash -o pipefail generate-admin-kubeconf.sh --namespace garden --shoot-name managedseed > /tmp/managedseed.kubeconfig &&
                   clear &&
-                  while is_tmux_window_shown &&
+                  while is_tmux_window_shown.sh &&
                         k --kubeconfig /tmp/managedseed.kubeconfig get pods -A -o wide | nl; do
                           sleep 10s
                           clear
@@ -1114,7 +1096,7 @@ spec:
               # the while loop is used instead of watch to allow for scrolling a longer list in the tmux pane
               while true; do
                 clear
-                is_tmux_window_shown &&
+                is_tmux_window_shown.sh &&
                 k get pods -A -o wide | nl
                 sleep 10s
               done
@@ -1131,7 +1113,7 @@ spec:
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               flag_wait shoot-ready &&
               while true; do
-                is_tmux_window_shown &&
+                is_tmux_window_shown.sh &&
                 bash -o pipefail generate-admin-kubeconf.sh > /tmp/shoot.kubeconfig &&
                 yes | watch -e -n 10 is_tmux_window_shown.sh "&&" k --kubeconfig /tmp/shoot.kubeconfig get pods -A
                 sleep 10s
@@ -1141,7 +1123,7 @@ spec:
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               flag_wait shoot-ready &&
               while true; do
-                is_tmux_window_shown &&
+                is_tmux_window_shown.sh &&
                 bash -o pipefail generate-admin-kubeconf.sh > /tmp/shoot.kubeconfig2 &&
                 yes | watch -e -n 10 "
                         is_tmux_window_shown.sh &&
