@@ -1245,6 +1245,7 @@ spec:
               while true; do
                 BOOKMARK="resourceVersion=$(cat /root/secrets.watch.bookmark 2>/dev/null)"
                 k get --raw "/api/v1/namespaces/garden/secrets?fieldSelector=metadata.name=gardener&watch=1&allowWatchBookmarks=true&$BOOKMARK" | jq -r --unbuffered '
+                  select(flatten | all(.!=null)) |
                   "\(.type) \(.object.metadata.resourceVersion) \(.object.data.kubeconfig)"
                 '
                 echo "Restarting the watch" | ts >&2
@@ -1314,6 +1315,7 @@ spec:
                     . +
                     (.namespace | capture("shoot--(?<project>.*)--(?<name>.*)")) +
                     {ip: $ingress2IP[.istio]} |
+                    select(flatten | all(.!=null)) |
                     "\(.type) \(.resourceVersion) api.\(.name).\(.project).external.local.gardener.cloud \(.ip | sub("^172.18"; "172.17"))"
                   end
                 '
@@ -1363,6 +1365,7 @@ spec:
                     { type: .type,
                       resourceVersion: .object.metadata.resourceVersion,
                       name: .object.metadata.name} |
+                    select(flatten | all(.!=null)) |
                     "\(.type) \(.resourceVersion) \(.name)"
                   end
                 '
