@@ -1172,9 +1172,64 @@ spec:
               done
             EOF
 
-            new_window "offline" "offline" Enter <<"EOF"
+            new_window "offline" "registry mitigation" Enter <<"EOF"
+              # The registry registry:2.8.3 seems to have a bug such that some of the cached images seems to miss an entry for a shared layer
+              # The mitigation is to iterate over all the registries and then all the images in the registries
+              # and pull all the images of the registry to a fresh containerd instance and then as a side effect,
+              # all the images will be pulled and the missing entries will be extended in the registry.
+              flag_wait shoot-ha-ready-deleted &&
+              time (
+                set -e
+                BEFORE=$(
+                  echo "Registry mirror file system usage before the mitigation"
+                  du -sh dev/local-registry/*
+                  for i in $(ls -d dev/local-registry/*); do echo -n "$i "; find $i | wc -l; done
+                )
+                for phase in online offline; do
+                  echo "phase: $phase"
+                  if [ "$phase" = "offline" ]; then
+                    echo "Blocking network traffic from the registry mirrors to the Internet"
+                    iptables -I FORWARD -i $(
+                      ip -o link show | awk -F ': ' '{print $2}' | grep br-
+                    ) -o eth0 -j REJECT -p tcp --reject-with tcp-reset
+                  fi
+                  k get deployments -o json | jq -r '
+                    .items[] |
+                    select(.metadata.name | startswith("registry-")) |
+                    [.metadata.name, (.metadata.name | sub("^registry-"; "")), .spec.template.spec.containers[0].ports[0].containerPort] |
+                    join(" ")
+                  ' | while read name suffix port; do
+                    echo "Processing the registry mirror $suffix"
+                    k port-forward deployment/$name 5000:$port >/dev/null &
+                    until curl localhost:5000 >/dev/null 2>&1; do sleep 1; done
+                    find dev/local-registry/$suffix -type d | sed -n -E '
+                      s|.*/docker/registry/v2/repositories/(.*)/_manifests/tags/([^/]*)$|\1:\2|p
+                    ' | while read image; do
+                      { echo -n "Pulling the image "
+                        docker pull -q localhost:5000/$image
+                        docker rmi localhost:5000/$image >/dev/null
+                      } | while read line; do echo "$phase: $line"; done
+                    done
+                    kill %1
+                    wait
+                  done
+                  if [ "$phase" = "offline" ]; then
+                    echo "Restoring network traffic to the Internet"
+                    iptables -D FORWARD -i $(
+                      ip -o link show | awk -F ': ' '{print $2}' | grep br-
+                    ) -o eth0 -j REJECT -p tcp --reject-with tcp-reset
+                  fi
+                done
+                echo "$BEFORE"
+                echo "Registry mirror file system usage after the mitigation"
+                du -sh dev/local-registry/*
+                for i in $(ls -d dev/local-registry/*); do echo -n "$i "; find $i | wc -l; done
+              ) && flag_notify registry-mitigation
+            EOF
+            new_pane "offline" Enter <<"EOF"
               flag_wait shoot-ha-ready-deleted && # managedseed-nested-shoot-ready-deleted once the workerless shoot bug is fixed
-              DEVICE=$(ip -o link show | awk -F': ' '{print $2}' | grep br-) &&
+              flag_wait registry-mitigation &&
+              DEVICE=$(ip -o link show | awk -F ': ' '{print $2}' | grep br-) &&
               for i in docker0 $DEVICE; do
                 iptables  -I FORWARD -i $i -o eth0 -j REJECT -p tcp --reject-with tcp-reset
                 iptables  -I FORWARD -i $i -j REJECT -p udp --reject-with icmp-port-unreachable
@@ -1184,7 +1239,7 @@ spec:
               flag_notify offline
             EOF
             new_pane "online" <<"EOF"
-              DEVICE=$(ip -o link show | awk -F': ' '{print $2}' | grep br-) &&
+              DEVICE=$(ip -o link show | awk -F ': ' '{print $2}' | grep br-) &&
               for i in docker0 $DEVICE; do
                 iptables  -D FORWARD -i $i -o eth0 -j REJECT -p tcp --reject-with tcp-reset
                 iptables  -D FORWARD -i $i -j REJECT -p udp --reject-with icmp-port-unreachable
