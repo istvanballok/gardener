@@ -994,7 +994,7 @@ spec:
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               time flag_wait shoot-ha-ready &&
               k annotate shoot local -n garden-local 'confirmation.gardener.cloud/deletion=true' &&
-              k delete shoot local -n garden-local &&
+              time k delete shoot local -n garden-local &&
               flag_notify shoot-ha-ready-deleted
             EOF
             new_window "seed&shoots" "seed&shoots" Enter <<"EOF"
@@ -1107,8 +1107,7 @@ spec:
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               time flag_wait managedseed-nested-shoot-ready &&
               k annotate shoot local-wl-ms -n garden-local 'confirmation.gardener.cloud/deletion=true' &&
-              k delete shoot local-wl-ms -n garden-local &&
-              k wait shoot local-wl-ms -n garden-local --for=delete --timeout=-1s &&
+              time k delete shoot local-wl-ms -n garden-local &&
               flag_notify managedseed-nested-shoot-ready-deleted
             EOF
             new_window "runtime&seed pods" "pods" Enter <<"EOF"
