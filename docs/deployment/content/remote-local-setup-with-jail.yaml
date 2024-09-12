@@ -1181,6 +1181,7 @@ spec:
               time (
                 set -e
                 BEFORE=$(
+                  echo
                   echo "Registry mirror file system usage before the mitigation"
                   du -sh dev/local-registry/*
                   for i in $(ls -d dev/local-registry/*); do echo -n "$i "; find $i | wc -l; done
@@ -1221,6 +1222,7 @@ spec:
                   fi
                 done
                 echo "$BEFORE"
+                echo
                 echo "Registry mirror file system usage after the mitigation"
                 du -sh dev/local-registry/*
                 for i in $(ls -d dev/local-registry/*); do echo -n "$i "; find $i | wc -l; done
