@@ -710,7 +710,7 @@ spec:
                     { name: .metadata.name,
                       conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
                   ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl
-                  sleep 10s
+                  sleep 2s
                 done
               EOF
 
@@ -756,7 +756,7 @@ spec:
                     { name: .metadata.name,
                       conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
                   ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl
-                  sleep 10s
+                  sleep 2s
                 done
               EOF
               new_horizontal_pane "shoot conditions" Enter <<"EOF"
@@ -769,7 +769,7 @@ spec:
                     { name: [.metadata.namespace, .metadata.name] | join("/"),
                       conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
                   ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl
-                  sleep 10s
+                  sleep 2s
                 done
               EOF
 
