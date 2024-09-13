@@ -42,9 +42,10 @@ spec:
 
           apk add apache2-utils bash bash-completion bat bind-tools brotli conntrack-tools       \
                   coreutils curl diffutils dnsmasq docker-bash-completion findutils fzf g++ gawk \
-                  gcompat git git-prompt grep helm inotify-tools jq k9s less lsof make mandoc mc \
-                  moreutils mount ncurses neovim openssl parallel procps sed socat strace        \
-                  sysstat sysstat-doc tar tcpdump tmux tmux-doc tzdata util-linux vim wget yq
+                  gcompat git git-prompt grep helm inotify-tools iproute2 jq k9s less lsof make  \
+                  mandoc mc moreutils mount ncurses neovim openssl parallel procps sed socat     \
+                  strace sysstat sysstat-doc tar tcpdump tmux tmux-doc tzdata util-linux vim     \
+                  wget yq
 
           mkdir -p ~/.cache/wget
           cd ~/.cache/wget
@@ -129,7 +130,7 @@ spec:
             address=/.seed.local.gardener.cloud/172.18.255.1
             address=/.garden.external.local.gardener.cloud/172.18.255.1
           EOF
-          sed '1inameserver 127.0.0.1' /etc/resolv.conf > /tmp/resolv.conf && cat /tmp/resolv.conf > /etc/resolv.conf
+          sed '1inameserver 172.17.0.1' /etc/resolv.conf > /tmp/resolv.conf && cat /tmp/resolv.conf > /etc/resolv.conf
           nice dnsmasq --no-daemon --log-debug --log-queries 2>&1 | ts > ~/.dnsmasq.log &
 
           ln -s /usr/share/zoneinfo/Europe/Berlin /etc/localtime
@@ -336,7 +337,25 @@ spec:
             true # do not change the currently checked out commit
           fi
 
-          nice dockerd-entrypoint.sh 2>&1 | tee ~/.dockerd.log &
+          unshare -n /bin/sh -c 'sleep inf' &
+          dockerd_netns_pid=$!
+          ip link add docker_veth0 type veth peer name docker_veth1
+          ip addr add 172.31.0.1/16 dev docker_veth0
+          ip link set docker_veth0 up
+          echo 1 > /proc/sys/net/ipv6/conf/docker_veth0/disable_ipv6
+          iptables -t nat -A POSTROUTING -s 172.31.0.1/16 -o eth0 -j MASQUERADE
+          ip link set docker_veth1 netns $dockerd_netns_pid
+          sed 's/^  //' <<"EOF" | xargs -0 \
+          nsenter -t $dockerd_netns_pid -n bash -c &
+            ip link set lo up
+            ip link set docker_veth1 name eth0
+            ip addr add 172.31.0.2/16 dev eth0
+            ip link set eth0 up
+            echo 1 > /proc/sys/net/ipv6/conf/eth0/disable_ipv6
+            ip route add default via 172.31.0.1
+            nice dockerd-entrypoint.sh 2>&1 | tee ~/.dockerd.log
+          EOF
+
           until docker ps >/dev/null 2>&1; do sleep 1; done
 
           sed 's/^  //' <<"SCRIPT_EOF" > /usr/local/bin/is_tmux_window_shown.sh
@@ -607,6 +626,7 @@ spec:
               [tmux]:        https://github.com/tmux/tmux/wiki
               [local setup]: https://github.com/gardener/gardener/blob/master/
                              docs/deployment/getting_started_locally.md
+
             EOF
 
             RUN sed 's/^  //' <<"EOF" > ~/demo.md
@@ -1210,9 +1230,7 @@ spec:
                   echo
                   if [ "$phase" = "offline" ]; then
                     echo "Blocking network traffic from the registry mirrors to the Internet"
-                    iptables -I FORWARD -i $(
-                      ip -o link show | awk -F ': ' '{print $2}' | grep br-
-                    ) -o eth0 -j REJECT -p tcp --reject-with tcp-reset
+                    iptables -I FORWARD -i docker_veth0 -o eth0 -j REJECT -p tcp --reject-with tcp-reset
                   fi
                   k -n registry get deployments -o json | jq -r '
                     .items[] |
@@ -1236,9 +1254,7 @@ spec:
                   done
                   if [ "$phase" = "offline" ]; then
                     echo "Restoring network traffic to the Internet"
-                    iptables -D FORWARD -i $(
-                      ip -o link show | awk -F ': ' '{print $2}' | grep br-
-                    ) -o eth0 -j REJECT -p tcp --reject-with tcp-reset
+                    iptables -D FORWARD -i docker_veth0 -o eth0 -j REJECT -p tcp --reject-with tcp-reset
                   fi
                 done
                 AFTER=$(
@@ -1258,23 +1274,15 @@ spec:
             new_pane "offline" Enter <<"EOF"
               flag_wait shoot-ha-ready-deleted && # managedseed-nested-shoot-ready-deleted once the workerless shoot bug is fixed
               flag_wait registry-mitigation &&
-              DEVICE=$(ip -o link show | awk -F ': ' '{print $2}' | grep br-) &&
-              for i in docker0 $DEVICE; do
-                iptables  -I FORWARD -i $i -o eth0 -j REJECT -p tcp --reject-with tcp-reset
-                iptables  -I FORWARD -i $i -j REJECT -p udp --reject-with icmp-port-unreachable
-                ip6tables -I FORWARD -i $i -o eth0 -j REJECT -p tcp --reject-with tcp-reset
-                ip6tables -I FORWARD -i $i -j REJECT -p udp --reject-with icmp6-port-unreachable
-              done &&
+              {
+                iptables -I FORWARD -i docker_veth0 -o eth0 -j REJECT -p tcp --reject-with tcp-reset
+                iptables -I FORWARD -i docker_veth0 -o eth0 -j REJECT -p udp --reject-with icmp-port-unreachable
+              } &&
               flag_notify offline
             EOF
             new_pane "online" <<"EOF"
-              DEVICE=$(ip -o link show | awk -F ': ' '{print $2}' | grep br-) &&
-              for i in docker0 $DEVICE; do
-                iptables  -D FORWARD -i $i -o eth0 -j REJECT -p tcp --reject-with tcp-reset
-                iptables  -D FORWARD -i $i -j REJECT -p udp --reject-with icmp-port-unreachable
-                ip6tables -D FORWARD -i $i -o eth0 -j REJECT -p tcp --reject-with tcp-reset
-                ip6tables -D FORWARD -i $i -j REJECT -p udp --reject-with icmp6-port-unreachable
-              done
+              iptables  -D FORWARD -i docker_veth0 -o eth0 -j REJECT -p tcp --reject-with tcp-reset &&
+              iptables  -D FORWARD -i docker_veth0 -o eth0 -j REJECT -p udp --reject-with icmp-port-unreachable
             EOF
 
             new_window "virtual garden" "virtual garden" Enter <<"EOF"
