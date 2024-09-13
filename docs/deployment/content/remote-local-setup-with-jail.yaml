@@ -1212,13 +1212,17 @@ spec:
             new_window "recordings" "recordings" Enter <<"EOF"
               mkdir -p ~/script_recordings
               cd ~/script_recordings/
-              watch -n 10 is_tmux_window_shown.sh "&&" ls -alht *
+              watch -n 10 is_tmux_window_shown.sh "&&" ls -lht *
             EOF
-            new_pane "replay latest" <<"EOF"
+            new_pane "fzf" <<"EOF"
               mkdir -p ~/script_recordings
-              cd ~/script_recordings/
-              LATEST=$(ls -t | head -n 1 | grep '$') &&
-              scriptreplay --log-timing $LATEST/timing.log --log-out $LATEST/out.log
+              cd ~/script_recordings
+              ls -d * | fzf --preview '
+                ls -lht {}/*
+                echo
+                tail -n +2 {}/input.log | strings | grep -v -F "[<0;"
+              ' | xargs -o -I {} \
+                scriptreplay -m 1 --log-timing {}/timing.log --log-out {}/out.log
             EOF
 
             new_window "image preload" "image preload" Enter <<"EOF"
