@@ -1304,9 +1304,8 @@ spec:
               ) && flag_notify registry-mitigation
             EOF
             new_pane "offline" Enter <<"EOF"
-              if is_state_tested; then
-                flag_wait managedseed-seed-ready
-              else
+              flag_wait managedseed-seed-ready &&
+              if ! is_state_tested; then
                 flag_wait shoot-ha-ready-deleted && # managedseed-nested-shoot-ready-deleted once the workerless shoot bug is fixed
                 flag_wait registry-mitigation
               fi &&
