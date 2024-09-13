@@ -1448,7 +1448,7 @@ spec:
                          }' | ts
             EOF
 
-            new_window "managed seed shoot API" "wait for the managed seed" Enter <<"EOF"
+            new_window "WIP managed seed shoot API" "wait for the managed seed" Enter <<"EOF"
               flag_wait virtual-garden-ha &&
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig &&
               rm -f /root/seed.watch.bookmark &&
