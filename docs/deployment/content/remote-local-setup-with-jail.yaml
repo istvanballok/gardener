@@ -940,7 +940,8 @@ spec:
             EOF
             new_window "make" "make kind-operator-up" Enter <<"EOF"
               sync_kubeconfig example/gardener-local/kind/operator & sleep 1
-              nice time nsenter -t $(cat /root/dockerd_netns_pid) -n make kind-operator-down kind-operator-up &&
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
+              nice time make kind-operator-down kind-operator-up &&
               DOCKER_IP=$(docker exec gardener-operator-local-control-plane ip addr show eth0 | awk '/inet /{print $2}' | cut -d '/' -f 1) &&
               yq -i ".clusters[0].cluster.server=\"https://$DOCKER_IP:6443\"" $PWD/example/gardener-local/kind/operator/kubeconfig &&
               flag_notify kind-operator-up
@@ -953,18 +954,21 @@ spec:
               flag_notify kind-operator-up-ready
             EOF
             new_pane "make operator-up" Enter <<"EOF"
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig
               flag_wait kind-operator-up-ready &&
-              nice time nsenter -t $(cat /root/dockerd_netns_pid) -n make operator-up &&
+              nice time make operator-up &&
               flag_notify operator-up
             EOF
             new_pane "make operator-seed-up" Enter <<"EOF"
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig
               flag_wait operator-up &&
-              nice time nsenter -t $(cat /root/dockerd_netns_pid) -n make operator-seed-up &&
+              nice time make operator-seed-up &&
               flag_notify operator-seed-up
             EOF
             new_pane "make the virtual cluster HA " Enter <<"EOF"
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               flag_wait operator-seed-up &&
               k get garden local -o json | jq '
                 .spec.virtualCluster.controlPlane.highAvailability = {}
@@ -977,9 +981,11 @@ spec:
               flag_notify virtual-garden-ha
             EOF
             new_window "garden" "garden" Enter <<"EOF"
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               watch -n 10 is_tmux_window_shown.sh "&&" k get garden
             EOF
             new_pane "last operations" Enter <<"EOF"
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               flag_wait operator-up &&
               while true; do k get garden local -o json -w 2>/dev/null \
                 | jq -r --unbuffered '.status.lastOperation |
@@ -992,9 +998,11 @@ spec:
               done
             EOF
             new_pane "Reconcile" <<"EOF"
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               k annotate garden local 'gardener.cloud/operation=reconcile'
             EOF
             new_pane "garden conditions" Enter <<"EOF"
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               while true; do
                 clear
                 is_tmux_window_shown.sh &&
@@ -1007,6 +1015,7 @@ spec:
               done
             EOF
             new_window "shoot lifecycle" "Create" Enter <<"EOF"
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               is_state_tested ||
               time flag_wait virtual-garden-ha &&
@@ -1017,6 +1026,7 @@ spec:
               flag_notify shoot-ready
             EOF
             new_pane "HA" Enter <<"EOF"
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               is_state_tested ||
               time flag_wait shoot-ready &&
@@ -1027,10 +1037,12 @@ spec:
               flag_notify shoot-ha-ready
             EOF
             new_pane "Reconcile" <<"EOF"
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               k annotate shoot local -n garden-local 'gardener.cloud/operation=reconcile'
             EOF
             new_pane "Delete" Enter <<"EOF"
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               is_state_tested ||
               time flag_wait shoot-ha-ready &&
@@ -1039,10 +1051,12 @@ spec:
               flag_notify shoot-ha-ready-deleted
             EOF
             new_window "seed&shoots" "seed&shoots" Enter <<"EOF"
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               watch -n 10 is_tmux_window_shown.sh "&&" k get -A seeds,managedseeds,shoots
             EOF
             new_pane "last operations seed" Enter <<"EOF"
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               flag_wait operator-seed-up &&
               while true; do
@@ -1058,6 +1072,7 @@ spec:
               done
             EOF
             new_pane "last operations shoot" Enter <<"EOF"
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               flag_wait operator-seed-up &&
               while true; do
@@ -1073,6 +1088,7 @@ spec:
               done
             EOF
             new_pane "seed conditions" Enter <<"EOF"
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               while true; do
                 clear
@@ -1086,6 +1102,7 @@ spec:
               done
             EOF
             new_horizontal_pane "shoot conditions" Enter <<"EOF"
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               while true; do
                 clear
@@ -1099,6 +1116,7 @@ spec:
               done
             EOF
             new_window "managed seed" "create shoot" Enter <<"EOF"
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               time flag_wait virtual-garden-ha &&
               k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type="zone"' example/provider-local/managedseeds/shoot-managedseed.yaml) &&
@@ -1108,6 +1126,7 @@ spec:
               flag_notify managedseed-shoot-ready
             EOF
             new_pane "create managed seed" Enter <<"EOF"
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               time flag_wait managedseed-shoot-ready &&
               k apply -f example/provider-local/managedseeds/managedseed.yaml &&
@@ -1116,6 +1135,7 @@ spec:
               flag_notify managedseed-seed-ready
             EOF
             new_pane "managed seed pods" Enter <<"EOF"
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               time flag_wait managedseed-seed-ready &&
               while true; do
@@ -1134,6 +1154,7 @@ spec:
             new_pane "workerless shoot on managed seed" Enter <<"EOF"
               # Note: regular shoots do not work due to nesting overlayfs, see errors in dmesg
               # Note: the managed seed has 1 node and no zones, so it is not HA
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               is_state_tested ||
               time flag_wait managedseed-seed-ready &&
@@ -1146,6 +1167,7 @@ spec:
               flag_notify managedseed-nested-shoot-ready
             EOF
             new_pane "delete workerless shoot on managed seed" Enter <<"EOF"
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               is_state_tested ||
               time flag_wait managedseed-nested-shoot-ready &&
@@ -1154,6 +1176,7 @@ spec:
               flag_notify managedseed-nested-shoot-ready-deleted
             EOF
             new_window "runtime&seed pods" "pods" Enter <<"EOF"
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               # the while loop is used instead of watch to allow for scrolling a longer list in the tmux pane
               while true; do
                 clear
@@ -1163,6 +1186,7 @@ spec:
               done
             EOF
             new_pane "not ready pods" Enter <<"EOF"
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               watch -n 10 "
                 is_tmux_window_shown.sh &&
                 k get pods -A -o wide | awk '
@@ -1171,6 +1195,7 @@ spec:
                      print}}'"
             EOF
             new_window "shoot pods" "pods" Enter <<"EOF"
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               flag_wait shoot-ready &&
               while true; do
@@ -1181,6 +1206,7 @@ spec:
               done
             EOF
             new_pane "not ready pods" Enter <<"EOF"
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               flag_wait shoot-ready &&
               while true; do
@@ -1197,6 +1223,7 @@ spec:
               done
             EOF
             new_window "gardenctl" "gardenctl" <<"EOF"
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               gardenctl config set-garden local --kubeconfig $PWD/example/operator/virtual-garden/kubeconfig
               eval $(gardenctl kubectl-env bash)
               g target --garden local --shoot local
@@ -1226,18 +1253,17 @@ spec:
             EOF
 
             new_window "image preload" "image preload" Enter <<"EOF"
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               is_state_tested ||
               flag_wait operator-up &&
-              sed 's/^  //' <<"SCRIPT_EOF" | xargs -d '\0' nsenter -t $(cat /root/dockerd_netns_pid) -n bash -c
-                for i in alpine:latest nginx:latest; do
-                  docker pull $i
-                  docker tag $i localhost:5001/$i
-                  docker push localhost:5001/$i
-                done
-                for i in $(curl -s localhost:5001/v2/_catalog | jq '.repositories[]' -r | grep -v local); do
-                  curl -s localhost:5001/v2/$i/tags/list | jq .
-                done
-              SCRIPT_EOF
+              for i in alpine:latest nginx:latest; do
+                docker pull $i
+                docker tag $i localhost:5001/$i
+                docker push localhost:5001/$i
+              done
+              for i in $(curl -s localhost:5001/v2/_catalog | jq '.repositories[]' -r | grep -v local); do
+                curl -s localhost:5001/v2/$i/tags/list | jq .
+              done
             EOF
 
             new_window "offline" "registry mitigation" Enter <<"EOF"
@@ -1250,6 +1276,7 @@ spec:
               # and pull them sequentially to ensure that the cache is complete and consistent.
               # The test also asserts that all the images can be pulled
               # even when the Internet access is blocked.
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               is_state_tested ||
               flag_wait shoot-ha-ready-deleted &&
               time (
@@ -1272,8 +1299,8 @@ spec:
                     join(" ")
                   ' | while read name suffix port; do
                     echo "Processing the registry mirror $suffix"
-                    nsenter -t $(cat /root/dockerd_netns_pid) -n k -n registry port-forward deployment/$name 5000:$port &
-                    until nsenter -t $(cat /root/dockerd_netns_pid) -n curl localhost:5000 >/dev/null 2>&1; do sleep 1; done
+                    k -n registry port-forward deployment/$name 5000:$port &
+                    until curl localhost:5000 >/dev/null 2>&1; do sleep 1; done
                     find dev/local-registry/$suffix -type d | sed -n -E '
                       s|.*/docker/registry/v2/repositories/(.*)/_manifests/tags/([^/]*)$|\1:\2|p
                     ' | while read image; do
@@ -1339,17 +1366,19 @@ spec:
                 172.31.0.2 is an IP in the docker bridge network,
                 that is going to be reachable from the cell.
               DOC
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               flag_wait virtual-garden-ha &&
               echo "starting socat for the virtual Garden cluster" &&
               flag_notify socat_virtual_garden &&
-              nsenter -t $(cat /root/dockerd_netns_pid) -n socat TCP-LISTEN:443,fork,reuseaddr,bind=172.31.0.2 TCP:172.18.255.3:443
+              socat TCP-LISTEN:443,fork,reuseaddr,bind=172.31.0.2 TCP:172.18.255.3:443
             EOF
             new_pane "test via socat" Enter <<"EOF"
               # api.virtual-garden.local.gardener.cloud is reachable via 172.31.0.2
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               flag_wait socat_virtual_garden &&
               while ! nc -z 172.31.0.2 443; do sleep 1; done &&
               CACERT=$(yq -o json example/operator/virtual-garden/kubeconfig | jq -r '.clusters[0].cluster."certificate-authority-data" | @base64d') &&
-              TOKEN=$(yq -o json example/operator/virtual-garden/kubeconfig | jq -r '.users[0].user.token') &&
+              TOKEN=$( yq -o json example/operator/virtual-garden/kubeconfig | jq -r '.users[0].user.token') &&
               curl -s \
                 -H        "Authorization: Bearer $TOKEN" \
                 --cacert  <(echo "$CACERT")              \
@@ -1357,6 +1386,7 @@ spec:
                  https://api.virtual-garden.local.gardener.cloud/ | head
             EOF
             new_pane "token refresh" Enter <<"EOF"
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               flag_wait virtual-garden-ha &&
               rm -f /root/secrets.watch.bookmark &&
               while true; do
@@ -1394,24 +1424,24 @@ spec:
                 To mitigate a routing issue and to control the network access from the cell, we map these to another 4 IPs from the docker bridge network,
                 that is routeable from the cell.
               DOC
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               flag_wait virtual-garden-ha &&
-              sed 's/^  //' <<"SCRIPT_EOF" | xargs -d '\0' nsenter -t $(cat /root/dockerd_netns_pid) -n bash -l -c
-                while read internalIP exposedIP; do
-                  echo "Exposing $internalIP:443 on $exposedIP:443"
-                  ip addr add $exposedIP/32 dev lo
-                  socat TCP-LISTEN:443,fork,reuseaddr,bind=$exposedIP TCP:$internalIP:443 &
-                done < <(
-                  k get svc -A -o json | jq -r '
-                    .items[] |
-                    select(.metadata | (.namespace | test("^istio-ingress")) and .name=="istio-ingressgateway") |
-                    .status.loadBalancer.ingress[0].ip |
-                    [., sub("^172.18"; "172.31")] | join(" ")
-                  ') &&
-                sleep 1 &&
-                jobs
-              SCRIPT_EOF
+              while read internalIP exposedIP; do
+                echo "Exposing $internalIP:443 on $exposedIP:443"
+                ip addr add $exposedIP/32 dev lo
+                socat TCP-LISTEN:443,fork,reuseaddr,bind=$exposedIP TCP:$internalIP:443 &
+              done < <(
+                k get svc -A -o json | jq -r '
+                  .items[] |
+                  select(.metadata | (.namespace | test("^istio-ingress")) and .name=="istio-ingressgateway") |
+                  .status.loadBalancer.ingress[0].ip |
+                  [., sub("^172.18"; "172.31")] | join(" ")
+                ') &&
+              sleep 1 &&
+              jobs
             EOF
             new_pane "hosts entries watching" Enter <<"EOF"
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               flag_wait virtual-garden-ha &&
               rm -f /root/gateways.watch.bookmark &&
               while true; do
@@ -1469,6 +1499,7 @@ spec:
             EOF
 
             new_window "WIP managed seed shoot API" "wait for the managed seed" Enter <<"EOF"
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               flag_wait virtual-garden-ha &&
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig &&
               rm -f /root/seed.watch.bookmark &&
@@ -1512,6 +1543,7 @@ spec:
             EOF
             new_pane "WIP - IP socat" Enter <<"EOF"
               # TODO add some port forwards to allow to talk to the API server in the managed seed...
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               inotifywait -m sync -e close_write --include shoot_api_managedseed | ts
             EOF
 
@@ -1526,37 +1558,37 @@ spec:
               # that can be used to access the KinD cluster from the cell in a read only mode.
               # The certificate is issued for the SAN and for some other IPs that we can't use in the cell, so we need to use the SAN from within the cell.
               # TODO: note: with gardenctl target --control-plane, the untrusted user might have full access to the seed. If the offline setup works, that is just fine.
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               flag_wait virtual-garden-ha &&
               echo &&
-              sed 's/^  //' <<"SCRIPT_EOF" | xargs -d '\0' nsenter -t $(cat /root/dockerd_netns_pid) -n bash -l -c
-                endpoint=$(yq ~/.kube/config -o json | jq -r '.clusters[0].cluster.server' | sed 's#^https://##') &&
-                echo "KinD cluster endpoint: $endpoint" &&
-                SAN=$(openssl s_client -connect "$endpoint" </dev/null 2>/dev/null \
-                      | openssl x509 -noout -ext subjectAltName \
-                      | grep DNS: | sed 's/,/\n/g' | grep DNS: \
-                      | awk -F : '{print $2}' \
-                      | grep -v -E 'localhost|kubernetes') &&
-                echo "KinD cluster certificate SAN: $SAN" &&
-                DOCKER_IP=$(ip addr show eth0 | awk '/inet /{print $2}' | cut -d '/' -f 1) &&
-                echo "Docker IP: $DOCKER_IP" &&
-                kubectl apply -f ~/.kube/readonly/resources.yaml &&
-                mkdir -p ~/.kube/readonly/export &&
-                yq ~/.kube/config -o json \
-                | jq --arg token "$(kubectl -n default create token readonly --duration 672h)" --arg SAN "$SAN" '
-                  .clusters[0].cluster.server = "https://\($SAN):44444" |
-                  .users[0].user={token: $token} |
-                  .contexts[0].context.namespace = "garden"
-                  ' > ~/.kube/readonly/export/config &&
-                echo "The readonly token expires at: $(jq '.users[0].user.token' ~/.kube/readonly/export/config | token | jq -r .exp)" &&
-                echo "$DOCKER_IP $SAN" > ~/.kube/readonly/export/hosts.entry &&
-                echo "$DOCKER_IP api.virtual-garden.local.gardener.cloud" >> ~/.kube/readonly/export/hosts.entry &&
-                echo "starting socat for the KinD cluster" &&
-                flag_notify socat &&
-                socat TCP-LISTEN:44444,fork,reuseaddr TCP:"$endpoint"
-              SCRIPT_EOF
+              endpoint=$(yq ~/.kube/config -o json | jq -r '.clusters[0].cluster.server' | sed 's#^https://##') &&
+              echo "KinD cluster endpoint: $endpoint" &&
+              SAN=$(openssl s_client -connect "$endpoint" </dev/null 2>/dev/null \
+                    | openssl x509 -noout -ext subjectAltName \
+                    | grep DNS: | sed 's/,/\n/g' | grep DNS: \
+                    | awk -F : '{print $2}' \
+                    | grep -v -E 'localhost|kubernetes') &&
+              echo "KinD cluster certificate SAN: $SAN" &&
+              DOCKER_IP=$(ip addr show eth0 | awk '/inet /{print $2}' | cut -d '/' -f 1) &&
+              echo "Docker IP: $DOCKER_IP" &&
+              kubectl apply -f ~/.kube/readonly/resources.yaml &&
+              mkdir -p ~/.kube/readonly/export &&
+              yq ~/.kube/config -o json \
+              | jq --arg token "$(kubectl -n default create token readonly --duration 672h)" --arg SAN "$SAN" '
+                .clusters[0].cluster.server = "https://\($SAN):44444" |
+                .users[0].user={token: $token} |
+                .contexts[0].context.namespace = "garden"
+                ' > ~/.kube/readonly/export/config &&
+              echo "The readonly token expires at: $(jq '.users[0].user.token' ~/.kube/readonly/export/config | token | jq -r .exp)" &&
+              echo "$DOCKER_IP $SAN" > ~/.kube/readonly/export/hosts.entry &&
+              echo "$DOCKER_IP api.virtual-garden.local.gardener.cloud" >> ~/.kube/readonly/export/hosts.entry &&
+              echo "starting socat for the KinD cluster" &&
+              flag_notify socat &&
+              socat TCP-LISTEN:44444,fork,reuseaddr TCP:"$endpoint"
             EOF
             new_pane "test read only permissions" Enter <<"EOF"
               # TODO wait for the port forward
+              nsenter -t $(cat /root/dockerd_netns_pid) -n
               flag_wait socat &&
               cat ~/.kube/readonly/export/hosts.entry >> /etc/hosts &&
               echo "can-i get pods?" &&
