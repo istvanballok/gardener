@@ -1519,30 +1519,32 @@ spec:
               # TODO: note: with gardenctl target --control-plane, the untrusted user might have full access to the seed. If the offline setup works, that is just fine.
               flag_wait virtual-garden-ha &&
               echo &&
-              endpoint=$(yq ~/.kube/config -o json | jq -r '.clusters[0].cluster.server' | sed 's#^https://##') &&
-              echo "KinD cluster endpoint: $endpoint" &&
-              SAN=$(openssl s_client -connect "$endpoint" </dev/null 2>/dev/null \
-                    | openssl x509 -noout -ext subjectAltName \
-                    | grep DNS: | sed 's/,/\n/g' | grep DNS: \
-                    | awk -F : '{print $2}' \
-                    | grep -v -E 'localhost|kubernetes') &&
-              echo "KinD cluster certificate SAN: $SAN" &&
-              DOCKER_IP=$(ip addr show docker0 | awk '/inet /{print $2}' | cut -d '/' -f 1) &&
-              echo "Docker IP: $DOCKER_IP" &&
-              kubectl apply -f ~/.kube/readonly/resources.yaml &&
-              mkdir -p ~/.kube/readonly/export &&
-              yq ~/.kube/config -o json \
-              | jq --arg token "$(kubectl -n default create token readonly --duration 672h)" --arg SAN "$SAN" '
-                .clusters[0].cluster.server = "https://\($SAN):44444" |
-                .users[0].user={token: $token} |
-                .contexts[0].context.namespace = "garden"
-                ' > ~/.kube/readonly/export/config &&
-              echo "The readonly token expires at: $(jq '.users[0].user.token' ~/.kube/readonly/export/config | token | jq -r .exp)" &&
-              echo "$DOCKER_IP $SAN" > ~/.kube/readonly/export/hosts.entry &&
-              echo "$DOCKER_IP api.virtual-garden.local.gardener.cloud" >> ~/.kube/readonly/export/hosts.entry &&
-              echo "starting socat for the KinD cluster" &&
-              flag_notify socat &&
-              socat TCP-LISTEN:44444,fork,reuseaddr TCP:"$endpoint"
+              sed 's/^  //' <<"SCRIPT_EOF" | xargs -d '\0' nsenter -t $(cat /root/dockerd_netns_pid) -n bash -l -c
+                endpoint=$(yq ~/.kube/config -o json | jq -r '.clusters[0].cluster.server' | sed 's#^https://##') &&
+                echo "KinD cluster endpoint: $endpoint" &&
+                SAN=$(openssl s_client -connect "$endpoint" </dev/null 2>/dev/null \
+                      | openssl x509 -noout -ext subjectAltName \
+                      | grep DNS: | sed 's/,/\n/g' | grep DNS: \
+                      | awk -F : '{print $2}' \
+                      | grep -v -E 'localhost|kubernetes') &&
+                echo "KinD cluster certificate SAN: $SAN" &&
+                DOCKER_IP=$(ip addr show eth0 | awk '/inet /{print $2}' | cut -d '/' -f 1) &&
+                echo "Docker IP: $DOCKER_IP" &&
+                kubectl apply -f ~/.kube/readonly/resources.yaml &&
+                mkdir -p ~/.kube/readonly/export &&
+                yq ~/.kube/config -o json \
+                | jq --arg token "$(kubectl -n default create token readonly --duration 672h)" --arg SAN "$SAN" '
+                  .clusters[0].cluster.server = "https://\($SAN):44444" |
+                  .users[0].user={token: $token} |
+                  .contexts[0].context.namespace = "garden"
+                  ' > ~/.kube/readonly/export/config &&
+                echo "The readonly token expires at: $(jq '.users[0].user.token' ~/.kube/readonly/export/config | token | jq -r .exp)" &&
+                echo "$DOCKER_IP $SAN" > ~/.kube/readonly/export/hosts.entry &&
+                echo "$DOCKER_IP api.virtual-garden.local.gardener.cloud" >> ~/.kube/readonly/export/hosts.entry &&
+                echo "starting socat for the KinD cluster" &&
+                flag_notify socat &&
+                socat TCP-LISTEN:44444,fork,reuseaddr TCP:"$endpoint"
+              SCRIPT_EOF
             EOF
             new_pane "test read only permissions" Enter <<"EOF"
               # TODO wait for the port forward
