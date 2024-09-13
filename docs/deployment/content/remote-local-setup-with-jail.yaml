@@ -130,7 +130,7 @@ spec:
             address=/.seed.local.gardener.cloud/172.18.255.1
             address=/.garden.external.local.gardener.cloud/172.18.255.1
           EOF
-          sed '1inameserver 172.17.0.1' /etc/resolv.conf > /tmp/resolv.conf && cat /tmp/resolv.conf > /etc/resolv.conf
+          sed '1inameserver 172.31.0.1' /etc/resolv.conf > /tmp/resolv.conf && cat /tmp/resolv.conf > /etc/resolv.conf
           nice dnsmasq --no-daemon --log-debug --log-queries 2>&1 | ts > ~/.dnsmasq.log &
 
           ln -s /usr/share/zoneinfo/Europe/Berlin /etc/localtime
@@ -352,11 +352,15 @@ spec:
 
           unshare -n /bin/sh -c 'sleep inf' &
           dockerd_netns_pid=$!
+          echo $dockerd_netns_pid > /root/dockerd_netns_pid
           ip link add docker_veth0 type veth peer name docker_veth1
           ip addr add 172.31.0.1/16 dev docker_veth0
           ip link set docker_veth0 up
-          echo 1 > /proc/sys/net/ipv6/conf/docker_veth0/disable_ipv6
+          sysctl -w net.ipv6.conf.docker_veth0.disable_ipv6=1
+          sysctl -w net.ipv4.ip_forward=1
           iptables -t nat -A POSTROUTING -s 172.31.0.1/16 -o eth0 -j MASQUERADE
+          ip route add 172.17.0.0/16 via 172.31.0.2
+          ip route add 172.18.0.0/16 via 172.31.0.2
           ip link set docker_veth1 netns $dockerd_netns_pid
           sed 's/^  //' <<"EOF" | xargs -0 \
           nsenter -t $dockerd_netns_pid -n bash -c &
@@ -364,8 +368,8 @@ spec:
             ip link set docker_veth1 name eth0
             ip addr add 172.31.0.2/16 dev eth0
             ip link set eth0 up
-            echo 1 > /proc/sys/net/ipv6/conf/eth0/disable_ipv6
             ip route add default via 172.31.0.1
+            sysctl -w net.ipv6.conf.eth0.disable_ipv6=1
             nice dockerd-entrypoint.sh 2>&1 | tee ~/.dockerd.log
           EOF
 
@@ -936,7 +940,9 @@ spec:
             EOF
             new_window "make" "make kind-operator-up" Enter <<"EOF"
               sync_kubeconfig example/gardener-local/kind/operator & sleep 1
-              nice time make kind-operator-down kind-operator-up &&
+              nice time nsenter -t $(cat /root/dockerd_netns_pid) -n make kind-operator-down kind-operator-up &&
+              DOCKER_IP=$(docker exec gardener-operator-local-control-plane ip addr show eth0 | awk '/inet /{print $2}' | cut -d '/' -f 1) &&
+              yq -i ".clusters[0].cluster.server=\"https://$DOCKER_IP:6443\"" $PWD/example/gardener-local/kind/operator/kubeconfig &&
               flag_notify kind-operator-up
             EOF
             new_pane "wait for the KinD cluster" Enter <<"EOF"
@@ -949,13 +955,13 @@ spec:
             new_pane "make operator-up" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig
               flag_wait kind-operator-up-ready &&
-              nice time make operator-up &&
+              nice time nsenter -t $(cat /root/dockerd_netns_pid) -n make operator-up &&
               flag_notify operator-up
             EOF
             new_pane "make operator-seed-up" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig
               flag_wait operator-up &&
-              nice time make operator-seed-up &&
+              nice time nsenter -t $(cat /root/dockerd_netns_pid) -n make operator-seed-up &&
               flag_notify operator-seed-up
             EOF
             new_pane "make the virtual cluster HA " Enter <<"EOF"
