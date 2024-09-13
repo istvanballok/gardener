@@ -1190,44 +1190,47 @@ spec:
             EOF
 
             new_window "offline" "registry mitigation" Enter <<"EOF"
-              # The registry registry:2.8.3 seems to have a bug such that some of the cached images seems to miss an entry for a shared layer
-              # The mitigation is to iterate over all the registries and then all the images in the registries
-              # and pull all the images of the registry to a fresh containerd instance and then as a side effect,
-              # all the images will be pulled and the missing entries will be extended in the registry.
+              # The pull through container registry cache 'registry:2.8.3'
+              # that is used to mirror the needed images from gcr.io, quay.io, ...
+              # seems to have a bug such that
+              # sometimes an entry is missing for a shared layer and hence
+              # the image pull from the mirror fails when the Internet access is blocked.
+              # The mitigation is to iterate over all the images in all the registries
+              # and pull them sequentially to ensure that the cache is complete and consistent.
+              # The test also asserts that all the images can be pulled
+              # even when the Internet access is blocked.
               flag_wait shoot-ha-ready-deleted &&
               time (
-                set -e
+                set -e -o pipefail
                 BEFORE=$(
-                  echo
-                  echo "Registry mirror file system usage before the mitigation"
-                  du -sh dev/local-registry/*
-                  for i in $(ls -d dev/local-registry/*); do echo -n "$i "; find $i | wc -l; done
+                  for i in $(ls -d dev/local-registry/*); do echo "$(du -sh $i) $(find $i | wc -l)"; done | column -t -R 3
                 )
                 for phase in online offline; do
                   echo "phase: $phase"
+                  echo
                   if [ "$phase" = "offline" ]; then
                     echo "Blocking network traffic from the registry mirrors to the Internet"
                     iptables -I FORWARD -i $(
                       ip -o link show | awk -F ': ' '{print $2}' | grep br-
                     ) -o eth0 -j REJECT -p tcp --reject-with tcp-reset
                   fi
-                  k get deployments -o json | jq -r '
+                  k -n registry get deployments -o json | jq -r '
                     .items[] |
                     select(.metadata.name | startswith("registry-")) |
                     [.metadata.name, (.metadata.name | sub("^registry-"; "")), .spec.template.spec.containers[0].ports[0].containerPort] |
                     join(" ")
                   ' | while read name suffix port; do
                     echo "Processing the registry mirror $suffix"
-                    k port-forward deployment/$name 5000:$port >/dev/null &
+                    k -n registry port-forward deployment/$name 5000:$port >/dev/null &
                     until curl localhost:5000 >/dev/null 2>&1; do sleep 1; done
                     find dev/local-registry/$suffix -type d | sed -n -E '
                       s|.*/docker/registry/v2/repositories/(.*)/_manifests/tags/([^/]*)$|\1:\2|p
                     ' | while read image; do
-                      { echo -n "Pulling the image "
-                        docker pull -q localhost:5000/$image
-                        docker rmi localhost:5000/$image >/dev/null
-                      } | while read line; do echo "$phase: $line"; done
-                    done
+                          echo
+                          echo "Pulling the image $suffix/$image"
+                          docker pull localhost:5000/$image
+                          docker rmi localhost:5000/$image >/dev/null
+                        done
                     kill %1
                     wait
                   done
@@ -1238,11 +1241,18 @@ spec:
                     ) -o eth0 -j REJECT -p tcp --reject-with tcp-reset
                   fi
                 done
+                AFTER=$(
+                  for i in $(ls -d dev/local-registry/*); do echo "$(du -sh $i) $(find $i | wc -l)"; done | column -t -R 3
+                )
+                echo
+                echo "Registry mirror file system usage before the mitigation:"
                 echo "$BEFORE"
                 echo
-                echo "Registry mirror file system usage after the mitigation"
-                du -sh dev/local-registry/*
-                for i in $(ls -d dev/local-registry/*); do echo -n "$i "; find $i | wc -l; done
+                echo "Registry mirror file system usage after the mitigation:"
+                echo "$AFTER"
+                echo
+                echo "Diff:"
+                { diff -U 10 -u --color=always <(echo "$BEFORE") <(echo "$AFTER") || true; } | grep -v /dev/fd
               ) && flag_notify registry-mitigation
             EOF
             new_pane "offline" Enter <<"EOF"
