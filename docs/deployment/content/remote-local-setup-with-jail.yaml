@@ -308,6 +308,19 @@ spec:
                 fi
               done
             }
+            function rls_state {
+              echo $(cd ~/go/src/github.com/gardener/gardener && git rev-parse HEAD)-$(sha1sum /proc/1/cmdline | awk '{print $1}')
+            }
+            function mark_state_tested {
+              echo $(rls_state) > ~/state_tested
+            }
+            function is_state_tested {
+              if [ -f ~/state_tested ] && [ "$(cat ~/state_tested)" == "$(rls_state)" ]; then
+                echo "This RLS and Gardener state has been already tested so that we can skip this step" >&1
+              else
+                return 1
+              fi
+            }
           EOF
           sed 's/^  //' <<"EOF" > ~/.tmux.conf
             set -g mouse on
@@ -989,6 +1002,7 @@ spec:
             EOF
             new_window "shoot lifecycle" "Create" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              is_state_tested ||
               time flag_wait virtual-garden-ha &&
               k apply -f example/provider-local/shoot.yaml &&
               time (k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Processing shoot local --timeout=-1s
@@ -998,6 +1012,7 @@ spec:
             EOF
             new_pane "HA" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              is_state_tested ||
               time flag_wait shoot-ready &&
               k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type="zone"' example/provider-local/shoot.yaml) &&
               time (k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Processing shoot local --timeout=-1s
@@ -1011,6 +1026,7 @@ spec:
             EOF
             new_pane "Delete" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              is_state_tested ||
               time flag_wait shoot-ha-ready &&
               k annotate shoot local -n garden-local 'confirmation.gardener.cloud/deletion=true' &&
               time k delete shoot local -n garden-local &&
@@ -1113,6 +1129,7 @@ spec:
               # Note: regular shoots do not work due to nesting overlayfs, see errors in dmesg
               # Note: the managed seed has 1 node and no zones, so it is not HA
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              is_state_tested ||
               time flag_wait managedseed-seed-ready &&
               k apply -f <(yq '.metadata.name="local-wl-ms" |
                                .spec.seedName="managedseed" |
@@ -1124,6 +1141,7 @@ spec:
             EOF
             new_pane "delete workerless shoot on managed seed" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              is_state_tested ||
               time flag_wait managedseed-nested-shoot-ready &&
               k annotate shoot local-wl-ms -n garden-local 'confirmation.gardener.cloud/deletion=true' &&
               time k delete shoot local-wl-ms -n garden-local &&
@@ -1198,6 +1216,7 @@ spec:
             EOF
 
             new_window "image preload" "image preload" Enter <<"EOF"
+              is_state_tested ||
               flag_wait operator-up &&
               for i in alpine:latest nginx:latest; do
                 docker pull $i
@@ -1219,6 +1238,7 @@ spec:
               # and pull them sequentially to ensure that the cache is complete and consistent.
               # The test also asserts that all the images can be pulled
               # even when the Internet access is blocked.
+              is_state_tested ||
               flag_wait shoot-ha-ready-deleted &&
               time (
                 set -e -o pipefail
@@ -1272,8 +1292,12 @@ spec:
               ) && flag_notify registry-mitigation
             EOF
             new_pane "offline" Enter <<"EOF"
-              flag_wait shoot-ha-ready-deleted && # managedseed-nested-shoot-ready-deleted once the workerless shoot bug is fixed
-              flag_wait registry-mitigation &&
+              if is_state_tested; then
+                flag_wait managedseed-seed-ready
+              else
+                flag_wait shoot-ha-ready-deleted && # managedseed-nested-shoot-ready-deleted once the workerless shoot bug is fixed
+                flag_wait registry-mitigation
+              fi &&
               {
                 iptables -I FORWARD -i docker_veth0 -o eth0 -j REJECT -p tcp --reject-with tcp-reset
                 iptables -I FORWARD -i docker_veth0 -o eth0 -j REJECT -p udp --reject-with icmp-port-unreachable
@@ -1655,7 +1679,10 @@ spec:
 
             new_window "cell-test" "cell-test" Enter <<"EOF"
               flag_wait cell &&
-              time sed 's/^  //' <<"JAIL" | xargs -0 docker exec jail sh -c |& ts && flag_notify cell-tested
+              if is_state_tested; then
+                docker exec jail docker exec cell touch /tmp/cell-tested
+              else
+              time sed 's/^  //' <<"JAIL" | xargs -0 docker exec jail sh -c |& ts && flag_notify cell-tested && mark_state_tested
                 sed 's/^  //' <<"CELL" | xargs -0 docker exec cell bash -l -c
                   set -ex -o pipefail
                   while [ ! -f ~/.kube/config ]; do sleep 1; done
@@ -1686,10 +1713,14 @@ spec:
                   touch /tmp/cell-tested
                 CELL
               JAIL
+              fi
             EOF
 
             new_window "cell" "cell" Enter <<"EOF"
-              flag_wait cell-tested &&
+              flag_wait cell &&
+              { is_state_tested ||
+                flag_wait cell-tested
+              } &&
               until docker exec jail sh -c "docker exec cell ls /tmp/ready" >/dev/null 2>&1; do sleep 1; done &&
               flag_notify cell-ready &&
               docker exec -it jail sh -c "docker exec -it cell tmux -u a -t gardener-demo"
