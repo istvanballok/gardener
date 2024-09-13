@@ -1271,8 +1271,8 @@ spec:
                     join(" ")
                   ' | while read name suffix port; do
                     echo "Processing the registry mirror $suffix"
-                    k -n registry port-forward deployment/$name 5000:$port >/dev/null &
-                    until curl localhost:5000 >/dev/null 2>&1; do sleep 1; done
+                    nsenter -t $(cat /root/dockerd_netns_pid) -n k -n registry port-forward deployment/$name 5000:$port &
+                    until nsenter -t $(cat /root/dockerd_netns_pid) -n curl localhost:5000 >/dev/null 2>&1; do sleep 1; done
                     find dev/local-registry/$suffix -type d | sed -n -E '
                       s|.*/docker/registry/v2/repositories/(.*)/_manifests/tags/([^/]*)$|\1:\2|p
                     ' | while read image; do
