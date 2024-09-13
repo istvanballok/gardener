@@ -1303,7 +1303,7 @@ spec:
                 echo "$AFTER"
                 echo
                 echo "Diff:"
-                { diff -U 10 -u --color=always <(echo "$BEFORE") <(echo "$AFTER") || true; } | grep -v /dev/fd
+                diff -U 10 -u --color=always <(echo "$BEFORE") <(echo "$AFTER") | grep -v /dev/fd || true
               ) && flag_notify registry-mitigation
             EOF
             new_pane "offline" Enter <<"EOF"
