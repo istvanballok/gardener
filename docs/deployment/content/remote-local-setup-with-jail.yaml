@@ -1228,14 +1228,16 @@ spec:
             new_window "image preload" "image preload" Enter <<"EOF"
               is_state_tested ||
               flag_wait operator-up &&
-              for i in alpine:latest nginx:latest; do
-                docker pull $i
-                docker tag $i localhost:5001/$i
-                docker push localhost:5001/$i
-              done &&
-              for i in $(curl -s localhost:5001/v2/_catalog | jq '.repositories[]' -r | grep -v local); do
-                curl -s localhost:5001/v2/$i/tags/list | jq .
-              done
+              sed 's/^  //' <<"SCRIPT_EOF" | xargs -d '\0' nsenter -t $(cat /root/dockerd_netns_pid) -n bash -c
+                for i in alpine:latest nginx:latest; do
+                  docker pull $i
+                  docker tag $i localhost:5001/$i
+                  docker push localhost:5001/$i
+                done
+                for i in $(curl -s localhost:5001/v2/_catalog | jq '.repositories[]' -r | grep -v local); do
+                  curl -s localhost:5001/v2/$i/tags/list | jq .
+                done
+              SCRIPT_EOF
             EOF
 
             new_window "offline" "registry mitigation" Enter <<"EOF"
