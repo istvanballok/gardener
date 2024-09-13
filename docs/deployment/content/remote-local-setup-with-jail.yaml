@@ -1335,25 +1335,25 @@ spec:
                   See PR g/g#10019 and 'docker network inspect 'kind'.
                 "docker ps | sed 's/,/\n/g'" shows that '172.18.255.3:443' is mapped to the KinD node port 31443,
                 which is the node port of the 'virtual-garden-istio-ingress/istio-ingressgateway' service.
-                With 'socat', 172.18.255.3:443 is remapped to 172.31.0.1:443, where
-                172.31.0.1 is an IP in the docker bridge network,
+                With 'socat', 172.18.255.3:443 is remapped to 172.31.0.2:443, where
+                172.31.0.2 is an IP in the docker bridge network,
                 that is going to be reachable from the cell.
               DOC
               flag_wait virtual-garden-ha &&
               echo "starting socat for the virtual Garden cluster" &&
               flag_notify socat_virtual_garden &&
-              socat TCP-LISTEN:443,fork,reuseaddr,bind=172.31.0.1 TCP:172.18.255.3:443
+              nsenter -t $(cat /root/dockerd_netns_pid) -n socat TCP-LISTEN:443,fork,reuseaddr,bind=172.31.0.2 TCP:172.18.255.3:443
             EOF
             new_pane "test via socat" Enter <<"EOF"
-              # api.virtual-garden.local.gardener.cloud is reachable via 172.31.0.1
+              # api.virtual-garden.local.gardener.cloud is reachable via 172.31.0.2
               flag_wait socat_virtual_garden &&
-              while ! nc -z 172.31.0.1 443; do sleep 1; done &&
+              while ! nc -z 172.31.0.2 443; do sleep 1; done &&
               CACERT=$(yq -o json example/operator/virtual-garden/kubeconfig | jq -r '.clusters[0].cluster."certificate-authority-data" | @base64d') &&
               TOKEN=$(yq -o json example/operator/virtual-garden/kubeconfig | jq -r '.users[0].user.token') &&
               curl -s \
                 -H        "Authorization: Bearer $TOKEN" \
                 --cacert  <(echo "$CACERT")              \
-                --resolve api.virtual-garden.local.gardener.cloud:443:172.31.0.1 \
+                --resolve api.virtual-garden.local.gardener.cloud:443:172.31.0.2 \
                  https://api.virtual-garden.local.gardener.cloud/ | head
             EOF
             new_pane "token refresh" Enter <<"EOF"
@@ -1395,19 +1395,21 @@ spec:
                 that is routeable from the cell.
               DOC
               flag_wait virtual-garden-ha &&
-              while read internalIP exposedIP; do
-                echo "Exposing $internalIP:443 on $exposedIP:443"
-                ip addr add $exposedIP/32 dev lo
-                socat TCP-LISTEN:443,fork,reuseaddr,bind=$exposedIP TCP:$internalIP:443 &
-              done < <(
-                k get svc -A -o json | jq -r '
-                  .items[] |
-                  select(.metadata | (.namespace | test("^istio-ingress")) and .name=="istio-ingressgateway") |
-                  .status.loadBalancer.ingress[0].ip |
-                  [., sub("^172.18"; "172.17")] | join(" ")
-                ') &&
-              sleep 1 &&
-              jobs
+              sed 's/^  //' <<"SCRIPT_EOF" | xargs -d '\0' nsenter -t $(cat /root/dockerd_netns_pid) -n bash -l -c
+                while read internalIP exposedIP; do
+                  echo "Exposing $internalIP:443 on $exposedIP:443"
+                  ip addr add $exposedIP/32 dev lo
+                  socat TCP-LISTEN:443,fork,reuseaddr,bind=$exposedIP TCP:$internalIP:443 &
+                done < <(
+                  k get svc -A -o json | jq -r '
+                    .items[] |
+                    select(.metadata | (.namespace | test("^istio-ingress")) and .name=="istio-ingressgateway") |
+                    .status.loadBalancer.ingress[0].ip |
+                    [., sub("^172.18"; "172.31")] | join(" ")
+                  ') &&
+                sleep 1 &&
+                jobs
+              SCRIPT_EOF
             EOF
             new_pane "hosts entries watching" Enter <<"EOF"
               flag_wait virtual-garden-ha &&
@@ -1433,7 +1435,7 @@ spec:
                     (.namespace | capture("shoot--(?<project>.*)--(?<name>.*)")) +
                     {ip: $ingress2IP[.istio]} |
                     select(flatten | all(.!=null)) |
-                    "\(.type) \(.resourceVersion) api.\(.name).\(.project).external.local.gardener.cloud \(.ip | sub("^172.18"; "172.17"))"
+                    "\(.type) \(.resourceVersion) api.\(.name).\(.project).external.local.gardener.cloud \(.ip | sub("^172.18"; "172.31"))"
                   end
                 '
                 echo "Restarting the watch" | ts >&2
