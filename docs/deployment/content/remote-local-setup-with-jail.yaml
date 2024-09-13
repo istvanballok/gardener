@@ -1262,7 +1262,8 @@ spec:
                   echo
                   if [ "$phase" = "offline" ]; then
                     echo "Blocking network traffic from the registry mirrors to the Internet"
-                    iptables -I FORWARD -i docker_veth0 -o eth0 -j REJECT -p tcp --reject-with tcp-reset
+                    iptables -I FORWARD -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
+                    iptables -I INPUT   -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
                   fi
                   k -n registry get deployments -o json | jq -r '
                     .items[] |
@@ -1286,7 +1287,9 @@ spec:
                   done
                   if [ "$phase" = "offline" ]; then
                     echo "Restoring network traffic to the Internet"
-                    iptables -D FORWARD -i docker_veth0 -o eth0 -j REJECT -p tcp --reject-with tcp-reset
+                    iptables -D FORWARD -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
+                    iptables -D INPUT   -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
+
                   fi
                 done
                 AFTER=$(
@@ -1310,14 +1313,18 @@ spec:
                 flag_wait registry-mitigation
               fi &&
               {
-                iptables -I FORWARD -i docker_veth0 -o eth0 -j REJECT -p tcp --reject-with tcp-reset
-                iptables -I FORWARD -i docker_veth0 -o eth0 -j REJECT -p udp --reject-with icmp-port-unreachable
+                iptables -I FORWARD -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
+                iptables -I INPUT   -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
+                iptables -I FORWARD -i docker_veth0 -j REJECT -p udp --reject-with icmp-port-unreachable
+                iptables -I INPUT   -i docker_veth0 -j REJECT -p udp --reject-with icmp-port-unreachable
               } &&
               flag_notify offline
             EOF
             new_pane "online" <<"EOF"
-              iptables  -D FORWARD -i docker_veth0 -o eth0 -j REJECT -p tcp --reject-with tcp-reset &&
-              iptables  -D FORWARD -i docker_veth0 -o eth0 -j REJECT -p udp --reject-with icmp-port-unreachable
+              iptables  -D FORWARD -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset &&
+              iptables  -D INPUT   -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset &&
+              iptables  -D FORWARD -i docker_veth0 -j REJECT -p udp --reject-with icmp-port-unreachable &&
+              iptables  -D INPUT   -i docker_veth0 -j REJECT -p udp --reject-with icmp-port-unreachable
             EOF
 
             new_window "virtual garden" "virtual garden" Enter <<"EOF"
