@@ -575,20 +575,38 @@ spec:
             ADD scripts/is_tmux_window_shown.sh /usr/local/bin/is_tmux_window_shown.sh
 
             RUN sed 's/^  //' <<"EOF" > ~/welcome.md
-              # Welcome to the Gardener Demo environment
+              # Welcome to the online Gardener Demo environment
 
-              This is a demo environment for the [Gardener][] project that
-              allows you to explore the features and capabilities of Gardener
-              interactively.
+              [Gardener][] is an open source project contributed by SAP and others that
+              provides a Kubernetes-based solution to manage Kubernetes clusters on various
+              cloud providers in a uniform way.
 
-              Gardener is an open source project contributed by SAP and others
-              that provides a Kubernetes-based solution to manage Kubernetes
-              clusters on various cloud providers in a uniform way.
+              This online demo environment allows you to explore the features and capabilities
+              of Gardener interactively in a [tmux][] terminal session in your browser without
+              the need to install anything on your local machine.
 
-              Please follow the step by step instructions on the side to explore
-              the features of Gardener interactively.
+              The demo environment is based the [local setup][] documentation of Gardener that
+              allows you to deploy Gardener on your own machine. It is slightly restricted
+              compared to a local setup to avoid abusing this free environment but it should
+              not limit the exploration of the features in any way.
 
-              [Gardener]: https://gardener.cloud/
+              The interaction with the terminal session is captured for security purposes so
+              please refrain from typing in any sensitive information. The environment is
+              sealed off from the Internet to avoid using it as a proxy for malicious
+              activities.
+
+              Please follow the step by step instructions on the side to explore the features
+              of Gardener interactively.
+
+              For example, you could start with creating your first "shoot", a Kubernetes
+              cluster managed by Gardener with:
+
+                  k apply -f example/provider-local/shoot.yaml
+
+              [Gardener]:    https://gardener.cloud/
+              [tmux]:        https://github.com/tmux/tmux/wiki
+              [local setup]: https://github.com/gardener/gardener/blob/master/
+                             docs/deployment/getting_started_locally.md
             EOF
 
             RUN sed 's/^  //' <<"EOF" > ~/demo.md
@@ -655,9 +673,8 @@ spec:
               source /usr/local/bin/tmux_functions.sh
               tmux new -d -s gardener-demo -n demo -x 2000 -y 2000
               tmux select-pane -T demo;
-              send_commands <<"EOF"
+              send_commands Enter <<"EOF"
                 cat ~/welcome.md
-                k apply -f example/provider-local/shoot.yaml # Create your first shoot, a Kubernetes cluster managed by Gardener
               EOF
 
               tmux new -d -s advanced -n demo -x 2000 -y 2000
