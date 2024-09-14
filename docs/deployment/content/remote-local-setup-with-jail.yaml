@@ -1221,8 +1221,9 @@ spec:
               # Use this pane for ad-hoc commands
             EOF
             new_pane "online" Enter <<"EOF"
-              # The demo environment is sealed and offline after the preparation phase.
-              # The remote local setup has unrestricted Internet access in the default network namespace.
+              # The demo environment is sealed off from the Internet after the preparation phase.
+              # The default network namespace can be used to access the Internet in that case.
+              # Note that the default network namespace can't access the demo environment when it is sealed off.
               nsenter -t 1 -n
             EOF
 
