@@ -1739,8 +1739,8 @@ spec:
                   echo "ctr -n k8s.io image list" | k node-shell $(k get nodes --no-headers | awk '{print $1}') \
                     | grep --line-buffered -v -E '^sha256:' | awk '{print $1; fflush();}' | nl
                   # offline tests
-                  ! curl -v google.com
-                  echo "! curl -v google.com" | k node-shell $(k get nodes --no-headers | awk '{print $1}')
+                  time ! curl -v google.com
+                  echo "time ! curl -v google.com" | k node-shell $(k get nodes --no-headers | awk '{print $1}')
                   # delete the shoot
                   unset KUBECONFIG
                   k annotate shoot local -n garden-local 'confirmation.gardener.cloud/deletion=true'
