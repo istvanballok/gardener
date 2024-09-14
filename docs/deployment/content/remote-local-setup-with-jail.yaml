@@ -708,6 +708,7 @@ spec:
             RUN sed 's/^  //' <<"SCRIPT_EOF" > ~/prepare-cell.sh
               set -x
               source /usr/local/bin/tmux_functions.sh
+              while ! [ -f ~/.kube/config ]; do sleep 1; done
               tmux new -d -s gardener-demo -n demo -x 2000 -y 2000
               tmux select-pane -T demo;
               send_commands Enter <<"EOF"
