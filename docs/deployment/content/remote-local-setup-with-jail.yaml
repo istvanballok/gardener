@@ -117,11 +117,6 @@ spec:
           echo node-shell
                krew install node-shell
 
-          touch /tmp/alive
-          sleep $(( $(date -d '6 days 0:00' -u +%s) - $(date -u +%s) + RANDOM % 3600 )) &&
-          echo "Restarting after 5.x days of uptime to prevent issues with the registry cache expiration while offline" &&
-          rm /tmp/alive &
-
           bash -c "
             echo {{p,g}-seed,{gu,p,v}-local--local}.ingress.local.seed.local.gardener.cloud \
                  api.{e2e-managedseed.garden,local.local}.{internal,external}.local.gardener.cloud \
@@ -1808,6 +1803,11 @@ spec:
           elapsed=$(date -u -d @${diff} +"%T")
           echo $elapsed > /root/elapsed_until_tmux
           echo "Elapsed time until the tmux session is prepared: ${elapsed}"
+          { touch /tmp/alive
+            sleep $(( $(date -d '6 days 0:00' -u +%s) - $(date -u +%s) + RANDOM % 3600 )) &&
+            echo "Restarting after 5.x days of uptime to prevent issues with the registry cache expiration while offline" &&
+            rm /tmp/alive
+          } &
           touch /tmp/ready
           wait
         startupProbe:
