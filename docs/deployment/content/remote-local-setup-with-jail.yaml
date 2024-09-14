@@ -383,7 +383,7 @@ spec:
             nice dockerd-entrypoint.sh 2>&1 | tee ~/.dockerd.log
           EOF
 
-          until docker ps >/dev/null 2>&1; do sleep 1; done
+          until docker ps -a >/dev/null 2>&1; do sleep 1; done
 
           sed 's/^  //' <<"SCRIPT_EOF" > /usr/local/bin/is_tmux_window_shown.sh
             if [ ! -f /root/disable_tmux_optimization ]; then
