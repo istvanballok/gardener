@@ -1220,6 +1220,11 @@ spec:
             new_window "ad-hoc" "ad-hoc" Enter <<"EOF"
               # Use this pane for ad-hoc commands
             EOF
+            new_pane "online" Enter <<"EOF"
+              # The demo environment is sealed and offline after the preparation phase.
+              # The remote local setup has unrestricted Internet access in the default network namespace.
+              nsenter -t 1 -n
+            EOF
 
             new_window "recordings" "recordings" Enter <<"EOF"
               mkdir -p ~/script_recordings
@@ -1272,8 +1277,8 @@ spec:
                   echo
                   if [ "$phase" = "offline" ]; then
                     echo "Blocking network traffic from the registry mirrors to the Internet"
-                    iptables -I FORWARD -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
-                    iptables -I INPUT   -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
+                    nsenter -t 1 -n iptables -I FORWARD -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
+                    nsenter -t 1 -n iptables -I INPUT   -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
                   fi
                   k -n registry get deployments -o json | jq -r '
                     .items[] |
@@ -1297,9 +1302,8 @@ spec:
                   done
                   if [ "$phase" = "offline" ]; then
                     echo "Restoring network traffic to the Internet"
-                    iptables -D FORWARD -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
-                    iptables -D INPUT   -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
-
+                    nsenter -t 1 -n iptables -D FORWARD -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
+                    nsenter -t 1 -n iptables -D INPUT   -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
                   fi
                 done
                 AFTER=$(
@@ -1317,6 +1321,7 @@ spec:
               ) && flag_notify registry-mitigation
             EOF
             new_pane "offline" Enter <<"EOF"
+              nsenter -t 1 -n
               flag_wait managedseed-seed-ready &&
               if ! is_state_tested; then
                 flag_wait shoot-ha-ready-deleted && # managedseed-nested-shoot-ready-deleted once the workerless shoot bug is fixed
@@ -1331,6 +1336,7 @@ spec:
               flag_notify offline
             EOF
             new_pane "online" <<"EOF"
+              nsenter -t 1 -n
               iptables  -D FORWARD -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset &&
               iptables  -D INPUT   -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset &&
               iptables  -D FORWARD -i docker_veth0 -j REJECT -p udp --reject-with icmp-port-unreachable &&
