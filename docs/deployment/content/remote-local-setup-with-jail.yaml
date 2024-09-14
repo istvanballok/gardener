@@ -1020,23 +1020,25 @@ spec:
             EOF
             new_window "shoot lifecycle" "Create" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              is_state_tested ||
-              time flag_wait virtual-garden-ha &&
-              k apply -f example/provider-local/shoot.yaml &&
-              time (k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Processing shoot local --timeout=-1s
-                    k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot local --timeout=-1s
-                    k -n garden-local wait shoot local --for=condition=SystemComponentsHealthy --timeout=-1s) &&
-              flag_notify shoot-ready
+              is_state_tested || {
+                time flag_wait virtual-garden-ha &&
+                k apply -f example/provider-local/shoot.yaml &&
+                time (k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Processing shoot local --timeout=-1s
+                      k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot local --timeout=-1s
+                      k -n garden-local wait shoot local --for=condition=SystemComponentsHealthy --timeout=-1s) &&
+                flag_notify shoot-ready
+              }
             EOF
             new_pane "HA" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              is_state_tested ||
-              time flag_wait shoot-ready &&
-              k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type="zone"' example/provider-local/shoot.yaml) &&
-              time (k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Processing shoot local --timeout=-1s
-                    k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot local --timeout=-1s
-                    k -n garden-local wait shoot local --for=condition=SystemComponentsHealthy --timeout=-1s) &&
-              flag_notify shoot-ha-ready
+              is_state_tested || {
+                time flag_wait shoot-ready &&
+                k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type="zone"' example/provider-local/shoot.yaml) &&
+                time (k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Processing shoot local --timeout=-1s
+                      k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot local --timeout=-1s
+                      k -n garden-local wait shoot local --for=condition=SystemComponentsHealthy --timeout=-1s) &&
+                flag_notify shoot-ha-ready
+              }
             EOF
             new_pane "Reconcile" <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
@@ -1044,11 +1046,12 @@ spec:
             EOF
             new_pane "Delete" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              is_state_tested ||
-              time flag_wait shoot-ha-ready &&
-              k annotate shoot local -n garden-local 'confirmation.gardener.cloud/deletion=true' &&
-              time k delete shoot local -n garden-local &&
-              flag_notify shoot-ha-ready-deleted
+              is_state_tested || {
+                time flag_wait shoot-ha-ready &&
+                k annotate shoot local -n garden-local 'confirmation.gardener.cloud/deletion=true' &&
+                time k delete shoot local -n garden-local &&
+                flag_notify shoot-ha-ready-deleted
+              }
             EOF
             new_window "seed&shoots" "seed&shoots" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
@@ -1147,23 +1150,25 @@ spec:
               # Note: regular shoots do not work due to nesting overlayfs, see errors in dmesg
               # Note: the managed seed has 1 node and no zones, so it is not HA
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              is_state_tested ||
-              time flag_wait managedseed-seed-ready &&
-              k apply -f <(yq '.metadata.name="local-wl-ms" |
-                               .spec.seedName="managedseed" |
-                               .spec.networking.services="10.6.0.0/16"' example/provider-local/shoot-workerless.yaml) &&
-              time (k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Processing shoot local-wl-ms --timeout=-1s
-                    k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot local-wl-ms --timeout=-1s
-                    k -n garden-local wait shoot local-wl-ms --for=condition=SystemComponentsHealthy --timeout=-1s) &&
-              flag_notify managedseed-nested-shoot-ready
+              is_state_tested || {
+                time flag_wait managedseed-seed-ready &&
+                k apply -f <(yq '.metadata.name="local-wl-ms" |
+                                .spec.seedName="managedseed" |
+                                .spec.networking.services="10.6.0.0/16"' example/provider-local/shoot-workerless.yaml) &&
+                time (k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Processing shoot local-wl-ms --timeout=-1s
+                      k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot local-wl-ms --timeout=-1s
+                      k -n garden-local wait shoot local-wl-ms --for=condition=SystemComponentsHealthy --timeout=-1s) &&
+                flag_notify managedseed-nested-shoot-ready
+              }
             EOF
             new_pane "delete workerless shoot on managed seed" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              is_state_tested ||
-              time flag_wait managedseed-nested-shoot-ready &&
-              k annotate shoot local-wl-ms -n garden-local 'confirmation.gardener.cloud/deletion=true' &&
-              time k delete shoot local-wl-ms -n garden-local &&
-              flag_notify managedseed-nested-shoot-ready-deleted
+              is_state_tested || {
+                time flag_wait managedseed-nested-shoot-ready &&
+                k annotate shoot local-wl-ms -n garden-local 'confirmation.gardener.cloud/deletion=true' &&
+                time k delete shoot local-wl-ms -n garden-local &&
+                flag_notify managedseed-nested-shoot-ready-deleted
+              }
             EOF
             new_window "runtime&seed pods" "pods" Enter <<"EOF"
               # the while loop is used instead of watch to allow for scrolling a longer list in the tmux pane
@@ -1244,16 +1249,17 @@ spec:
             EOF
 
             new_window "image preload" "image preload" Enter <<"EOF"
-              is_state_tested ||
-              flag_wait operator-up &&
-              for i in alpine:latest nginx:latest; do
-                docker pull $i
-                docker tag $i localhost:5001/$i
-                docker push localhost:5001/$i
-              done &&
-              for i in $(curl -s localhost:5001/v2/_catalog | jq '.repositories[]' -r | grep -v local); do
-                curl -s localhost:5001/v2/$i/tags/list | jq .
-              done
+              is_state_tested || {
+                flag_wait operator-up &&
+                for i in alpine:latest nginx:latest; do
+                  docker pull $i
+                  docker tag $i localhost:5001/$i
+                  docker push localhost:5001/$i
+                done &&
+                for i in $(curl -s localhost:5001/v2/_catalog | jq '.repositories[]' -r | grep -v local); do
+                  curl -s localhost:5001/v2/$i/tags/list | jq .
+                done
+              }
             EOF
 
             new_window "offline" "registry mitigation" Enter <<"EOF"
@@ -1266,60 +1272,61 @@ spec:
               # and pull them sequentially to ensure that the cache is complete and consistent.
               # The test also asserts that all the images can be pulled
               # even when the Internet access is blocked.
-              is_state_tested ||
-              flag_wait shoot-ha-ready-deleted &&
-              time (
-                set -e -o pipefail
-                BEFORE=$(
-                  for i in $(ls -d dev/local-registry/*); do echo "$(du -sh $i) $(find $i | wc -l)"; done | column -t -R 3
-                )
-                for phase in online offline; do
-                  echo "phase: $phase"
-                  echo
-                  if [ "$phase" = "offline" ]; then
-                    echo "Blocking network traffic from the registry mirrors to the Internet"
-                    nsenter -t 1 -n iptables -I FORWARD -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
-                    nsenter -t 1 -n iptables -I INPUT   -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
-                  fi
-                  k -n registry get deployments -o json | jq -r '
-                    .items[] |
-                    select(.metadata.name | startswith("registry-")) |
-                    [.metadata.name, (.metadata.name | sub("^registry-"; "")), .spec.template.spec.containers[0].ports[0].containerPort] |
-                    join(" ")
-                  ' | while read name suffix port; do
-                    echo "Processing the registry mirror $suffix"
-                    k -n registry port-forward deployment/$name 5000:$port &
-                    until curl localhost:5000 >/dev/null 2>&1; do sleep 1; done
-                    find dev/local-registry/$suffix -type d | sed -n -E '
-                      s|.*/docker/registry/v2/repositories/(.*)/_manifests/tags/([^/]*)$|\1:\2|p
-                    ' | while read image; do
-                          echo
-                          echo "Pulling the image $suffix/$image"
-                          docker pull localhost:5000/$image
-                          docker rmi localhost:5000/$image >/dev/null
-                        done
-                    kill %1
-                    wait
+              is_state_tested || {
+                flag_wait shoot-ha-ready-deleted &&
+                time (
+                  set -e -o pipefail
+                  BEFORE=$(
+                    for i in $(ls -d dev/local-registry/*); do echo "$(du -sh $i) $(find $i | wc -l)"; done | column -t -R 3
+                  )
+                  for phase in online offline; do
+                    echo "phase: $phase"
+                    echo
+                    if [ "$phase" = "offline" ]; then
+                      echo "Blocking network traffic from the registry mirrors to the Internet"
+                      nsenter -t 1 -n iptables -I FORWARD -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
+                      nsenter -t 1 -n iptables -I INPUT   -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
+                    fi
+                    k -n registry get deployments -o json | jq -r '
+                      .items[] |
+                      select(.metadata.name | startswith("registry-")) |
+                      [.metadata.name, (.metadata.name | sub("^registry-"; "")), .spec.template.spec.containers[0].ports[0].containerPort] |
+                      join(" ")
+                    ' | while read name suffix port; do
+                      echo "Processing the registry mirror $suffix"
+                      k -n registry port-forward deployment/$name 5000:$port &
+                      until curl localhost:5000 >/dev/null 2>&1; do sleep 1; done
+                      find dev/local-registry/$suffix -type d | sed -n -E '
+                        s|.*/docker/registry/v2/repositories/(.*)/_manifests/tags/([^/]*)$|\1:\2|p
+                      ' | while read image; do
+                            echo
+                            echo "Pulling the image $suffix/$image"
+                            docker pull localhost:5000/$image
+                            docker rmi localhost:5000/$image >/dev/null
+                          done
+                      kill %1
+                      wait
+                    done
+                    if [ "$phase" = "offline" ]; then
+                      echo "Restoring network traffic to the Internet"
+                      nsenter -t 1 -n iptables -D FORWARD -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
+                      nsenter -t 1 -n iptables -D INPUT   -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
+                    fi
                   done
-                  if [ "$phase" = "offline" ]; then
-                    echo "Restoring network traffic to the Internet"
-                    nsenter -t 1 -n iptables -D FORWARD -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
-                    nsenter -t 1 -n iptables -D INPUT   -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
-                  fi
-                done
-                AFTER=$(
-                  for i in $(ls -d dev/local-registry/*); do echo "$(du -sh $i) $(find $i | wc -l)"; done | column -t -R 3
-                )
-                echo
-                echo "Registry mirror file system usage before the mitigation:"
-                echo "$BEFORE"
-                echo
-                echo "Registry mirror file system usage after the mitigation:"
-                echo "$AFTER"
-                echo
-                echo "Diff:"
-                diff -U 10 -u --color=always <(echo "$BEFORE") <(echo "$AFTER") | grep -v /dev/fd || true
-              ) && flag_notify registry-mitigation
+                  AFTER=$(
+                    for i in $(ls -d dev/local-registry/*); do echo "$(du -sh $i) $(find $i | wc -l)"; done | column -t -R 3
+                  )
+                  echo
+                  echo "Registry mirror file system usage before the mitigation:"
+                  echo "$BEFORE"
+                  echo
+                  echo "Registry mirror file system usage after the mitigation:"
+                  echo "$AFTER"
+                  echo
+                  echo "Diff:"
+                  diff -U 10 -u --color=always <(echo "$BEFORE") <(echo "$AFTER") | grep -v /dev/fd || true
+                ) && flag_notify registry-mitigation
+              }
             EOF
             new_pane "offline" Enter <<"EOF"
               nsenter -t 1 -n
