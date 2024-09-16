@@ -1024,7 +1024,7 @@ spec:
               DOCKERFILE
               vim Dockerfile
             EOF
-            new_pane "docker build" Enter <<"EOF"
+            new_pane "docker build" <<"EOF"
               cd docker
               docker build -t sysd .
             EOF
