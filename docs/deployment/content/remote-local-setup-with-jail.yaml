@@ -950,6 +950,78 @@ spec:
                 1,5p; 98,141p; 1294,1298p; 1360,1386p; 1437,1512p; 1552,1602p; 1629,1636p;
               ' | grep --color=Always -P '^              (?!following|that|values|are)[a-z%][^ ]*|$'
             EOF
+
+            new_window "rootless" "Dockerfile" Enter <<"EOF"
+              mkdir -p docker
+              cd docker
+              sed 's/^  //' <<"DOCKERFILE" > Dockerfile
+                FROM ubuntu:24.04
+                STOPSIGNAL SIGRTMIN+3
+
+                RUN apt-get update
+                RUN apt-get install -y systemd systemd-sysv
+                RUN apt-get install -y uidmap iptables kmod iproute2
+                RUN apt-get install -y dbus-user-session systemd-container
+
+                # https://docs.docker.com/engine/install/ubuntu/
+                # Add Docker's official GPG key:
+                RUN apt-get install -y ca-certificates curl
+                RUN install -m 0755 -d /etc/apt/keyrings
+                RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+                RUN chmod a+r /etc/apt/keyrings/docker.asc
+
+                # Add the Docker repository to the Apt sources:
+                RUN echo \
+                  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+                  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+                  tee /etc/apt/sources.list.d/docker.list > /dev/null
+                RUN apt-get update
+
+                # Install the latest version of Docker that includes /usr/bin/dockerd-rootless-setuptool.sh
+                RUN apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+                # Allow delegation of all controllers
+                RUN mkdir -p /etc/systemd/system/user@.service.d
+                RUN cat > /etc/systemd/system/user@.service.d/delegate.conf <<EOF
+                [Service]
+                Delegate=yes
+                EOF
+
+                # Disable the rootful docker service
+                RUN systemctl disable docker.service
+                RUN systemctl disable docker.socket
+
+                # KinD needs this folder
+                RUN mkdir -p /lib/modules
+
+                # dockeruser is the unprivileged user that runs the rootless Docker daemon
+                RUN apt-get install -y curl jq less wget
+                RUN useradd -m -s /bin/bash dockeruser
+
+                USER dockeruser
+                RUN cat <<"EOF" > /home/dockeruser/.bashrc
+                  export PATH=/home/dockeruser/bin:$PATH
+                  # export DOCKER_HOST=unix://${XDG_RUNTIME_DIR}/docker.sock
+                EOF
+
+                RUN cd && mkdir bin && \
+                    VERSION=$(curl -sL https://dl.k8s.io/release/stable.txt) && \
+                    wget "https://dl.k8s.io/release/$VERSION/bin/linux/amd64/kubectl" && \
+                    chmod +x kubectl && \
+                    mv kubectl bin
+                RUN cd && \
+                    VERSION=$(curl -sL https://api.github.com/repos/kubernetes-sigs/kind/releases/latest | jq .tag_name -r) && \
+                    wget -N "https://kind.sigs.k8s.io/dl/$VERSION/kind-linux-amd64" && \
+                    mv kind-linux-amd64 kind && \
+                    chmod +x kind && \
+                    mv kind bin
+
+                USER root
+                CMD ["/sbin/init"]
+              DOCKERFILE
+              vim Dockerfile
+            EOF
+
             new_window "make" "make kind-operator-up" Enter <<"EOF"
               sync_kubeconfig example/gardener-local/kind/operator & sleep 1
               nice time make kind-operator-down kind-operator-up &&
