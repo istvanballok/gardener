@@ -1000,12 +1000,12 @@ spec:
 
                 # dockeruser is the unprivileged user that runs the rootless Docker daemon
                 RUN apt-get install -y curl jq less wget
-                RUN useradd -m -s /bin/bash dockeruser
+                RUN useradd -m -s /bin/bash -u 12345 dockeruser
 
                 USER dockeruser
                 RUN cat <<"EOF" > /home/dockeruser/.bashrc
                   export PATH=/home/dockeruser/bin:$PATH
-                  # export DOCKER_HOST=unix://${XDG_RUNTIME_DIR}/docker.sock
+                  export DOCKER_HOST=unix://${XDG_RUNTIME_DIR}/docker.sock
                 EOF
 
                 RUN cd && mkdir bin && \
@@ -1031,10 +1031,10 @@ spec:
             EOF
             new_pane "docker run" <<"EOF"
               mkdir ~/.docker-rootless ~/.docker-rootless-socket # on a persistent volume, not on overlayfs
-              chown 1001:1001 ~/.docker-rootless ~/.docker-rootless-socket
+              chown 12345:12345 ~/.docker-rootless ~/.docker-rootless-socket
               docker run -it --privileged --rm \
                      -v /root/go/src/github.com/gardener/gardener/dev:/root/go/src/github.com/gardener/gardener/dev \
-                     -v ~/.docker-rootless-socket:/run/user/1001 \
+                     -v ~/.docker-rootless-socket:/run/user/12345 \
                      -v ~/.docker-rootless:/home/dockeruser/.local \
                      --tmpfs /tmp --tmpfs /run --tmpfs /run/lock \
                      --name sysd sysd
