@@ -1072,7 +1072,7 @@ spec:
             EOF
             new_pane "kind-operator-up" <<"EOF"
               export DOCKER_HOST=unix:///root/.docker-rootless-socket/docker.sock
-              nsenter -t $(docker inspect --format '{{ .State.Pid }}' sysd) -n make kind-operator-up
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n make kind-operator-up
             EOF
 
 
