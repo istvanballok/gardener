@@ -1033,6 +1033,9 @@ spec:
                      --tmpfs /tmp --tmpfs /run --tmpfs /run/lock \
                      --name sysd sysd
             EOF
+            new_pane "docker stop" <<"EOF"
+              docker stop sysd
+            EOF
 
             new_window "make" "make kind-operator-up" Enter <<"EOF"
               sync_kubeconfig example/gardener-local/kind/operator & sleep 1
