@@ -1073,6 +1073,12 @@ spec:
               make kind-operator-down
             EOF
             new_pane "kind-operator-up" <<"EOF"
+              # TODO https://github.com/moby/moby/issues/47812 Need to use different IPs for the host and the container
+              # https://github.com/docker/compose/issues/11169#issuecomment-1826846604 seems to be supported by podman
+              # sysctl: check if the value is low: https://kind.sigs.k8s.io/docs/user/known-issues/#pod-errors-due-to-too-many-open-files
+              # etcd change-backup-bucket-permissions
+              # https://github.com/gardener/etcd-druid/blob/549d4a417905d66425cd3b91b26d9779de529223/internal/component/statefulset/stsmatcher.go#L187
+              # chown -R 165536:165536 dev/local-backupbuckets/gardener-operator/ is the root 0 user in the user namespace
               export DOCKER_HOST=unix:///root/.docker-rootless-socket/docker.sock
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n make kind-operator-up
             EOF
