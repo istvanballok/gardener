@@ -1021,6 +1021,18 @@ spec:
               DOCKERFILE
               vim Dockerfile
             EOF
+            new_pane "docker build" <<"EOF"
+              docker build -t sysd .
+            EOF
+            new_pane "docker run" <<"EOF"
+              mkdir ~/.docker-rootless ~/.docker-rootless-socket # on a persistent volume, not on overlayfs
+              chown 1001:1001 ~/.docker-rootless ~/.docker-rootless-socket
+              docker run -it --privileged --rm \
+                     -v ~/.docker-rootless-socket:/run/user/1001 \
+                     -v ~/.docker-rootless:/home/dockeruser/.local \
+                     --tmpfs /tmp --tmpfs /run --tmpfs /run/lock \
+                     --name sysd sysd
+            EOF
 
             new_window "make" "make kind-operator-up" Enter <<"EOF"
               sync_kubeconfig example/gardener-local/kind/operator & sleep 1
