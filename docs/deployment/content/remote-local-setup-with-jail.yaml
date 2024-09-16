@@ -1004,24 +1004,26 @@ spec:
                   # export DOCKER_HOST=unix://${XDG_RUNTIME_DIR}/docker.sock
                 EOF
 
-                RUN cd && mkdir bin && \
-                    VERSION=$(curl -sL https://dl.k8s.io/release/stable.txt) && \
-                    wget "https://dl.k8s.io/release/$VERSION/bin/linux/amd64/kubectl" && \
-                    chmod +x kubectl && \
-                    mv kubectl bin
-                RUN cd && \
-                    VERSION=$(curl -sL https://api.github.com/repos/kubernetes-sigs/kind/releases/latest | jq .tag_name -r) && \
-                    wget -N "https://kind.sigs.k8s.io/dl/$VERSION/kind-linux-amd64" && \
-                    mv kind-linux-amd64 kind && \
-                    chmod +x kind && \
-                    mv kind bin
+                # curl -sL https://dl.k8s.io/release/stable.txt is not working atm.
+                # RUN cd && mkdir bin && \
+                #     VERSION=$(curl -sL https://dl.k8s.io/release/stable.txt) && \
+                #     wget "https://dl.k8s.io/release/$VERSION/bin/linux/amd64/kubectl" && \
+                #     chmod +x kubectl && \
+                #     mv kubectl bin
+                # RUN cd && \
+                #     VERSION=$(curl -sL https://api.github.com/repos/kubernetes-sigs/kind/releases/latest | jq .tag_name -r) && \
+                #     wget -N "https://kind.sigs.k8s.io/dl/$VERSION/kind-linux-amd64" && \
+                #     mv kind-linux-amd64 kind && \
+                #     chmod +x kind && \
+                #     mv kind bin
 
                 USER root
                 CMD ["/sbin/init"]
               DOCKERFILE
               vim Dockerfile
             EOF
-            new_pane "docker build" <<"EOF"
+            new_pane "docker build" Enter <<"EOF"
+              cd docker
               docker build -t sysd .
             EOF
             new_pane "docker run" <<"EOF"
@@ -1044,7 +1046,7 @@ spec:
                 setcap cap_net_bind_service=ep $(which rootlesskit)
                 loginctl enable-linger dockeruser
                 sed 's/^  //' <<"DOCKERUSER" | xargs -d '\0' \
-                machinectl shell dockeruser@ bash -c
+                machinectl shell dockeruser@ /bin/bash -c
                   dockerd-rootless-setuptool.sh install
                 DOCKERUSER
               SYSD
