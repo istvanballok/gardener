@@ -1846,11 +1846,14 @@ spec:
             EOF
 
             new_window "cell-test" "cell-test" Enter <<"EOF"
+              GOOGLE_IP=$(dig +short google.com)
               flag_wait cell &&
               if is_state_tested; then
                 docker exec jail docker exec cell touch /tmp/cell-tested
               else
-              time sed 's/^  //' <<"JAIL" | xargs -0 docker exec jail sh -c |& ts && flag_notify cell-tested && mark_state_tested
+              time (
+              docker exec jail docker exec cell bash -c "echo $GOOGLE_IP > /tmp/google_ip"
+              sed 's/^  //' <<"JAIL" | xargs -0 docker exec jail sh -c |& ts && flag_notify cell-tested && mark_state_tested
                 sed 's/^  //' <<"CELL" | xargs -0 docker exec cell bash -l -c
                   set -ex -o pipefail
                   while [ ! -f ~/.kube/config ]; do sleep 1; done
@@ -1874,6 +1877,8 @@ spec:
                   # offline tests
                   time ! curl -v google.com
                   echo "time ! curl -v google.com" | k node-shell $(k get nodes --no-headers | awk '{print $1}')
+                  time ! curl -v $(cat /tmp/google_ip)
+                  echo "time ! curl -v $(cat /tmp/google_ip) | k node-shell $(k get nodes --no-headers | awk '{print $1}')
                   # delete the shoot
                   unset KUBECONFIG
                   k annotate shoot local -n garden-local 'confirmation.gardener.cloud/deletion=true'
@@ -1881,6 +1886,7 @@ spec:
                   touch /tmp/cell-tested
                 CELL
               JAIL
+              )
               fi
             EOF
 
