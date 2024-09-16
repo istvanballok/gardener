@@ -1007,18 +1007,17 @@ spec:
                   # export DOCKER_HOST=unix://${XDG_RUNTIME_DIR}/docker.sock
                 EOF
 
-                # curl -sL https://dl.k8s.io/release/stable.txt is not working atm.
-                # RUN cd && mkdir bin && \
-                #     VERSION=$(curl -sL https://dl.k8s.io/release/stable.txt) && \
-                #     wget "https://dl.k8s.io/release/$VERSION/bin/linux/amd64/kubectl" && \
-                #     chmod +x kubectl && \
-                #     mv kubectl bin
-                # RUN cd && \
-                #     VERSION=$(curl -sL https://api.github.com/repos/kubernetes-sigs/kind/releases/latest | jq .tag_name -r) && \
-                #     wget -N "https://kind.sigs.k8s.io/dl/$VERSION/kind-linux-amd64" && \
-                #     mv kind-linux-amd64 kind && \
-                #     chmod +x kind && \
-                #     mv kind bin
+                RUN cd && mkdir bin && \
+                    VERSION=$(curl -sL https://dl.k8s.io/release/stable.txt) && \
+                    wget "https://dl.k8s.io/release/$VERSION/bin/linux/amd64/kubectl" && \
+                    chmod +x kubectl && \
+                    mv kubectl bin
+                RUN cd && \
+                    VERSION=$(curl -sL https://api.github.com/repos/kubernetes-sigs/kind/releases/latest | jq .tag_name -r) && \
+                    wget -N "https://kind.sigs.k8s.io/dl/$VERSION/kind-linux-amd64" && \
+                    mv kind-linux-amd64 kind && \
+                    chmod +x kind && \
+                    mv kind bin
 
                 USER root
                 CMD ["/sbin/init"]
