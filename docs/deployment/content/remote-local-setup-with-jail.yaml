@@ -1055,6 +1055,10 @@ spec:
               # journalctl --user -xeu docker.service
               docker exec -it sysd bash
             EOF
+            new_pane "outside" <<"EOF"
+              export DOCKER_HOST=unix:///root/.docker-rootless-socket/docker.sock
+              docker ps
+            EOF
 
             new_window "make" "make kind-operator-up" Enter <<"EOF"
               sync_kubeconfig example/gardener-local/kind/operator & sleep 1
