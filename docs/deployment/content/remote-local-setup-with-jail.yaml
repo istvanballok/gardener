@@ -997,6 +997,7 @@ spec:
                 # allow the unprivileged users to list the content of the /root folder
                 # because the Gardener source code is mounted there
                 RUN chmod 755 /root
+
                 # dockeruser is the unprivileged user that runs the rootless Docker daemon
                 RUN apt-get install -y curl jq less wget
                 RUN useradd -m -s /bin/bash dockeruser
