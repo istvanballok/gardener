@@ -1036,6 +1036,25 @@ spec:
             new_pane "docker stop" <<"EOF"
               docker stop sysd
             EOF
+            new_pane "install" <<"EOF"
+              sed 's/^  //' <<"SYSD" | xargs -d '\0' \
+              docker exec sysd bash -c
+                sysctl -w net.ipv4.ping_group_range="0 2147483647"
+                sysctl -w net.ipv4.ip_unprivileged_port_start=0
+                setcap cap_net_bind_service=ep $(which rootlesskit)
+                loginctl enable-linger dockeruser
+                sed 's/^  //' <<"DOCKERUSER" | xargs -d '\0' \
+                machinectl shell dockeruser@ bash -c
+                  dockerd-rootless-setuptool.sh install
+                DOCKERUSER
+              SYSD
+            EOF
+            new_pane "interact" <<"EOF"
+              # machinectl shell dockeruser@
+              # systemctl --user status docker.service
+              # journalctl --user -xeu docker.service
+              docker exec -it sysd bash
+            EOF
 
             new_window "make" "make kind-operator-up" Enter <<"EOF"
               sync_kubeconfig example/gardener-local/kind/operator & sleep 1
