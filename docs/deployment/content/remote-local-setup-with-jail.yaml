@@ -142,12 +142,12 @@ spec:
             normal='\e[0m'; green='\e[1;32m'; yellow='\e[1;33m'; cyan='\e[1;36m'; n=$normal; g=$green; y=$yellow; c=$cyan
             echo -e "$(
             sed 's/^  //' <<GREETING_EOF
-              ${c}Welcome${y} to the jailed version of the remote local setup pod of ${c}Gardener${y} as citizen!${n}
+              ${c}Welcome${y} to the jailed version of the remote local setup pod of ${c}Gardener${y} as a citizen!${n}
 
               ${c}Documentation:${n} https://github.com/gardener/gardener/blob/master/docs/deployment/getting_started_locally.md
               ${y}To ${c}exec${y} into this pod, run '${g}kubectl exec -it remote-local-setup-with-jail-0 -- sh${y}'${n}
 
-              The "Gardener Operator Complete" tmux session is prepared by default.
+              The "Gardener Operator Complete" tmux session is prepared in this setup (not configurable).
 
               ${y}To attach to the ${c}tmux${y} session, run '${g}tmux a${y}'${n}.
               - ${y}mouse${n} support is enabled
