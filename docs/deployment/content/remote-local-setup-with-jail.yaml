@@ -1032,7 +1032,8 @@ spec:
               docker build -t sysd .
             EOF
             new_pane "docker run" <<"EOF"
-              mkdir ~/.docker-rootless ~/.docker-rootless-socket # on a persistent volume, not on overlayfs
+              rm -rf ~/.docker-rootless ~/.docker-rootless-socket
+              mkdir -p ~/.docker-rootless ~/.docker-rootless-socket # on a persistent volume, not on overlayfs
               chown 12345:12345 ~/.docker-rootless ~/.docker-rootless-socket
               docker run -it --privileged --rm \
                      -v /root/go/src/github.com/gardener/gardener/dev:/root/go/src/github.com/gardener/gardener/dev \
