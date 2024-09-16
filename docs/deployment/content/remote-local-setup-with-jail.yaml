@@ -1892,15 +1892,16 @@ spec:
           cp kubectl /usr/local/bin/kubectl
           chmod +x /usr/local/bin/kubectl
 
-          echo "Wait for the remote-local-setup-with-jail pod to be ready"
+          while true; do
           while ! kubectl wait --for=condition=ready pod/remote-local-setup-with-jail-0 --timeout=-1s; do
+            echo "Wait for the remote-local-setup-with-jail pod to be ready"
             sleep 10
           done
 
           set +x
           echo "Trying to jump into the rls pod, jail container and then into the cell container to attach to the tmux session" | ts
           sed 's/^  //' <<"EOF_EXEC" | xargs -0 \
-          kubectl exec remote-local-setup-with-jail-0 -- sh -c | ts
+          kubectl exec remote-local-setup-with-jail-0 -- sh -c | ts && break
             echo "Exec-ed into the remote local setup pod"
             while ! docker ps -f name=jail | grep jail; do
               echo "  Wait for the jail docker container..."
@@ -1931,6 +1932,9 @@ spec:
               EOF_CELL
             EOF_JAIL
           EOF_EXEC
+          echo "The probing failed, retrying in 10s"
+          sleep 10s
+          done
 
           echo "The probing worked: attach to the tmux session and mark the pod as ready once tmux produced some output"
           cd
