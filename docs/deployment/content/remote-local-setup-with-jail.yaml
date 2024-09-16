@@ -1058,7 +1058,7 @@ spec:
                 DOCKERUSER
               SYSD
             EOF
-            new_pane "interact" <<"EOF"
+            new_window "rootless2" "interact" <<"EOF"
               # machinectl shell dockeruser@
               # systemctl --user status docker.service
               # journalctl --user -xeu docker.service
