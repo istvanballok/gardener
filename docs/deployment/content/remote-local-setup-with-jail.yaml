@@ -1684,7 +1684,7 @@ spec:
                 sed 's/^  //' <<"CELL" | xargs -d '\0' docker exec -u root cell sh -c
                   mkdir -p /home/demo/.kube
                   chown demo /home/demo/.kube
-                  inotifywait -m -e close_write /home/demo/go/src/github.com/gardener/gardener/example/operator/virtual-garden --include '/kubeconfig$' \
+                  inotifywait -m -e moved_to /home/demo/go/src/github.com/gardener/gardener/example/operator/virtual-garden --include '/kubeconfig$' \
                   | while read line; do
                       echo "Detected a change in the virtual garden kubeconfig"
                       touch ~/.kubeconfig_changed
