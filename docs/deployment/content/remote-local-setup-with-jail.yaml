@@ -1083,8 +1083,7 @@ spec:
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n make kind-operator-up
             EOF
 
-
-            new_window "make" "make kind-operator-up" Enter <<"EOF"
+            new_window "make" "make kind-operator-up" <<"EOF"
               sync_kubeconfig example/gardener-local/kind/operator & sleep 1
               nice time make kind-operator-down kind-operator-up &&
               DOCKER_IP=$(docker exec gardener-operator-local-control-plane ip addr show eth0 | awk '/inet /{print $2}' | cut -d '/' -f 1) &&
