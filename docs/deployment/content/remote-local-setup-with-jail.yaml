@@ -360,6 +360,73 @@ spec:
             true # do not change the currently checked out commit
           fi
 
+          mkdir -p ~/gardener-patches
+          sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0001-Avoid-using-the-same-port-with-rootless-docker.patch
+            From f74bcb8325105ff82d856378c31e554de8af3c32 Mon Sep 17 00:00:00 2001
+            From: dev <dev>
+            Date: Fri, 4 Oct 2024 16:03:51 +0200
+            Subject: [PATCH 1/2] Avoid using the same port with rootless docker
+
+            To mitigate
+            https://github.com/moby/moby/issues/47812
+            ---
+             .../kind/cluster/templates/_extra_port_mappings.tpl             | 2 +-
+             1 file changed, 1 insertion(+), 1 deletion(-)
+
+            diff --git a/example/gardener-local/kind/cluster/templates/_extra_port_mappings.tpl b/example/gardener-local/kind/cluster/templates/_extra_port_mappings.tpl
+            index 8e9e07ae9..ed5e4692a 100644
+            --- a/example/gardener-local/kind/cluster/templates/_extra_port_mappings.tpl
+            +++ b/example/gardener-local/kind/cluster/templates/_extra_port_mappings.tpl
+            @@ -10,7 +10,7 @@
+             {{- range $i, $listenAddress := (required ".Values.gardener.seed.istio.listenAddresses is required" .Values.gardener.seed.istio.listenAddresses) }}
+             - containerPort: {{ add 30443 $i }}
+             {{- if $.Values.gardener.controlPlane.deployed }}
+            -  hostPort: 443
+            +  hostPort: {{ add 443 $i 1 }}
+             {{- else }}
+               # TODO (plkokanov): when using skaffold to deploy, 172.18.255.2 is not used as listenAddress (unlike the local
+               #  deployment) because secondary IPs cannot be easily added to inside the `prow` containers. Additionally, there is no
+            --
+            2.45.2
+          PATCH_EOF
+
+          sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0002-Only-set-sysctl-if-it-is-not-already-set.patch
+            From 232f2963c8285d1a8193b96929ad09883d849e3a Mon Sep 17 00:00:00 2001
+            From: dev <dev>
+            Date: Fri, 4 Oct 2024 16:06:47 +0200
+            Subject: [PATCH 2/2] Only set sysctl if it is not already set
+
+            ---
+             hack/kind-up.sh | 6 +++++-
+             1 file changed, 5 insertions(+), 1 deletion(-)
+
+            diff --git a/hack/kind-up.sh b/hack/kind-up.sh
+            index 33d5d6193..c8e4b2543 100755
+            --- a/hack/kind-up.sh
+            +++ b/hack/kind-up.sh
+            @@ -338,7 +338,11 @@ fi
+             # workaround https://kind.sigs.k8s.io/docs/user/known-issues/#pod-errors-due-to-too-many-open-files
+             kubectl get nodes -o name |\
+               cut -d/ -f2 |\
+            -  xargs -I {} docker exec {} sh -c "sysctl fs.inotify.max_user_instances=8192"
+            +  xargs -I {} docker exec {} sh -c "
+            +    current_value=\$(sysctl -n fs.inotify.max_user_instances)
+            +    if [ \"\$current_value\" -ne 8192 ]; then
+            +      sysctl -w fs.inotify.max_user_instances=8192
+            +    fi"
+
+             value=$(kubectl get cm -n kube-system kubeadm-config -oyaml | yq e '.data.ClusterConfiguration' | yq e '.apiServer.extraVolumes[0].hostPath')
+             if [[ -n "$value" && "$value" != "null" ]]; then
+            --
+            2.45.2
+          PATCH_EOF
+
+          git config --global user.name  dev
+          git config --global user.email dev
+          if [[ $NAMESPACE == "demo*" ]] || [[ $NAMESPACE == "test*" ]]; then
+            git am ~/gardener-patches/00*.patch
+          fi
+
           unshare -n /bin/sh -c 'sleep inf' &
           dockerd_netns_pid=$!
           echo $dockerd_netns_pid > /root/dockerd_netns_pid
@@ -1081,6 +1148,15 @@ spec:
               # chown -R 165536:165536 dev/local-backupbuckets/gardener-operator/ is the root 0 user in the user namespace
               export DOCKER_HOST=unix:///root/.docker-rootless-socket/docker.sock
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n make kind-operator-up
+            EOF
+            new_pane "kind-operator-up fix" <<"EOF"
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n
+              {
+                socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.1  TCP:172.18.255.1:444 &
+                socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.10 TCP:172.18.255.10:445 &
+                socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.11 TCP:172.18.255.11:446 &
+                socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.12 TCP:172.18.255.12:447 &
+              }
             EOF
 
             new_window "make" "make kind-operator-up" <<"EOF"
