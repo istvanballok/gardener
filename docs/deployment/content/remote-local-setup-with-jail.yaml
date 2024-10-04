@@ -1151,13 +1151,16 @@ spec:
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n make kind-operator-up
             EOF
             new_pane "kind-operator-up fix" <<"EOF"
-              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n
-              {
-                socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.1  TCP:172.18.255.1:444 &
-                socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.10 TCP:172.18.255.10:445 &
-                socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.11 TCP:172.18.255.11:446 &
-                socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.12 TCP:172.18.255.12:447 &
-              }
+              sed 's/^  //' <<"SCRIPT_EOF" | xargs -d '\0' \
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
+                {
+                  socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.1  TCP:172.18.255.1:444 &
+                  socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.10 TCP:172.18.255.10:445 &
+                  socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.11 TCP:172.18.255.11:446 &
+                  socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.12 TCP:172.18.255.12:447 &
+                  wait
+                }
+              SCRIPT_EOF
             EOF
 
             new_window "make" "make kind-operator-up" <<"EOF"
