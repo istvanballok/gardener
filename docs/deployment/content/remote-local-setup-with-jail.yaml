@@ -117,6 +117,7 @@ spec:
           cd
 
           sed 's/^  //' <<"EOF" > ~/.install.sh
+            set -x
             echo delve
                 go install github.com/go-delve/delve/cmd/dlv@latest
             echo gron
@@ -274,7 +275,7 @@ spec:
             [ -t 0 ] && stty -ixon
             [ -n "$GCTL_SESSION_ID" ] || [ -n "$TERM_SESSION_ID" ] || export GCTL_SESSION_ID=$(uuidgen)
             if [ "$(whoami)" == "demo" ]; then
-              cd ~/go/src/github.com/gardener/gardener
+              cd ~/go/src/github.com/gardener/gardener || true
             fi
             function flag_notify {
               touch /tmp/sync/$1
@@ -357,8 +358,10 @@ spec:
               fi
             }
           EOF
+
           cp ~/.bashrc /home/demo/.bashrc
           chown demo:demo /home/demo/.bashrc
+
           sed 's/^  //' <<"EOF" > ~/.tmux.conf
             set -g mouse on
             bind -T copy-mode-vi MouseDown3Pane    send -X copy-selection-and-cancel
@@ -373,7 +376,9 @@ spec:
             set -g status-left-length 30
           EOF
 
+
           sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
+            set -x
             mkdir -p ~/go/src/github.com/gardener
             cd ~/go/src/github.com/gardener
             [ -d gardener/.git ] || git clone -q https://github.com/gardener/gardener
@@ -491,6 +496,7 @@ spec:
             cd etcd-druid
             git fetch
             git reset --hard
+            git am --abort || true
             git checkout $(yq '.images[] | select(.name == "etcd-druid").tag' ../gardener/imagevector/containers.yaml)
 
             rm -rf ~/etcd-druid-patches
@@ -503,6 +509,7 @@ spec:
 
               In a rootless docker environment, changing the ownership
               can only be done once, because the root user is actually not root.
+
               ---
                controllers/etcdcopybackupstask/reconciler.go | 2 +-
                pkg/component/etcd/statefulset/statefulset.go | 4 ++--
@@ -513,42 +520,43 @@ spec:
               --- a/controllers/etcdcopybackupstask/reconciler.go
               +++ b/controllers/etcdcopybackupstask/reconciler.go
               @@ -377,7 +377,7 @@ func (r *Reconciler) createJobObject(ctx context.Context, task *druidv1alpha1.Et
-                                                      Name:         "change-backup-bucket-permissions",
-                                                      Image:        *initContainerImage,
-                                                      Command:      []string{"sh", "-c", "--"},
-              -                                       Args:         []string{fmt.Sprintf("%s%s%s%s", "chown -R 65532:65532 /home/nonroot/", *targetStore.Container, " /home/nonroot/", *sourceStore.Container)},
-              +                                       Args:         []string{fmt.Sprintf("[ $(stat -c '%u' /home/nonroot) -eq 65532 ] || %s%s%s%s", "chown -R 65532:65532 /home/nonroot/", *targetStore.Container, " /home/nonroot/", *sourceStore.Container)},
-                                                      VolumeMounts: volumeMounts,
-                                                      SecurityContext: &corev1.SecurityContext{
-                                                              RunAsGroup:   pointer.Int64(0),
+               					Name:         "change-backup-bucket-permissions",
+               					Image:        *initContainerImage,
+               					Command:      []string{"sh", "-c", "--"},
+              -					Args:         []string{fmt.Sprintf("%s%s%s%s", "chown -R 65532:65532 /home/nonroot/", *targetStore.Container, " /home/nonroot/", *sourceStore.Container)},
+              +					Args:         []string{fmt.Sprintf("[ $(stat -c '%u' /home/nonroot) -eq 65532 ] || %s%s%s%s", "chown -R 65532:65532 /home/nonroot/", *targetStore.Container, " /home/nonroot/", *sourceStore.Container)},
+               					VolumeMounts: volumeMounts,
+               					SecurityContext: &corev1.SecurityContext{
+               						RunAsGroup:   pointer.Int64(0),
               diff --git a/pkg/component/etcd/statefulset/statefulset.go b/pkg/component/etcd/statefulset/statefulset.go
               index b66ec17e..a473ad97 100644
               --- a/pkg/component/etcd/statefulset/statefulset.go
               +++ b/pkg/component/etcd/statefulset/statefulset.go
               @@ -641,7 +641,7 @@ func (c *component) createOrPatch(ctx context.Context, sts *appsv1.StatefulSet,
-                                                      Image:           c.values.InitContainerImage,
-                                                      ImagePullPolicy: corev1.PullIfNotPresent,
-                                                      Command:         []string{"sh", "-c", "--"},
-              -                                       Args:            []string{"chown -R 65532:65532 /var/etcd/data"},
-              +                                       Args:            []string{"[ $(stat -c '%u' /var/etcd/data) -eq 65532 ] || chown -R 65532:65532 /var/etcd/data"},
-                                                      VolumeMounts:    getEtcdVolumeMounts(c.values),
-                                                      SecurityContext: &corev1.SecurityContext{
-                                                              RunAsGroup:   pointer.Int64(0),
+               					Image:           c.values.InitContainerImage,
+               					ImagePullPolicy: corev1.PullIfNotPresent,
+               					Command:         []string{"sh", "-c", "--"},
+              -					Args:            []string{"chown -R 65532:65532 /var/etcd/data"},
+              +					Args:            []string{"[ $(stat -c '%u' /var/etcd/data) -eq 65532 ] || chown -R 65532:65532 /var/etcd/data"},
+               					VolumeMounts:    getEtcdVolumeMounts(c.values),
+               					SecurityContext: &corev1.SecurityContext{
+               						RunAsGroup:   pointer.Int64(0),
               @@ -660,7 +660,7 @@ func (c *component) createOrPatch(ctx context.Context, sts *appsv1.StatefulSet,
-                                                              Image:           c.values.InitContainerImage,
-                                                              ImagePullPolicy: corev1.PullIfNotPresent,
-                                                              Command:         []string{"sh", "-c", "--"},
-              -                                               Args:            []string{fmt.Sprintf("chown -R 65532:65532 /home/nonroot/%s", *c.values.BackupStore.Container)},
-              +                                               Args:            []string{fmt.Sprintf("[ $(stat -c '%u' /home/nonroot) -eq 65532 ] || chown -R 65532:65532 /home/nonroot/%s", *c.values.BackupStore.Container)},
-                                                              VolumeMounts:    getBackupRestoreVolumeMounts(c),
-                                                              SecurityContext: &corev1.SecurityContext{
-                                                                      RunAsGroup:   pointer.Int64(0),
+               						Image:           c.values.InitContainerImage,
+               						ImagePullPolicy: corev1.PullIfNotPresent,
+               						Command:         []string{"sh", "-c", "--"},
+              -						Args:            []string{fmt.Sprintf("chown -R 65532:65532 /home/nonroot/%s", *c.values.BackupStore.Container)},
+              +						Args:            []string{fmt.Sprintf("[ $(stat -c '%u' /home/nonroot) -eq 65532 ] || chown -R 65532:65532 /home/nonroot/%s", *c.values.BackupStore.Container)},
+               						VolumeMounts:    getBackupRestoreVolumeMounts(c),
+               						SecurityContext: &corev1.SecurityContext{
+               							RunAsGroup:   pointer.Int64(0),
               --
               2.45.2
             PATCH_EOF
 
             if ! git am ~/etcd-druid-patches/00*.patch; then
               echo "Please check/rebase the patches as needed."
+              sleep 1h
               exit 1
             fi
           DEMO_EOF
