@@ -43,9 +43,19 @@ spec:
           apk add apache2-utils bash bash-completion bat bind-tools brotli conntrack-tools       \
                   coreutils curl diffutils dnsmasq docker-bash-completion findutils fzf g++ gawk \
                   gcompat git git-prompt grep helm inotify-tools iproute2 jq k9s less lsof make  \
-                  mandoc mc moreutils mount ncurses neovim openssl parallel procps sed socat     \
-                  strace sysstat sysstat-doc tar tcpdump tmux tmux-doc tzdata util-linux vim     \
-                  wget yq
+                  mandoc mc moreutils mount ncurses neovim openssl parallel procps sed shadow    \
+                  shadow-login socat strace sysstat sysstat-doc tar tcpdump tmux tmux-doc tzdata \
+                  util-linux vim wget yq
+
+          useradd -m -s /bin/bash -u 2000 demo
+
+          sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
+            sed 's/^  //' <<"EOF" > ~/.bash_profile
+              source /etc/bash/bashrc
+              source ~/.bashrc
+            EOF
+            touch ~/.bashrc
+          DEMO_EOF
 
           mkdir -p ~/.cache/wget
           cd ~/.cache/wget
@@ -82,6 +92,7 @@ spec:
                tar -xzf krew-linux_amd64.tar.gz ./krew-linux_amd64
                mv krew-linux_amd64 /usr/local/bin/krew
                krew install krew
+               su -l demo -c -l "krew install krew"
           echo ktx
                wget -N "https://raw.githubusercontent.com/blendle/kns/master/bin/ktx"
                cp ktx /usr/local/bin/ktx
@@ -104,18 +115,24 @@ spec:
                cp yaml2json_linux_amd64 /usr/local/bin/yaml2json
                chmod +x /usr/local/bin/yaml2json
           cd
-          echo delve
-               go install github.com/go-delve/delve/cmd/dlv@latest
-          echo gron
-               go install github.com/tomnomnom/gron@latest
-          echo ginkgo
-               go install github.com/onsi/ginkgo/v2/ginkgo@latest
-          echo stern
-               go install github.com/stern/stern@latest
-          echo neat
-               krew install neat
-          echo node-shell
-               krew install node-shell
+
+          sed 's/^  //' <<"EOF" > ~/.install.sh
+            echo delve
+                go install github.com/go-delve/delve/cmd/dlv@latest
+            echo gron
+                go install github.com/tomnomnom/gron@latest
+            echo ginkgo
+                go install github.com/onsi/ginkgo/v2/ginkgo@latest
+            echo stern
+                go install github.com/stern/stern@latest
+            echo neat
+                krew install neat
+            echo node-shell
+                krew install node-shell
+          EOF
+          chmod +x ~/.install.sh
+          ~/.install.sh
+          su -l demo -c -l ~/.install.sh
 
           bash -c "
             echo {{p,g}-seed,{gu,p,v}-local--local}.ingress.local.seed.local.gardener.cloud \
@@ -225,11 +242,17 @@ spec:
             source ~/.bashrc
           EOF
 
+          mkdir -p /tmp/sync
           sed 's/^  //' <<"EOF" > ~/.bashrc
             [ -z "$TMUX" ] && export TERM=xterm-256color
             set -o pipefail
             export GOPATH=~/go
-            export PATH=$PATH:$GOPATH/bin:~/.krew/bin:~/go/src/github.com/gardener/gardener/hack/usage
+            export PATH=$PATH:$GOPATH/bin:~/.krew/bin
+            if [ "$(whoami)" == "demo" ]; then
+              export PATH=$PATH:~/go/src/github.com/gardener/gardener/hack/usage
+            else
+              cd ~
+            fi
             export XDG_CONFIG_HOME=~/.config
             export EDITOR=nvim
             export KUBE_EDITOR=nvim
@@ -250,15 +273,17 @@ spec:
             export PS1='[\w $(printf "$(kube_ps1)")] $(__git_ps1 "(%s)") [$(date +%H:%M)]\$ '
             [ -t 0 ] && stty -ixon
             [ -n "$GCTL_SESSION_ID" ] || [ -n "$TERM_SESSION_ID" ] || export GCTL_SESSION_ID=$(uuidgen)
-            cd ~/go/src/github.com/gardener/gardener
+            if [ "$(whoami)" == "demo" ]; then
+              cd ~/go/src/github.com/gardener/gardener
+            fi
             function flag_notify {
-              touch sync/$1
+              touch /tmp/sync/$1
             }
             function flag_wait {
-              [ -f sync/$1 ] || inotifywait -qq sync --include /$1$
+              [ -f /tmp/sync/$1 ] || inotifywait -qq /tmp/sync --include /$1$
             }
             function flag_delete {
-              rm sync/$1
+              rm /tmp/sync/$1
             }
             function token {
               jq -R '
@@ -332,6 +357,8 @@ spec:
               fi
             }
           EOF
+          cp ~/.bashrc /home/demo/.bashrc
+          chown demo:demo /home/demo/.bashrc
           sed 's/^  //' <<"EOF" > ~/.tmux.conf
             set -g mouse on
             bind -T copy-mode-vi MouseDown3Pane    send -X copy-selection-and-cancel
@@ -346,89 +373,185 @@ spec:
             set -g status-left-length 30
           EOF
 
-          mkdir -p ~/go/src/github.com/gardener
-          cd ~/go/src/github.com/gardener
-          [ -d gardener/.git ] || git clone -q https://github.com/gardener/gardener
-          cd gardener
-          git fetch
-          if [[ $NAMESPACE == "demo*" ]]; then
-            git checkout $(git tag | sort -V | tail -n 1)
-          elif [[ $NAMESPACE == "test*" ]]; then
-            git checkout master
-            git reset --hard origin/master
-          else
-            true # do not change the currently checked out commit
-          fi
+          sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
+            mkdir -p ~/go/src/github.com/gardener
+            cd ~/go/src/github.com/gardener
+            [ -d gardener/.git ] || git clone -q https://github.com/gardener/gardener
+            cd gardener
+            git fetch
+            if [[ $NAMESPACE == "demo*" ]]; then
+              git checkout $(git tag | sort -V | tail -n 1)
+            elif [[ $NAMESPACE == "test*" ]]; then
+              git checkout master
+              git reset --hard origin/master
+            else
+              true # do not change the currently checked out commit
+            fi
 
-          mkdir -p ~/gardener-patches
-          sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0001-Avoid-using-the-same-port-with-rootless-docker.patch
-            From f74bcb8325105ff82d856378c31e554de8af3c32 Mon Sep 17 00:00:00 2001
-            From: dev <dev>
-            Date: Fri, 4 Oct 2024 16:03:51 +0200
-            Subject: [PATCH 1/2] Avoid using the same port with rootless docker
+            rm -rf ~/gardener-patches
+            mkdir -p ~/gardener-patches
+            sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0001-Avoid-using-the-same-port-with-rootless-docker.patch
+              From f74bcb8325105ff82d856378c31e554de8af3c32 Mon Sep 17 00:00:00 2001
+              From: dev <dev>
+              Date: Fri, 4 Oct 2024 16:03:51 +0200
+              Subject: [PATCH 1/3] Avoid using the same port with rootless docker
 
-            To mitigate
-            https://github.com/moby/moby/issues/47812
-            ---
-             .../kind/cluster/templates/_extra_port_mappings.tpl             | 2 +-
-             1 file changed, 1 insertion(+), 1 deletion(-)
+              To mitigate
+              https://github.com/moby/moby/issues/47812
+              ---
+               .../kind/cluster/templates/_extra_port_mappings.tpl             | 2 +-
+               1 file changed, 1 insertion(+), 1 deletion(-)
 
-            diff --git a/example/gardener-local/kind/cluster/templates/_extra_port_mappings.tpl b/example/gardener-local/kind/cluster/templates/_extra_port_mappings.tpl
-            index 8e9e07ae9..ed5e4692a 100644
-            --- a/example/gardener-local/kind/cluster/templates/_extra_port_mappings.tpl
-            +++ b/example/gardener-local/kind/cluster/templates/_extra_port_mappings.tpl
-            @@ -10,7 +10,7 @@
-             {{- range $i, $listenAddress := (required ".Values.gardener.seed.istio.listenAddresses is required" .Values.gardener.seed.istio.listenAddresses) }}
-             - containerPort: {{ add 30443 $i }}
-             {{- if $.Values.gardener.controlPlane.deployed }}
-            -  hostPort: 443
-            +  hostPort: {{ add 443 $i 1 }}
-             {{- else }}
-               # TODO (plkokanov): when using skaffold to deploy, 172.18.255.2 is not used as listenAddress (unlike the local
-               #  deployment) because secondary IPs cannot be easily added to inside the `prow` containers. Additionally, there is no
-            --
-            2.45.2
-          PATCH_EOF
+              diff --git a/example/gardener-local/kind/cluster/templates/_extra_port_mappings.tpl b/example/gardener-local/kind/cluster/templates/_extra_port_mappings.tpl
+              index 8e9e07ae9..ed5e4692a 100644
+              --- a/example/gardener-local/kind/cluster/templates/_extra_port_mappings.tpl
+              +++ b/example/gardener-local/kind/cluster/templates/_extra_port_mappings.tpl
+              @@ -10,7 +10,7 @@
+               {{- range $i, $listenAddress := (required ".Values.gardener.seed.istio.listenAddresses is required" .Values.gardener.seed.istio.listenAddresses) }}
+               - containerPort: {{ add 30443 $i }}
+               {{- if $.Values.gardener.controlPlane.deployed }}
+              -  hostPort: 443
+              +  hostPort: {{ add 443 $i 1 }}
+               {{- else }}
+                 # TODO (plkokanov): when using skaffold to deploy, 172.18.255.2 is not used as listenAddress (unlike the local
+                 #  deployment) because secondary IPs cannot be easily added to inside the `prow` containers. Additionally, there is no
+              --
+              2.45.2
+            PATCH_EOF
 
-          sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0002-Only-set-sysctl-if-it-is-not-already-set.patch
-            From 232f2963c8285d1a8193b96929ad09883d849e3a Mon Sep 17 00:00:00 2001
-            From: dev <dev>
-            Date: Fri, 4 Oct 2024 16:06:47 +0200
-            Subject: [PATCH 2/2] Only set sysctl if it is not already set
+            sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0002-Only-set-sysctl-if-it-is-not-already-set.patch
+              From 232f2963c8285d1a8193b96929ad09883d849e3a Mon Sep 17 00:00:00 2001
+              From: dev <dev>
+              Date: Fri, 4 Oct 2024 16:06:47 +0200
+              Subject: [PATCH 2/3] Only set sysctl if it is not already set
 
-            ---
-             hack/kind-up.sh | 6 +++++-
-             1 file changed, 5 insertions(+), 1 deletion(-)
+              ---
+               hack/kind-up.sh | 6 +++++-
+               1 file changed, 5 insertions(+), 1 deletion(-)
 
-            diff --git a/hack/kind-up.sh b/hack/kind-up.sh
-            index 33d5d6193..c8e4b2543 100755
-            --- a/hack/kind-up.sh
-            +++ b/hack/kind-up.sh
-            @@ -338,7 +338,11 @@ fi
-             # workaround https://kind.sigs.k8s.io/docs/user/known-issues/#pod-errors-due-to-too-many-open-files
-             kubectl get nodes -o name |\
-               cut -d/ -f2 |\
-            -  xargs -I {} docker exec {} sh -c "sysctl fs.inotify.max_user_instances=8192"
-            +  xargs -I {} docker exec {} sh -c "
-            +    current_value=\$(sysctl -n fs.inotify.max_user_instances)
-            +    if [ \"\$current_value\" -ne 8192 ]; then
-            +      sysctl -w fs.inotify.max_user_instances=8192
-            +    fi"
+              diff --git a/hack/kind-up.sh b/hack/kind-up.sh
+              index 33d5d6193..c8e4b2543 100755
+              --- a/hack/kind-up.sh
+              +++ b/hack/kind-up.sh
+              @@ -338,7 +338,11 @@ fi
+               # workaround https://kind.sigs.k8s.io/docs/user/known-issues/#pod-errors-due-to-too-many-open-files
+               kubectl get nodes -o name |\
+                 cut -d/ -f2 |\
+              -  xargs -I {} docker exec {} sh -c "sysctl fs.inotify.max_user_instances=8192"
+              +  xargs -I {} docker exec {} sh -c "
+              +    current_value=\$(sysctl -n fs.inotify.max_user_instances)
+              +    if [ \"\$current_value\" -ne 8192 ]; then
+              +      sysctl -w fs.inotify.max_user_instances=8192
+              +    fi"
 
-             value=$(kubectl get cm -n kube-system kubeadm-config -oyaml | yq e '.data.ClusterConfiguration' | yq e '.apiServer.extraVolumes[0].hostPath')
-             if [[ -n "$value" && "$value" != "null" ]]; then
-            --
-            2.45.2
-          PATCH_EOF
+               value=$(kubectl get cm -n kube-system kubeadm-config -oyaml | yq e '.data.ClusterConfiguration' | yq e '.apiServer.extraVolumes[0].hostPath')
+               if [[ -n "$value" && "$value" != "null" ]]; then
+              --
+              2.45.2
+            PATCH_EOF
 
-          git config --global user.name  dev
-          git config --global user.email dev
-          if [[ $NAMESPACE == "demo*" ]] || [[ $NAMESPACE == "test*" ]]; then
-            if ! git am ~/gardener-patches/00*.patch; then
+            sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0002-Only-set-sysctl-if-it-is-not-already-set.patch
+              From 3c0699f7bf49644833712cddf3c059e8e7e262d8 Mon Sep 17 00:00:00 2001
+              From: dev <dev>
+              Date: Mon, 7 Oct 2024 15:26:06 +0200
+              Subject: [PATCH 3/3] Use a patched version of etcd druid
+
+              ---
+               imagevector/containers.yaml | 2 +-
+               1 file changed, 1 insertion(+), 1 deletion(-)
+
+              diff --git a/imagevector/containers.yaml b/imagevector/containers.yaml
+              index e1fb1cde8..a1c8dfbae 100644
+              --- a/imagevector/containers.yaml
+              +++ b/imagevector/containers.yaml
+              @@ -67,7 +67,7 @@ images:
+                       interacted with from other containers or other systems
+               - name: etcd-druid
+                 sourceRepository: github.com/gardener/etcd-druid
+              -  repository: europe-docker.pkg.dev/gardener-project/releases/gardener/etcd-druid
+              +  repository: localhost:5001/gardener/etcd-druid
+                 tag: "v0.22.7"
+               - name: dependency-watchdog
+                 sourceRepository: github.com/gardener/dependency-watchdog
+              --
+              2.45.2
+            PATCH_EOF
+
+            git config --global user.name  dev
+            git config --global user.email dev
+            if [[ $NAMESPACE == "demo*" ]] || [[ $NAMESPACE == "test*" ]]; then
+              if ! git am ~/gardener-patches/00*.patch; then
+                echo "Please check/rebase the patches as needed."
+                exit 1
+              fi
+            fi
+
+            cd ~/go/src/github.com/gardener
+            [ -d etcd-druid/.git ] || git clone -q https://github.com/gardener/etcd-druid
+            cd etcd-druid
+            git fetch
+            git reset --hard
+            git checkout $(yq '.images[] | select(.name == "etcd-druid").tag' ../gardener/imagevector/containers.yaml)
+
+            rm -rf ~/etcd-druid-patches
+            mkdir -p ~/etcd-druid-patches
+            sed 's/^  //' <<"PATCH_EOF" > ~/etcd-druid-patches/0001-Change-the-ownership-only-if-required.patch
+              From 0f0a713cb2d5c547313512ef441beb8ef3221416 Mon Sep 17 00:00:00 2001
+              From: dev <dev>
+              Date: Mon, 7 Oct 2024 15:42:24 +0200
+              Subject: [PATCH] Change the ownership only if required
+
+              In a rootless docker environment, changing the ownership
+              can only be done once, because the root user is actually not root.
+              ---
+               controllers/etcdcopybackupstask/reconciler.go | 2 +-
+               pkg/component/etcd/statefulset/statefulset.go | 4 ++--
+               2 files changed, 3 insertions(+), 3 deletions(-)
+
+              diff --git a/controllers/etcdcopybackupstask/reconciler.go b/controllers/etcdcopybackupstask/reconciler.go
+              index 0439cfdb..6f82aa42 100644
+              --- a/controllers/etcdcopybackupstask/reconciler.go
+              +++ b/controllers/etcdcopybackupstask/reconciler.go
+              @@ -377,7 +377,7 @@ func (r *Reconciler) createJobObject(ctx context.Context, task *druidv1alpha1.Et
+                                                      Name:         "change-backup-bucket-permissions",
+                                                      Image:        *initContainerImage,
+                                                      Command:      []string{"sh", "-c", "--"},
+              -                                       Args:         []string{fmt.Sprintf("%s%s%s%s", "chown -R 65532:65532 /home/nonroot/", *targetStore.Container, " /home/nonroot/", *sourceStore.Container)},
+              +                                       Args:         []string{fmt.Sprintf("[ $(stat -c '%u' /home/nonroot) -eq 65532 ] || %s%s%s%s", "chown -R 65532:65532 /home/nonroot/", *targetStore.Container, " /home/nonroot/", *sourceStore.Container)},
+                                                      VolumeMounts: volumeMounts,
+                                                      SecurityContext: &corev1.SecurityContext{
+                                                              RunAsGroup:   pointer.Int64(0),
+              diff --git a/pkg/component/etcd/statefulset/statefulset.go b/pkg/component/etcd/statefulset/statefulset.go
+              index b66ec17e..a473ad97 100644
+              --- a/pkg/component/etcd/statefulset/statefulset.go
+              +++ b/pkg/component/etcd/statefulset/statefulset.go
+              @@ -641,7 +641,7 @@ func (c *component) createOrPatch(ctx context.Context, sts *appsv1.StatefulSet,
+                                                      Image:           c.values.InitContainerImage,
+                                                      ImagePullPolicy: corev1.PullIfNotPresent,
+                                                      Command:         []string{"sh", "-c", "--"},
+              -                                       Args:            []string{"chown -R 65532:65532 /var/etcd/data"},
+              +                                       Args:            []string{"[ $(stat -c '%u' /var/etcd/data) -eq 65532 ] || chown -R 65532:65532 /var/etcd/data"},
+                                                      VolumeMounts:    getEtcdVolumeMounts(c.values),
+                                                      SecurityContext: &corev1.SecurityContext{
+                                                              RunAsGroup:   pointer.Int64(0),
+              @@ -660,7 +660,7 @@ func (c *component) createOrPatch(ctx context.Context, sts *appsv1.StatefulSet,
+                                                              Image:           c.values.InitContainerImage,
+                                                              ImagePullPolicy: corev1.PullIfNotPresent,
+                                                              Command:         []string{"sh", "-c", "--"},
+              -                                               Args:            []string{fmt.Sprintf("chown -R 65532:65532 /home/nonroot/%s", *c.values.BackupStore.Container)},
+              +                                               Args:            []string{fmt.Sprintf("[ $(stat -c '%u' /home/nonroot) -eq 65532 ] || chown -R 65532:65532 /home/nonroot/%s", *c.values.BackupStore.Container)},
+                                                              VolumeMounts:    getBackupRestoreVolumeMounts(c),
+                                                              SecurityContext: &corev1.SecurityContext{
+                                                                      RunAsGroup:   pointer.Int64(0),
+              --
+              2.45.2
+            PATCH_EOF
+
+            if ! git am ~/etcd-druid-patches/00*.patch; then
               echo "Please check/rebase the patches as needed."
               exit 1
             fi
-          fi
+          DEMO_EOF
 
           unshare -n /bin/sh -c 'sleep inf' &
           dockerd_netns_pid=$!
@@ -525,491 +648,492 @@ spec:
             }
           SCRIPT_EOF
 
-          mkdir -p cell
-          cd cell
-          if [ -d gardener/.git ]; then
-            cd gardener
-            git fetch origin HEAD --tags
-            if [[ $NAMESPACE == "demo*" ]]; then
-              git checkout $(git tag | sort -V | tail -n 1)
-            elif [[ $NAMESPACE == "test*" ]]; then
-              git checkout master
-              git reset --hard origin/master
+          sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
+            mkdir -p cell
+            cd cell
+            if [ -d gardener/.git ]; then
+              cd gardener
+              git fetch origin HEAD --tags
+              if [[ $NAMESPACE == "demo*" ]]; then
+                git checkout $(git tag | sort -V | tail -n 1)
+              elif [[ $NAMESPACE == "test*" ]]; then
+                git checkout master
+                git reset --hard origin/master
+              fi
+              cd -
+            else
+              git clone ~/go/src/github.com/gardener/gardener gardener
             fi
+            mkdir -p scripts
+            cp /usr/local/bin/tmux_functions.sh scripts
+            cp /usr/local/bin/is_tmux_window_shown.sh scripts
+
+            sed 's/^  //' <<DOCKERFILE > ~/go/src/github.com/gardener/gardener/cell/Dockerfile
+              FROM alpine:3.20
+              RUN apk add bash bash-completion bat bind-tools brotli conntrack-tools coreutils curl       \\
+                          diffutils docker-bash-completion findutils fzf gawk gcompat git git-prompt grep \\
+                          helm inotify-tools jq k9s less lsof make mandoc mc moreutils mount ncurses      \\
+                          neovim openssl parallel procps sed sysstat tar tcpdump tmux tmux-doc tzdata     \\
+                          util-linux vim wget yq
+              RUN echo golang                                                                                                  && \\
+                       VERSION=$(curl -sL https://golang.org/VERSION?m=text | awk 'NR==1{print}')                              && \\
+                       wget "https://go.dev/dl/\$VERSION.linux-amd64.tar.gz"                                                   && \\
+                       tar -C /usr/local -xzf "\$VERSION.linux-amd64.tar.gz"                                                   && \\
+                       ln -s /usr/local/go/bin/go /usr/local/bin/go                                                            && \\
+                       ln -s /usr/local/go/bin/gofmt /usr/local/bin/gofmt
+              RUN echo gardenlogin                                                                                             && \\
+                       VERSION=$(curl -sL https://raw.githubusercontent.com/gardener/gardenlogin/master/LATEST)                && \\
+                       wget "https://github.com/gardener/gardenlogin/releases/download/\$VERSION/gardenlogin_linux_amd64"      && \\
+                       mv gardenlogin_linux_amd64 /usr/local/bin/gardenlogin                                                   && \\
+                       chmod +x /usr/local/bin/gardenlogin                                                                     && \\
+                       ln -s "\$(which gardenlogin)" /usr/local/bin/kubectl-gardenlogin
+              RUN echo gardenctl                                                                                               && \\
+                       VERSION=$(curl -sL https://raw.githubusercontent.com/gardener/gardenctl-v2/master/LATEST)               && \\
+                       wget "https://github.com/gardener/gardenctl-v2/releases/download/\$VERSION/gardenctl_v2_linux_amd64"    && \\
+                       mv gardenctl_v2_linux_amd64 /usr/local/bin/gardenctl                                                    && \\
+                       chmod +x /usr/local/bin/gardenctl                                                                       && \\
+                       ln -s "\$(which gardenctl)" /usr/local/bin/g
+              RUN echo kns                                                                                                     && \\
+                       wget "https://raw.githubusercontent.com/blendle/kns/master/bin/kns"                                     && \\
+                       mv kns /usr/local/bin/kns                                                                               && \\
+                       chmod +x /usr/local/bin/kns
+              RUN echo krew                                                                                                    && \\
+                       VERSION=$(curl -sL https://api.github.com/repos/kubernetes-sigs/krew/releases/latest | jq .tag_name -r) && \\
+                       wget "https://github.com/kubernetes-sigs/krew/releases/download/\$VERSION/krew-linux_amd64.tar.gz"      && \\
+                       tar -xzf krew-linux_amd64.tar.gz ./krew-linux_amd64                                                     && \\
+                       mv krew-linux_amd64 /usr/local/bin/krew                                                                 && \\
+                       krew install krew
+              RUN echo ktx                                                                                                     && \\
+                       wget "https://raw.githubusercontent.com/blendle/kns/master/bin/ktx"                                     && \\
+                       mv ktx /usr/local/bin/ktx                                                                               && \\
+                       chmod +x /usr/local/bin/ktx
+              RUN echo kube-ps1                                                                                                && \\
+                       wget "https://raw.githubusercontent.com/jonmosco/kube-ps1/master/kube-ps1.sh"                           && \\
+                       mv kube-ps1.sh /usr/local/bin/kube-ps1.sh
+              RUN echo kubectl                                                                                                 && \\
+                       VERSION=$(curl -sL https://dl.k8s.io/release/stable.txt)                                                && \\
+                       wget "https://dl.k8s.io/release/\$VERSION/bin/linux/amd64/kubectl"                                      && \\
+                       mv kubectl /usr/local/bin/kubectl                                                                       && \\
+                       chmod +x /usr/local/bin/kubectl                                                                         && \\
+                       ln -s "\$(which kubectl)" /usr/local/bin/k
+              RUN echo tmux-completion                                                                                         && \\
+                       wget "https://raw.githubusercontent.com/imomaliev/tmux-bash-completion/master/completions/tmux"         && \\
+                       mv tmux /usr/share/bash-completion/completions/tmux
+              RUN echo yaml2json                                                                                               && \\
+                       VERSION=$(curl -sL https://api.github.com/repos/bronze1man/yaml2json/releases/latest | jq .tag_name -r) && \\
+                       wget "https://github.com/bronze1man/yaml2json/releases/download/\$VERSION/yaml2json_linux_amd64"        && \\
+                       mv yaml2json_linux_amd64 /usr/local/bin/yaml2json                                                       && \\
+                       chmod +x /usr/local/bin/yaml2json
+
+
+              RUN adduser --disabled-password --gecos '' demo
+              USER demo
+
+              RUN echo gron                                                                                                    && \\
+                       go install github.com/tomnomnom/gron@latest
+              RUN echo ginkgo                                                                                                  && \\
+                       go install github.com/onsi/ginkgo/v2/ginkgo@latest
+              RUN echo stern                                                                                                   && \\
+                       go install github.com/stern/stern@latest
+              RUN echo neat                                                                                                    && \\
+                       krew install neat
+              RUN echo node-shell                                                                                              && \\
+                       krew install node-shell
+            DOCKERFILE
+
+            sed 's/^  //' <<"DOCKERFILE" >> ~/go/src/github.com/gardener/gardener/cell/Dockerfile
+              USER root
+              RUN kubectl   completion bash                 > /usr/share/bash-completion/completions/kubectl
+              RUN gardenctl completion bash                 > /usr/share/bash-completion/completions/gardenctl
+              RUN /home/demo/go/bin/stern --completion=bash > /usr/share/bash-completion/completions/stern
+              USER demo
+
+              RUN sed 's/^  //' <<"EOF" > ~/.bash_profile
+                source /etc/bash/bashrc
+                source ~/.bashrc
+              EOF
+
+              RUN sed 's/^  //' <<"EOF" > ~/.bashrc
+                [ -z "$TMUX" ] && export TERM=xterm-256color
+                set -o pipefail
+                export GOPATH=~/go
+                export PATH=$PATH:$GOPATH/bin:~/.krew/bin:~/go/src/github.com/gardener/gardener/hack/usage
+                export XDG_CONFIG_HOME=~/.config
+                export EDITOR=nvim
+                export KUBE_EDITOR=nvim
+                export HISTFILESIZE=10000
+                export HISTSIZE=10000
+                export HISTTIMEFORMAT="%F %T "
+                export HISTCONTROL=ignorespace
+                export PROMPT_COMMAND='history -a'
+                export BAT_THEME="gruvbox-light" # assuming a light terminal theme
+                export KUBECTL_NODE_SHELL_IMAGE=localhost:5001/alpine:latest
+                shopt -s histappend
+                source /usr/share/bash-completion/completions/kubectl
+                source /usr/share/bash-completion/completions/gardenctl
+                complete -o default -F __start_kubectl k
+                complete -o default -F __start_gardenctl g
+                source /usr/local/bin/kube-ps1.sh
+                source /usr/share/git-core/git-prompt.sh
+                export PS1='[\w $(printf "$(kube_ps1)")] $(__git_ps1 "(%s)")\n\$ '
+                [ -t 0 ] && stty -ixon
+                [ -n "$GCTL_SESSION_ID" ] || [ -n "$TERM_SESSION_ID" ] || export GCTL_SESSION_ID=$(uuidgen)
+                cd ~/go/src/github.com/gardener/gardener
+                function uniq_unbuffered {
+                  # like uniq --unbuffered, if uniq had an --unbuffered option
+                  # compare interactively: uniq | cat; uniq_unbuffered | cat
+                  awk '{if (prev!=$0) print; fflush(); prev=$0}'
+                }
+                function token {
+                  jq -R '
+                    split(".")[1] |
+                    @base64d |
+                    fromjson |
+                    (.exp,.iat,.nbf) |= todate'
+                }
+              EOF
+
+              RUN sed 's/^  //' <<"EOF" > ~/.tmux.conf
+                set -g mouse on
+                bind -T copy-mode-vi MouseDown3Pane send -X copy-selection-and-cancel
+                bind -T copy-mode-vi MouseDown2Pane send -X copy-selection # Command right-click to copy without leaving the copy mode
+                bind -T copy-mode-vi MouseDragEnd1Pane send -X select-pane
+                set -g mode-keys vi
+                set -g default-shell /bin/bash
+                set -g pane-border-status top
+                set -g pane-border-format " #{pane_index} #{pane_title} - #{pane_current_command} "
+                set -g history-limit 100000
+                set -g status-left-length 30
+                set -g status-right ""
+              EOF
+
+              RUN sed 's/^  //' <<"EOF" > ~/greeting.sh
+                [ -n "$TMUX" ] && exit
+                export LANG=C.UTF-8
+                export TERM=xterm-256color
+                echo "Welcome to the Gardener Demo!"
+              EOF
+              ENV ENV=/home/demo/greeting.sh
+
+              RUN mkdir -p ~/go/src/github.com/gardener/gardener
+
+              ADD scripts/tmux_functions.sh /usr/local/bin/tmux_functions.sh
+              ADD scripts/is_tmux_window_shown.sh /usr/local/bin/is_tmux_window_shown.sh
+
+              RUN sed 's/^  //' <<"EOF" > ~/welcome.md
+                # Welcome to the online Gardener Demo environment
+
+                [Gardener][] is an open source project contributed by SAP and others that
+                provides a Kubernetes-based solution to manage Kubernetes clusters on various
+                cloud providers in a uniform way.
+
+                This online demo environment allows you to explore the features and capabilities
+                of Gardener interactively in a [tmux][] terminal session in your browser without
+                the need to install anything on your local machine.
+
+                The demo environment is based the [local setup][] documentation of Gardener that
+                allows you to deploy Gardener on your own machine. It is slightly restricted
+                compared to a local setup to avoid abusing this free environment but it should
+                not limit the exploration of the features in any way.
+
+                The interaction with the terminal session is captured for security purposes so
+                please refrain from typing in any sensitive information. The environment is
+                sealed off from the Internet to avoid using it as a proxy for malicious
+                activities.
+
+                Please follow the step by step instructions on the side to explore the features
+                of Gardener interactively.
+
+                For example, you could start with creating your first "shoot", a Kubernetes
+                cluster managed by Gardener with:
+
+                    k apply -f example/provider-local/shoot.yaml
+
+                [Gardener]:    https://gardener.cloud/
+                [tmux]:        https://github.com/tmux/tmux/wiki
+                [local setup]: https://github.com/gardener/gardener/blob/master/
+                               docs/deployment/getting_started_locally.md
+
+              EOF
+
+              RUN sed 's/^  //' <<"EOF" > ~/demo.md
+                # Welcome to the Gardener Demo environment
+
+                This is a demo environment for the Gardener (https://gardener.cloud/) project
+                that allows you to explore the features and capabilities of Gardener
+                interactively.
+
+                Gardener is an open source project contributed by SAP and others that provides a
+                Kubernetes-based solution to manage Kubernetes clusters on various cloud
+                providers in a uniform way.
+
+                This demo environment is based on KinD (Kubernetes in Docker): a KinD cluster
+                acts as the "runtime Garden" cluster where the Gardener operator manages the so
+                called "virtual Garden" cluster, the Gardener API.
+
+                The Gardener API is itself a Kubernetes API with various custom resources like
+                Shoots and Seeds. End users can create Shoots (Kubernetes clusters): the control
+                plane is then managed by Gardener on a Seed cluster. The worker nodes of the
+                Shoot cluster are created in the IaaS account that is configured by the end
+                user: in this local setup that has no IaaS dependencies, the worker nodes are
+                simulated by pods in the control plane of the shoot cluster.
+
+                As said above, the KinD cluster is the runtime Garden cluster and it also acts
+                as a Seed cluster. This might be slightly confusing because in real
+                installations these roles are separated into dedicated clusters.
+
+                Gardener managed shoots can be also upgraded to a seed cluster, such that they
+                can host shoot control planes. This allows for a recursive setup where a top
+                level, non Gardener managed seed cluster (the soil cluster) manages a small set
+                of shoots that are distributed across multiple IaaS providers and geographical
+                regions. These Gardener managed shoots are then registered as seeds and the end
+                user created shoots' control planes are hosted on them, close to the IaaS and
+                region that is chosen by the end user.
+
+                ## The demo environment
+
+                This demo environment contains a much more limited, but still fully functional
+                setup that allows you to explore the features of Gardener interactively. It is
+                based on the [local setup][] that you could also deploy on your own machine. It
+                is slightly restricted compared to the regular local setup (e.g. no Internet
+                access) to avoid abusing this free environment that is provided to reduce the
+                entry barrier for developers who would like to explore Gardener without
+                installing it on their own machine.
+
+                The demo environment is prepared in a tmux session. You can use the mouse to
+                select panes and windows. Please check the [tmux][] documentation for more
+                keyboard shortcuts, like `CTRL+b c` to create a new window for interactive
+                exploration.
+
+                The demo environment does not have Internet access, but you can use a local
+                container registry to pull the alpine and nginx images as
+                `localhost:5001/alpine:latest` and `localhost:5001/nginx:latest`.
+
+                [tmux]: https://github.com/tmux/tmux/wiki
+                [local setup]: https://github.com/gardener/gardener/blob/master
+                               /docs/deployment/getting_started_locally.md#
+                               alternative-way-to-set-up-garden-and-seed-leveraging-gardener-operator-complete
+              EOF
+
+              RUN sed 's/^  //' <<"SCRIPT_EOF" > ~/prepare-cell.sh
+                set -x
+                source /usr/local/bin/tmux_functions.sh
+                while ! [ -f ~/.kube/config ]; do sleep 1; done
+                tmux new -d -s gardener-demo -n demo -x 2000 -y 2000
+                tmux select-pane -T demo;
+                send_commands Enter <<"EOF"
+                  cat ~/welcome.md
+                EOF
+
+                tmux new -d -s advanced -n demo -x 2000 -y 2000
+                tmux select-pane -T demo;
+                send_commands Enter <<"EOF"
+                  less ~/demo.md
+                EOF
+
+                ##### Prepare the panes for the demo scenario here #####
+
+                new_window "garden" "garden" Enter <<"EOF"
+                  export KUBECONFIG=~/.kube_readonly/config
+                  nice watch is_tmux_window_shown.sh "&&" k get garden
+                EOF
+                new_pane "last operations" Enter <<"EOF"
+                  export KUBECONFIG=~/.kube_readonly/config
+                  while true; do k get garden local -o json -w 2>/dev/null \
+                    | jq -r --unbuffered '.status.lastOperation |
+                                          [.progress, .description] |
+                                          join(" ")
+                      ' | uniq_unbuffered \
+                    | sed --unbuffered 's/, /,\n+ /g' | ts
+                    echo "Restarting the watch" >&2
+                    sleep 10s
+                  done
+                EOF
+                new_pane "garden conditions" Enter <<"EOF"
+                  export KUBECONFIG=~/.kube_readonly/config
+                  while true; do
+                    clear
+                    is_tmux_window_shown.sh &&
+                    k get garden -o json | jq '
+                      [.items[] |
+                      { name: .metadata.name,
+                        conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
+                    ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl
+                    sleep 2s
+                  done
+                EOF
+
+                new_window "seed&shoots" "seed&shoots" Enter <<"EOF"
+                  export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+                  nice watch is_tmux_window_shown.sh "&&" k get -A seeds,managedseeds,shoots
+                EOF
+                new_pane "last operations seed" Enter <<"EOF"
+                  export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+                  while true; do
+                    k get seed -o json -w 2>/dev/null \
+                    | jq -r --unbuffered '[ "[seed=\(.metadata.name)]",
+                                            (.status.lastOperation |
+                                            [.progress, .description] |
+                                            join(" "))
+                                          ] | join(" ")
+                      ' | uniq_unbuffered | sed --unbuffered 's/, /,\n+ /g' | ts
+                    echo "Restarting the watch" >&2
+                    sleep 10s
+                  done
+                EOF
+                new_pane "last operations shoot" Enter <<"EOF"
+                  export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+                  while true; do
+                    k get shoot -A -o json -w 2>/dev/null  \
+                    | jq -r --unbuffered '[ "[shoot=\(.metadata.namespace)/\(.metadata.name)]",
+                                            (.status.lastOperation |
+                                            [.progress, .description] |
+                                            join(" "))
+                                          ] | join(" ")
+                      ' | uniq_unbuffered | sed --unbuffered 's/, /,\n+ /g' | ts
+                    echo "Restarting the watch" >&2
+                    sleep 10s
+                  done
+                EOF
+                new_pane "seed conditions" Enter <<"EOF"
+                  export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+                  while true; do
+                    clear
+                    is_tmux_window_shown.sh &&
+                    k get seeds -o json | jq '
+                      [.items[] |
+                      { name: .metadata.name,
+                        conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
+                    ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl
+                    sleep 2s
+                  done
+                EOF
+                new_horizontal_pane "shoot conditions" Enter <<"EOF"
+                  export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+                  while true; do
+                    clear
+                    is_tmux_window_shown.sh &&
+                    k get shoots -A -o json | jq '
+                      [.items[] |
+                      { name: [.metadata.namespace, .metadata.name] | join("/"),
+                        conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
+                    ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl
+                    sleep 2s
+                  done
+                EOF
+
+                new_window "shoot lifecycle" "Create" <<"EOF"
+                  export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+                  k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type="zone"' example/provider-local/shoot.yaml)
+                EOF
+                new_pane "Reconcile" <<"EOF"
+                  export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+                  k annotate shoot local -n garden-local 'gardener.cloud/operation=reconcile'
+                EOF
+                new_pane "Delete" <<"EOF"
+                  export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+                  k annotate shoot local -n garden-local 'confirmation.gardener.cloud/deletion=true' && k delete shoot local -n garden-local
+                EOF
+
+                new_window "runtime&seed pods" "pods" Enter <<"EOF"
+                  export KUBECONFIG=~/.kube_readonly/config
+                  # the while loop is used instead of watch to allow for scrolling a longer list in the tmux pane
+                  while true; do
+                    clear
+                    is_tmux_window_shown.sh &&
+                    k get pods -A -o wide | nl
+                    sleep 10s
+                  done
+                EOF
+
+                new_window "gardenctl" "gardenctl" <<"EOF"
+                  gardenctl config set-garden local --kubeconfig $PWD/example/operator/virtual-garden/kubeconfig
+                  eval $(gardenctl kubectl-env bash)
+                  g target --garden local --shoot local
+                EOF
+                new_window "ad-hoc" "ad-hoc" Enter <<"EOF"
+                  # Use this pane for ad-hoc commands
+                EOF
+
+                #### Misc ####
+
+                new_window "k9s" "k9s" <<"EOF"
+                  nice k9s
+                EOF
+
+                mkdir -p ~/.config/procps; rm -f ~/.config/procps/toprc
+                new_window "misc" "top" Enter <<"EOF"
+                  top
+                EOF
+                sleep 1
+                for k in z C c t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
+                new_pane "sar" Enter <<"EOF"
+                  while true; do sar -B -q LOAD -r -u -w -h 60 60; sleep 1m; done
+                EOF
+
+                new_pane "demo CPU limit" <<"EOF"
+                  nice dd if=/dev/zero of=/dev/null
+                EOF
+
+                new_pane "disk" Enter <<"EOF"
+                  df -h
+                EOF
+                new_pane "findmnt" Enter <<"EOF"
+                  findmnt
+                EOF
+
+                tmux select-window -t 0
+                tmux select-pane -t 1
+
+                echo "The tmux session is prepared. To attach to it, run 'tmux a'."
+                while [ ! -f /tmp/cell-tested ]; do sleep 1; done
+                touch /tmp/ready
+                sleep inf & # do not self destroy
+                wait
+              SCRIPT_EOF
+
+              RUN chmod +x ~/prepare-cell.sh
+
+              COPY --chown=demo:demo gardener /home/demo/go/src/github.com/gardener/gardener
+            DOCKERFILE
+
             cd -
-          else
-            git clone ~/go/src/github.com/gardener/gardener gardener
-          fi
-          mkdir -p scripts
-          cp /usr/local/bin/tmux_functions.sh scripts
-          cp /usr/local/bin/is_tmux_window_shown.sh scripts
 
-          sed 's/^  //' <<DOCKERFILE > ~/go/src/github.com/gardener/gardener/cell/Dockerfile
-            FROM alpine:3.20
-            RUN apk add bash bash-completion bat bind-tools brotli conntrack-tools coreutils curl       \\
-                        diffutils docker-bash-completion findutils fzf gawk gcompat git git-prompt grep \\
-                        helm inotify-tools jq k9s less lsof make mandoc mc moreutils mount ncurses      \\
-                        neovim openssl parallel procps sed sysstat tar tcpdump tmux tmux-doc tzdata     \\
-                        util-linux vim wget yq
-            RUN echo golang                                                                                                  && \\
-                     VERSION=$(curl -sL https://golang.org/VERSION?m=text | awk 'NR==1{print}')                              && \\
-                     wget "https://go.dev/dl/\$VERSION.linux-amd64.tar.gz"                                                   && \\
-                     tar -C /usr/local -xzf "\$VERSION.linux-amd64.tar.gz"                                                   && \\
-                     ln -s /usr/local/go/bin/go /usr/local/bin/go                                                            && \\
-                     ln -s /usr/local/go/bin/gofmt /usr/local/bin/gofmt
-            RUN echo gardenlogin                                                                                             && \\
-                     VERSION=$(curl -sL https://raw.githubusercontent.com/gardener/gardenlogin/master/LATEST)                && \\
-                     wget "https://github.com/gardener/gardenlogin/releases/download/\$VERSION/gardenlogin_linux_amd64"      && \\
-                     mv gardenlogin_linux_amd64 /usr/local/bin/gardenlogin                                                   && \\
-                     chmod +x /usr/local/bin/gardenlogin                                                                     && \\
-                     ln -s "\$(which gardenlogin)" /usr/local/bin/kubectl-gardenlogin
-            RUN echo gardenctl                                                                                               && \\
-                     VERSION=$(curl -sL https://raw.githubusercontent.com/gardener/gardenctl-v2/master/LATEST)               && \\
-                     wget "https://github.com/gardener/gardenctl-v2/releases/download/\$VERSION/gardenctl_v2_linux_amd64"    && \\
-                     mv gardenctl_v2_linux_amd64 /usr/local/bin/gardenctl                                                    && \\
-                     chmod +x /usr/local/bin/gardenctl                                                                       && \\
-                     ln -s "\$(which gardenctl)" /usr/local/bin/g
-            RUN echo kns                                                                                                     && \\
-                     wget "https://raw.githubusercontent.com/blendle/kns/master/bin/kns"                                     && \\
-                     mv kns /usr/local/bin/kns                                                                               && \\
-                     chmod +x /usr/local/bin/kns
-            RUN echo krew                                                                                                    && \\
-                     VERSION=$(curl -sL https://api.github.com/repos/kubernetes-sigs/krew/releases/latest | jq .tag_name -r) && \\
-                     wget "https://github.com/kubernetes-sigs/krew/releases/download/\$VERSION/krew-linux_amd64.tar.gz"      && \\
-                     tar -xzf krew-linux_amd64.tar.gz ./krew-linux_amd64                                                     && \\
-                     mv krew-linux_amd64 /usr/local/bin/krew                                                                 && \\
-                     krew install krew
-            RUN echo ktx                                                                                                     && \\
-                     wget "https://raw.githubusercontent.com/blendle/kns/master/bin/ktx"                                     && \\
-                     mv ktx /usr/local/bin/ktx                                                                               && \\
-                     chmod +x /usr/local/bin/ktx
-            RUN echo kube-ps1                                                                                                && \\
-                     wget "https://raw.githubusercontent.com/jonmosco/kube-ps1/master/kube-ps1.sh"                           && \\
-                     mv kube-ps1.sh /usr/local/bin/kube-ps1.sh
-            RUN echo kubectl                                                                                                 && \\
-                     VERSION=$(curl -sL https://dl.k8s.io/release/stable.txt)                                                && \\
-                     wget "https://dl.k8s.io/release/\$VERSION/bin/linux/amd64/kubectl"                                      && \\
-                     mv kubectl /usr/local/bin/kubectl                                                                       && \\
-                     chmod +x /usr/local/bin/kubectl                                                                         && \\
-                     ln -s "\$(which kubectl)" /usr/local/bin/k
-            RUN echo tmux-completion                                                                                         && \\
-                     wget "https://raw.githubusercontent.com/imomaliev/tmux-bash-completion/master/completions/tmux"         && \\
-                     mv tmux /usr/share/bash-completion/completions/tmux
-            RUN echo yaml2json                                                                                               && \\
-                     VERSION=$(curl -sL https://api.github.com/repos/bronze1man/yaml2json/releases/latest | jq .tag_name -r) && \\
-                     wget "https://github.com/bronze1man/yaml2json/releases/download/\$VERSION/yaml2json_linux_amd64"        && \\
-                     mv yaml2json_linux_amd64 /usr/local/bin/yaml2json                                                       && \\
-                     chmod +x /usr/local/bin/yaml2json
-
-
-            RUN adduser --disabled-password --gecos '' demo
-            USER demo
-
-            RUN echo gron                                                                                                    && \\
-                     go install github.com/tomnomnom/gron@latest
-            RUN echo ginkgo                                                                                                  && \\
-                     go install github.com/onsi/ginkgo/v2/ginkgo@latest
-            RUN echo stern                                                                                                   && \\
-                     go install github.com/stern/stern@latest
-            RUN echo neat                                                                                                    && \\
-                     krew install neat
-            RUN echo node-shell                                                                                              && \\
-                     krew install node-shell
-          DOCKERFILE
-
-          sed 's/^  //' <<"DOCKERFILE" >> ~/go/src/github.com/gardener/gardener/cell/Dockerfile
-            USER root
-            RUN kubectl   completion bash                 > /usr/share/bash-completion/completions/kubectl
-            RUN gardenctl completion bash                 > /usr/share/bash-completion/completions/gardenctl
-            RUN /home/demo/go/bin/stern --completion=bash > /usr/share/bash-completion/completions/stern
-            USER demo
-
-            RUN sed 's/^  //' <<"EOF" > ~/.bash_profile
-              source /etc/bash/bashrc
-              source ~/.bashrc
-            EOF
-
-            RUN sed 's/^  //' <<"EOF" > ~/.bashrc
-              [ -z "$TMUX" ] && export TERM=xterm-256color
-              set -o pipefail
-              export GOPATH=~/go
-              export PATH=$PATH:$GOPATH/bin:~/.krew/bin:~/go/src/github.com/gardener/gardener/hack/usage
-              export XDG_CONFIG_HOME=~/.config
-              export EDITOR=nvim
-              export KUBE_EDITOR=nvim
-              export HISTFILESIZE=10000
-              export HISTSIZE=10000
-              export HISTTIMEFORMAT="%F %T "
-              export HISTCONTROL=ignorespace
-              export PROMPT_COMMAND='history -a'
-              export BAT_THEME="gruvbox-light" # assuming a light terminal theme
-              export KUBECTL_NODE_SHELL_IMAGE=localhost:5001/alpine:latest
-              shopt -s histappend
-              source /usr/share/bash-completion/completions/kubectl
-              source /usr/share/bash-completion/completions/gardenctl
-              complete -o default -F __start_kubectl k
-              complete -o default -F __start_gardenctl g
-              source /usr/local/bin/kube-ps1.sh
-              source /usr/share/git-core/git-prompt.sh
-              export PS1='[\w $(printf "$(kube_ps1)")] $(__git_ps1 "(%s)")\n\$ '
-              [ -t 0 ] && stty -ixon
-              [ -n "$GCTL_SESSION_ID" ] || [ -n "$TERM_SESSION_ID" ] || export GCTL_SESSION_ID=$(uuidgen)
-              cd ~/go/src/github.com/gardener/gardener
-              function uniq_unbuffered {
-                # like uniq --unbuffered, if uniq had an --unbuffered option
-                # compare interactively: uniq | cat; uniq_unbuffered | cat
-                awk '{if (prev!=$0) print; fflush(); prev=$0}'
-              }
-              function token {
-                jq -R '
-                  split(".")[1] |
-                  @base64d |
-                  fromjson |
-                  (.exp,.iat,.nbf) |= todate'
-              }
-            EOF
-
-            RUN sed 's/^  //' <<"EOF" > ~/.tmux.conf
-              set -g mouse on
-              bind -T copy-mode-vi MouseDown3Pane send -X copy-selection-and-cancel
-              bind -T copy-mode-vi MouseDown2Pane send -X copy-selection # Command right-click to copy without leaving the copy mode
-              bind -T copy-mode-vi MouseDragEnd1Pane send -X select-pane
-              set -g mode-keys vi
-              set -g default-shell /bin/bash
-              set -g pane-border-status top
-              set -g pane-border-format " #{pane_index} #{pane_title} - #{pane_current_command} "
-              set -g history-limit 100000
-              set -g status-left-length 30
-              set -g status-right ""
-            EOF
-
-            RUN sed 's/^  //' <<"EOF" > ~/greeting.sh
-              [ -n "$TMUX" ] && exit
-              export LANG=C.UTF-8
-              export TERM=xterm-256color
-              echo "Welcome to the Gardener Demo!"
-            EOF
-            ENV ENV=/home/demo/greeting.sh
-
-            RUN mkdir -p ~/go/src/github.com/gardener/gardener
-
-            ADD scripts/tmux_functions.sh /usr/local/bin/tmux_functions.sh
-            ADD scripts/is_tmux_window_shown.sh /usr/local/bin/is_tmux_window_shown.sh
-
-            RUN sed 's/^  //' <<"EOF" > ~/welcome.md
-              # Welcome to the online Gardener Demo environment
-
-              [Gardener][] is an open source project contributed by SAP and others that
-              provides a Kubernetes-based solution to manage Kubernetes clusters on various
-              cloud providers in a uniform way.
-
-              This online demo environment allows you to explore the features and capabilities
-              of Gardener interactively in a [tmux][] terminal session in your browser without
-              the need to install anything on your local machine.
-
-              The demo environment is based the [local setup][] documentation of Gardener that
-              allows you to deploy Gardener on your own machine. It is slightly restricted
-              compared to a local setup to avoid abusing this free environment but it should
-              not limit the exploration of the features in any way.
-
-              The interaction with the terminal session is captured for security purposes so
-              please refrain from typing in any sensitive information. The environment is
-              sealed off from the Internet to avoid using it as a proxy for malicious
-              activities.
-
-              Please follow the step by step instructions on the side to explore the features
-              of Gardener interactively.
-
-              For example, you could start with creating your first "shoot", a Kubernetes
-              cluster managed by Gardener with:
-
-                  k apply -f example/provider-local/shoot.yaml
-
-              [Gardener]:    https://gardener.cloud/
-              [tmux]:        https://github.com/tmux/tmux/wiki
-              [local setup]: https://github.com/gardener/gardener/blob/master/
-                             docs/deployment/getting_started_locally.md
-
-            EOF
-
-            RUN sed 's/^  //' <<"EOF" > ~/demo.md
-              # Welcome to the Gardener Demo environment
-
-              This is a demo environment for the Gardener (https://gardener.cloud/) project
-              that allows you to explore the features and capabilities of Gardener
-              interactively.
-
-              Gardener is an open source project contributed by SAP and others that provides a
-              Kubernetes-based solution to manage Kubernetes clusters on various cloud
-              providers in a uniform way.
-
-              This demo environment is based on KinD (Kubernetes in Docker): a KinD cluster
-              acts as the "runtime Garden" cluster where the Gardener operator manages the so
-              called "virtual Garden" cluster, the Gardener API.
-
-              The Gardener API is itself a Kubernetes API with various custom resources like
-              Shoots and Seeds. End users can create Shoots (Kubernetes clusters): the control
-              plane is then managed by Gardener on a Seed cluster. The worker nodes of the
-              Shoot cluster are created in the IaaS account that is configured by the end
-              user: in this local setup that has no IaaS dependencies, the worker nodes are
-              simulated by pods in the control plane of the shoot cluster.
-
-              As said above, the KinD cluster is the runtime Garden cluster and it also acts
-              as a Seed cluster. This might be slightly confusing because in real
-              installations these roles are separated into dedicated clusters.
-
-              Gardener managed shoots can be also upgraded to a seed cluster, such that they
-              can host shoot control planes. This allows for a recursive setup where a top
-              level, non Gardener managed seed cluster (the soil cluster) manages a small set
-              of shoots that are distributed across multiple IaaS providers and geographical
-              regions. These Gardener managed shoots are then registered as seeds and the end
-              user created shoots' control planes are hosted on them, close to the IaaS and
-              region that is chosen by the end user.
-
-              ## The demo environment
-
-              This demo environment contains a much more limited, but still fully functional
-              setup that allows you to explore the features of Gardener interactively. It is
-              based on the [local setup][] that you could also deploy on your own machine. It
-              is slightly restricted compared to the regular local setup (e.g. no Internet
-              access) to avoid abusing this free environment that is provided to reduce the
-              entry barrier for developers who would like to explore Gardener without
-              installing it on their own machine.
-
-              The demo environment is prepared in a tmux session. You can use the mouse to
-              select panes and windows. Please check the [tmux][] documentation for more
-              keyboard shortcuts, like `CTRL+b c` to create a new window for interactive
-              exploration.
-
-              The demo environment does not have Internet access, but you can use a local
-              container registry to pull the alpine and nginx images as
-              `localhost:5001/alpine:latest` and `localhost:5001/nginx:latest`.
-
-              [tmux]: https://github.com/tmux/tmux/wiki
-              [local setup]: https://github.com/gardener/gardener/blob/master
-                             /docs/deployment/getting_started_locally.md#
-                             alternative-way-to-set-up-garden-and-seed-leveraging-gardener-operator-complete
-            EOF
-
-            RUN sed 's/^  //' <<"SCRIPT_EOF" > ~/prepare-cell.sh
-              set -x
-              source /usr/local/bin/tmux_functions.sh
-              while ! [ -f ~/.kube/config ]; do sleep 1; done
-              tmux new -d -s gardener-demo -n demo -x 2000 -y 2000
-              tmux select-pane -T demo;
-              send_commands Enter <<"EOF"
-                cat ~/welcome.md
-              EOF
-
-              tmux new -d -s advanced -n demo -x 2000 -y 2000
-              tmux select-pane -T demo;
-              send_commands Enter <<"EOF"
-                less ~/demo.md
-              EOF
-
-              ##### Prepare the panes for the demo scenario here #####
-
-              new_window "garden" "garden" Enter <<"EOF"
-                export KUBECONFIG=~/.kube_readonly/config
-                nice watch is_tmux_window_shown.sh "&&" k get garden
-              EOF
-              new_pane "last operations" Enter <<"EOF"
-                export KUBECONFIG=~/.kube_readonly/config
-                while true; do k get garden local -o json -w 2>/dev/null \
-                  | jq -r --unbuffered '.status.lastOperation |
-                                        [.progress, .description] |
-                                        join(" ")
-                    ' | uniq_unbuffered \
-                  | sed --unbuffered 's/, /,\n+ /g' | ts
-                  echo "Restarting the watch" >&2
-                  sleep 10s
-                done
-              EOF
-              new_pane "garden conditions" Enter <<"EOF"
-                export KUBECONFIG=~/.kube_readonly/config
-                while true; do
-                  clear
-                  is_tmux_window_shown.sh &&
-                  k get garden -o json | jq '
-                    [.items[] |
-                    { name: .metadata.name,
-                      conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
-                  ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl
-                  sleep 2s
-                done
-              EOF
-
-              new_window "seed&shoots" "seed&shoots" Enter <<"EOF"
-                export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-                nice watch is_tmux_window_shown.sh "&&" k get -A seeds,managedseeds,shoots
-              EOF
-              new_pane "last operations seed" Enter <<"EOF"
-                export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-                while true; do
-                  k get seed -o json -w 2>/dev/null \
-                  | jq -r --unbuffered '[ "[seed=\(.metadata.name)]",
-                                          (.status.lastOperation |
-                                          [.progress, .description] |
-                                          join(" "))
-                                        ] | join(" ")
-                    ' | uniq_unbuffered | sed --unbuffered 's/, /,\n+ /g' | ts
-                  echo "Restarting the watch" >&2
-                  sleep 10s
-                done
-              EOF
-              new_pane "last operations shoot" Enter <<"EOF"
-                export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-                while true; do
-                  k get shoot -A -o json -w 2>/dev/null  \
-                  | jq -r --unbuffered '[ "[shoot=\(.metadata.namespace)/\(.metadata.name)]",
-                                          (.status.lastOperation |
-                                          [.progress, .description] |
-                                          join(" "))
-                                        ] | join(" ")
-                    ' | uniq_unbuffered | sed --unbuffered 's/, /,\n+ /g' | ts
-                  echo "Restarting the watch" >&2
-                  sleep 10s
-                done
-              EOF
-              new_pane "seed conditions" Enter <<"EOF"
-                export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-                while true; do
-                  clear
-                  is_tmux_window_shown.sh &&
-                  k get seeds -o json | jq '
-                    [.items[] |
-                    { name: .metadata.name,
-                      conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
-                  ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl
-                  sleep 2s
-                done
-              EOF
-              new_horizontal_pane "shoot conditions" Enter <<"EOF"
-                export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-                while true; do
-                  clear
-                  is_tmux_window_shown.sh &&
-                  k get shoots -A -o json | jq '
-                    [.items[] |
-                    { name: [.metadata.namespace, .metadata.name] | join("/"),
-                      conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
-                  ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl
-                  sleep 2s
-                done
-              EOF
-
-              new_window "shoot lifecycle" "Create" <<"EOF"
-                export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-                k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type="zone"' example/provider-local/shoot.yaml)
-              EOF
-              new_pane "Reconcile" <<"EOF"
-                export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-                k annotate shoot local -n garden-local 'gardener.cloud/operation=reconcile'
-              EOF
-              new_pane "Delete" <<"EOF"
-                export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-                k annotate shoot local -n garden-local 'confirmation.gardener.cloud/deletion=true' && k delete shoot local -n garden-local
-              EOF
-
-              new_window "runtime&seed pods" "pods" Enter <<"EOF"
-                export KUBECONFIG=~/.kube_readonly/config
-                # the while loop is used instead of watch to allow for scrolling a longer list in the tmux pane
-                while true; do
-                  clear
-                  is_tmux_window_shown.sh &&
-                  k get pods -A -o wide | nl
-                  sleep 10s
-                done
-              EOF
-
-              new_window "gardenctl" "gardenctl" <<"EOF"
-                gardenctl config set-garden local --kubeconfig $PWD/example/operator/virtual-garden/kubeconfig
-                eval $(gardenctl kubectl-env bash)
-                g target --garden local --shoot local
-              EOF
-              new_window "ad-hoc" "ad-hoc" Enter <<"EOF"
-                # Use this pane for ad-hoc commands
-              EOF
-
-              #### Misc ####
-
-              new_window "k9s" "k9s" <<"EOF"
-                nice k9s
-              EOF
-
-              mkdir -p ~/.config/procps; rm -f ~/.config/procps/toprc
-              new_window "misc" "top" Enter <<"EOF"
-                top
-              EOF
-              sleep 1
-              for k in z C c t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
-              new_pane "sar" Enter <<"EOF"
-                while true; do sar -B -q LOAD -r -u -w -h 60 60; sleep 1m; done
-              EOF
-
-              new_pane "demo CPU limit" <<"EOF"
-                nice dd if=/dev/zero of=/dev/null
-              EOF
-
-              new_pane "disk" Enter <<"EOF"
-                df -h
-              EOF
-              new_pane "findmnt" Enter <<"EOF"
-                findmnt
-              EOF
-
-              tmux select-window -t 0
-              tmux select-pane -t 1
-
-              echo "The tmux session is prepared. To attach to it, run 'tmux a'."
-              while [ ! -f /tmp/cell-tested ]; do sleep 1; done
-              touch /tmp/ready
-              sleep inf & # do not self destroy
-              wait
-            SCRIPT_EOF
-
-            RUN chmod +x ~/prepare-cell.sh
-
-            COPY --chown=demo:demo gardener /home/demo/go/src/github.com/gardener/gardener
-          DOCKERFILE
-
-          cd -
-
-          mkdir -p ~/.kube/readonly
-          sed 's/^  //' <<"EOF" > ~/.kube/readonly/resources.yaml
-            apiVersion: v1
-            kind: ServiceAccount
-            metadata:
-              name: readonly
-              namespace: default
-            ---
-            apiVersion: rbac.authorization.k8s.io/v1
-            kind: ClusterRole
-            metadata:
-              name: readonly
-            rules:
-            - apiGroups: ["*"]
-              resources: ["*"]
-              verbs: ["get", "list", "watch"]
-            ---
-            apiVersion: rbac.authorization.k8s.io/v1
-            kind: ClusterRoleBinding
-            metadata:
-              name: readonly
-            roleRef:
-              apiGroup: rbac.authorization.k8s.io
+            mkdir -p ~/.kube/readonly
+            sed 's/^  //' <<"EOF" > ~/.kube/readonly/resources.yaml
+              apiVersion: v1
+              kind: ServiceAccount
+              metadata:
+                name: readonly
+                namespace: default
+              ---
+              apiVersion: rbac.authorization.k8s.io/v1
               kind: ClusterRole
-              name: readonly
-            subjects:
-            - kind: ServiceAccount
-              name: readonly
-              namespace: default
-          EOF
+              metadata:
+                name: readonly
+              rules:
+              - apiGroups: ["*"]
+                resources: ["*"]
+                verbs: ["get", "list", "watch"]
+              ---
+              apiVersion: rbac.authorization.k8s.io/v1
+              kind: ClusterRoleBinding
+              metadata:
+                name: readonly
+              roleRef:
+                apiGroup: rbac.authorization.k8s.io
+                kind: ClusterRole
+                name: readonly
+              subjects:
+              - kind: ServiceAccount
+                name: readonly
+                namespace: default
+            EOF
+          DEMO_EOF
 
           sed 's/^  //' <<"SCRIPT_EOF" > /usr/local/bin/prepare-operator-complete.sh
             tmux kill-server 2>/dev/null || true
             cd ~/go/src/github.com/gardener/gardener
-            rm -rf sync && mkdir -p sync
             cd - >/dev/null
             mkdir -p ~/.kube
             echo '{"current-context": "kind-gardener-operator-local"}' > ~/.kube/config
@@ -1027,6 +1151,12 @@ spec:
             EOF
 
             new_window "patches" "gardener" Enter <<"EOF"
+              su -l demo
+              git log -p origin/master.. --author dev
+            EOF
+            new_pane "etcd-druid" <<"EOF"
+              su -l demo
+              cd ../etcd-druid
               git log -p origin/master.. --author dev
             EOF
 
@@ -1073,17 +1203,13 @@ spec:
                 # KinD needs this folder
                 RUN mkdir -p /lib/modules
 
-                # allow the unprivileged users to list the content of the /root folder
-                # because the Gardener source code is mounted there
-                RUN chmod 755 /root
-
-                # dockeruser is the unprivileged user that runs the rootless Docker daemon
+                # demo is the unprivileged user that runs the rootless Docker daemon
                 RUN apt-get install -y curl jq less wget
-                RUN useradd -m -s /bin/bash -u 12345 dockeruser
+                RUN useradd -m -s /bin/bash -u 2000 demo
 
-                USER dockeruser
-                RUN cat <<"EOF" > /home/dockeruser/.bashrc
-                  export PATH=/home/dockeruser/bin:$PATH
+                USER demo
+                RUN cat <<"EOF" > /home/demo/.bashrc
+                  export PATH=/home/demo/bin:$PATH
                   export DOCKER_HOST=unix://${XDG_RUNTIME_DIR}/docker.sock
                 EOF
 
@@ -1111,13 +1237,13 @@ spec:
               docker build -t sysd --progress plain .
             EOF
             new_pane "docker run" <<"EOF"
-              rm -rf  ~/.docker-rootless-socket
-              mkdir -p ~/.docker-rootless ~/.docker-rootless-socket 2>/dev/null # on a persistent volume, not on overlayfs
-              chown 12345:12345 ~/.docker-rootless ~/.docker-rootless-socket
+              rm -rf   /home/demo/.docker-rootless-socket
+              mkdir -p /home/demo/.docker-rootless-socket
+              mkdir -p /home/demo/.docker-rootless        # on a persistent volume, not on overlayfs
               docker run -it --privileged --rm \
                      -v /root/go/src/github.com/gardener/gardener/dev:/root/go/src/github.com/gardener/gardener/dev \
-                     -v ~/.docker-rootless-socket:/run/user/12345 \
-                     -v ~/.docker-rootless:/home/dockeruser/.local \
+                     -v /home/demo/.docker-rootless-socket:/run/user/2000 \
+                     -v /home/demo/.docker-rootless:/home/demo/.local \
                      --tmpfs /tmp --tmpfs /run --tmpfs /run/lock \
                      --name sysd sysd
             EOF
@@ -1130,26 +1256,35 @@ spec:
                 sysctl -w net.ipv4.ping_group_range="0 2147483647"
                 sysctl -w net.ipv4.ip_unprivileged_port_start=0
                 setcap cap_net_bind_service=ep $(which rootlesskit)
-                loginctl enable-linger dockeruser
-                sed 's/^  //' <<"DOCKERUSER" | xargs -d '\0' \
-                machinectl shell dockeruser@ /bin/bash -c
+                loginctl enable-linger demo
+                sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
+                machinectl shell demo@ /bin/bash -c
                   dockerd-rootless-setuptool.sh install
-                DOCKERUSER
+                DEMO_EOF
               SYSD
             EOF
+
+            new_window "etcd-druid" "make" Enter <<"EOF"
+              su -l demo
+              export DOCKER_HOST=unix://$HOME/.docker-rootless-socket/docker.sock
+              cd ../etcd-druid
+              make REGISTRY=localhost:5001 docker-build docker-push
+            EOF
+
             new_window "rootless2" "interact" <<"EOF"
-              # machinectl shell dockeruser@
+              # machinectl shell demo@
               # systemctl --user status docker.service
               # journalctl --user -xeu docker.service
               docker exec -it sysd bash
             EOF
             new_pane "outside" <<"EOF"
-              export DOCKER_HOST=unix:///root/.docker-rootless-socket/docker.sock
+              su -l demo
+              export DOCKER_HOST=unix://$HOME/.docker-rootless-socket/docker.sock
               docker ps
             EOF
             new_pane "kind-operator-down" <<"EOF"
-              chmod -R 777 dev
-              export DOCKER_HOST=unix:///root/.docker-rootless-socket/docker.sock
+              su -l demo
+              export DOCKER_HOST=unix://$HOME/.docker-rootless-socket/docker.sock
               make kind-operator-down
             EOF
             new_pane "kind-operator-up" <<"EOF"
@@ -1159,20 +1294,21 @@ spec:
               # etcd change-backup-bucket-permissions
               # https://github.com/gardener/etcd-druid/blob/549d4a417905d66425cd3b91b26d9779de529223/internal/component/statefulset/stsmatcher.go#L187
               # chown -R 165536:165536 dev/local-backupbuckets/gardener-operator/ is the root 0 user in the user namespace
-              export DOCKER_HOST=unix:///root/.docker-rootless-socket/docker.sock
-              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n make kind-operator-up
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n
+              su -l demo
+              export DOCKER_HOST=unix://$HOME/.docker-rootless-socket/docker.sock
+              make kind-operator-up
             EOF
             new_pane "kind-operator-up fix" <<"EOF"
-              sed 's/^  //' <<"SCRIPT_EOF" | xargs -d '\0' \
-              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
-                {
-                  socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.1  TCP:172.18.255.1:444 &
-                  socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.10 TCP:172.18.255.10:445 &
-                  socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.11 TCP:172.18.255.11:446 &
-                  socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.12 TCP:172.18.255.12:447 &
-                  wait
-                }
-              SCRIPT_EOF
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n
+              su -l demo
+              {
+                socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.1  TCP:172.18.255.1:444 &
+                socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.10 TCP:172.18.255.10:445 &
+                socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.11 TCP:172.18.255.11:446 &
+                socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.12 TCP:172.18.255.12:447 &
+                wait
+              }
             EOF
 
             new_window "make" "make kind-operator-up" <<"EOF"
@@ -2043,6 +2179,7 @@ spec:
         # https://github.com/gardener/ci-infra/blob/dff565bced0f386dd1acb0743beb3831dae6c10d/config/prow/config.yaml#L288-L298
         - {name: cgroup,  mountPath: /sys/fs/cgroup}
         - {name: home,    mountPath: /root}
+        - {name: home,    mountPath: /home,           subPath: .home}
         - {name: home,    mountPath: /var/lib/docker, subPath: .docker}
         - {name: modules, mountPath: /lib/modules, readOnly: true}
       volumes:
