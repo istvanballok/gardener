@@ -1026,6 +1026,10 @@ spec:
               ' | grep --color=Always -P '^              (?!following|that|values|are)[a-z%][^ ]*|$'
             EOF
 
+            new_window "patches" "gardener" Enter <<"EOF"
+              git log -p origin/master.. --author dev
+            EOF
+
             new_window "rootless" "Dockerfile" Enter <<"EOF"
               mkdir -p docker
               cd docker
