@@ -1096,7 +1096,7 @@ spec:
             EOF
             new_pane "docker build" <<"EOF"
               cd docker
-              docker build -t sysd .
+              docker build -t sysd --progress plain .
             EOF
             new_pane "docker run" <<"EOF"
               rm -rf  ~/.docker-rootless-socket
