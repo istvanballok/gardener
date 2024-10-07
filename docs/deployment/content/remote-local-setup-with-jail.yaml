@@ -530,7 +530,12 @@ spec:
           if [ -d gardener/.git ]; then
             cd gardener
             git fetch origin HEAD --tags
-            git checkout FETCH_HEAD
+            if [[ $NAMESPACE == "demo*" ]]; then
+              git checkout $(git tag | sort -V | tail -n 1)
+            elif [[ $NAMESPACE == "test*" ]]; then
+              git checkout master
+              git reset --hard origin/master
+            fi
             cd -
           else
             git clone ~/go/src/github.com/gardener/gardener gardener
