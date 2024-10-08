@@ -71,7 +71,7 @@ spec:
                chmod +x /usr/local/bin/gardenlogin
                ln -s "$(which gardenlogin)" /usr/local/bin/kubectl-gardenlogin
           echo kind
-               VERSION=$(curl -sL https://api.github.com/repos/kubernetes-sigs/kind/releases/latest | jq .tag_name -r)
+               VERSION=$(curl -sL https://api.github.com/repos/kubernetes-sigs/kind/releases/latest | jq .tag_name -r -e || echo "v0.24.0")
                wget -N "https://kind.sigs.k8s.io/dl/$VERSION/kind-linux-amd64"
                cp kind-linux-amd64 /usr/local/bin/kind
                chmod +x /usr/local/bin/kind
@@ -80,7 +80,7 @@ spec:
                cp kns /usr/local/bin/kns
                chmod +x /usr/local/bin/kns
           echo krew
-               VERSION=$(curl -sL https://api.github.com/repos/kubernetes-sigs/krew/releases/latest | jq .tag_name -r)
+               VERSION=$(curl -sL https://api.github.com/repos/kubernetes-sigs/krew/releases/latest | jq .tag_name -r -e || echo "v0.4.4")
                wget -N "https://github.com/kubernetes-sigs/krew/releases/download/$VERSION/krew-linux_amd64.tar.gz"
                tar --no-same-owner -xzf krew-linux_amd64.tar.gz ./krew-linux_amd64
                mv krew-linux_amd64 /usr/local/bin/krew
@@ -101,7 +101,7 @@ spec:
                wget -N "https://raw.githubusercontent.com/imomaliev/tmux-bash-completion/master/completions/tmux"
                cp tmux /usr/share/bash-completion/completions/tmux
           echo yaml2json
-               VERSION=$(curl -sL https://api.github.com/repos/bronze1man/yaml2json/releases/latest | jq .tag_name -r)
+               VERSION=$(curl -sL https://api.github.com/repos/bronze1man/yaml2json/releases/latest | jq .tag_name -r -e || echo "v1.3.3")
                wget -N "https://github.com/bronze1man/yaml2json/releases/download/$VERSION/yaml2json_linux_amd64"
                cp yaml2json_linux_amd64 /usr/local/bin/yaml2json
                chmod +x /usr/local/bin/yaml2json
@@ -686,7 +686,8 @@ spec:
                        mv kns /usr/local/bin/kns                                                                               && \\
                        chmod +x /usr/local/bin/kns
               RUN echo krew                                                                                                    && \\
-                       VERSION=$(curl -sL https://api.github.com/repos/kubernetes-sigs/krew/releases/latest | jq .tag_name -r) && \\
+                       VERSION=$(curl -sL https://api.github.com/repos/kubernetes-sigs/krew/releases/latest \\
+                                                                                        | jq .tag_name -r -e || echo "v0.4.4") && \\
                        wget "https://github.com/kubernetes-sigs/krew/releases/download/\$VERSION/krew-linux_amd64.tar.gz"      && \\
                        tar -xzf krew-linux_amd64.tar.gz ./krew-linux_amd64                                                     && \\
                        mv krew-linux_amd64 /usr/local/bin/krew                                                                 && \\
@@ -708,7 +709,8 @@ spec:
                        wget "https://raw.githubusercontent.com/imomaliev/tmux-bash-completion/master/completions/tmux"         && \\
                        mv tmux /usr/share/bash-completion/completions/tmux
               RUN echo yaml2json                                                                                               && \\
-                       VERSION=$(curl -sL https://api.github.com/repos/bronze1man/yaml2json/releases/latest | jq .tag_name -r) && \\
+                       VERSION=$(curl -sL https://api.github.com/repos/bronze1man/yaml2json/releases/latest \\
+                                                                                        | jq .tag_name -r -e || echo "v1.3.3") && \\
                        wget "https://github.com/bronze1man/yaml2json/releases/download/\$VERSION/yaml2json_linux_amd64"        && \\
                        mv yaml2json_linux_amd64 /usr/local/bin/yaml2json                                                       && \\
                        chmod +x /usr/local/bin/yaml2json
@@ -1207,7 +1209,7 @@ spec:
                     chmod +x kubectl && \
                     mv kubectl bin
                 RUN cd && \
-                    VERSION=$(curl -sL https://api.github.com/repos/kubernetes-sigs/kind/releases/latest | jq .tag_name -r) && \
+                    VERSION=$(curl -sL https://api.github.com/repos/kubernetes-sigs/kind/releases/latest | jq .tag_name -r -e || echo "v0.24.0") && \
                     wget -N "https://kind.sigs.k8s.io/dl/$VERSION/kind-linux-amd64" && \
                     mv kind-linux-amd64 kind && \
                     chmod +x kind && \
