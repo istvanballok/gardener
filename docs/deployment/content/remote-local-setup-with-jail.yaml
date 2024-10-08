@@ -1138,12 +1138,12 @@ spec:
 
             new_window "patches" "gardener" Enter <<"EOF"
               su -l demo
-              git log -p origin/master.. --author dev
+              git log --color -p origin/master.. --author dev | less -RN
             EOF
-            new_pane "etcd-druid" <<"EOF"
+            new_pane "etcd-druid" Enter <<"EOF"
               su -l demo
               cd ../etcd-druid
-              git log -p origin/master.. --author dev
+              git log --color -p origin/master.. --author dev | less -RN
             EOF
 
             new_window "rootless" "Dockerfile" Enter <<"EOF"
