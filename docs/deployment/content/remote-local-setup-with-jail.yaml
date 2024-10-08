@@ -1337,11 +1337,11 @@ spec:
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
                 su demo -c -l
                   set -e
+                  netstat -ntlp
                   socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.1  TCP:172.18.255.1:444  &
                   socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.10 TCP:172.18.255.10:445 &
                   socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.11 TCP:172.18.255.11:446 &
                   socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.12 TCP:172.18.255.12:447 &
-                  netstat -ntlp
                   sleep 1
                   netstat -ntlp
                   flag_notify rootless_kind-operator-up-fix
