@@ -387,9 +387,9 @@ spec:
             cd gardener
             git fetch
             git am --abort || true
-            if [[ $NAMESPACE == "demo*" ]]; then
+            if [[ $NAMESPACE == demo* ]]; then
               git checkout $(git tag | sort -V | tail -n 1)
-            elif [[ $NAMESPACE == "test*" ]]; then
+            elif [[ $NAMESPACE == test* ]]; then
               git checkout master
               git reset --hard origin/master
             else
@@ -487,7 +487,7 @@ spec:
 
             git config --global user.name  dev
             git config --global user.email dev
-            if [[ $NAMESPACE == "demo*" ]] || [[ $NAMESPACE == "test*" ]]; then
+            if [[ $NAMESPACE == demo* ]] || [[ $NAMESPACE == test* ]]; then
               if ! git am ~/gardener-patches/00*.patch; then
                 echo "Please check/rebase the patches as needed."
                 exit 1
@@ -665,9 +665,9 @@ spec:
             if [ -d gardener/.git ]; then
               cd gardener
               git fetch origin HEAD --tags
-              if [[ $NAMESPACE == "demo*" ]]; then
+              if [[ $NAMESPACE == demo* ]]; then
                 git checkout $(git tag | sort -V | tail -n 1)
-              elif [[ $NAMESPACE == "test*" ]]; then
+              elif [[ $NAMESPACE == test* ]]; then
                 git checkout master
                 git reset --hard origin/master
               fi
