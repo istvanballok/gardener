@@ -378,7 +378,7 @@ spec:
           EOF
 
 
-          sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
+          sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su demo -c -l
             set -x
 
             git config --global user.name  dev
@@ -636,7 +636,7 @@ spec:
             }
           SCRIPT_EOF
 
-          sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
+          sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su demo -c -l
             mkdir -p cell
             cd cell
             if [ -d gardener/.git ]; then
