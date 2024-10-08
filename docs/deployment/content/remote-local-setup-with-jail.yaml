@@ -1324,6 +1324,7 @@ spec:
                   export DOCKER_HOST=unix://$HOME/.docker-rootless-socket/docker.sock
                   cd ../etcd-druid
                   nice time make REGISTRY=localhost:5001 docker-build docker-push
+                  docker system prune -f
                   flag_notify rootless_etcd-druid-patched
                 DEMO_EOF
               NETWORK_EOF
