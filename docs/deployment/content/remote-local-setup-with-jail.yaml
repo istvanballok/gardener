@@ -398,6 +398,7 @@ spec:
             cd gardener
             git fetch
             git am --abort || true
+            git reset --hard
             if [[ $NAMESPACE == demo* ]]; then
               git checkout $(git tag | sort -V | tail -n 1)
             elif [[ $NAMESPACE == test* ]]; then
