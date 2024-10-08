@@ -360,7 +360,7 @@ spec:
               fi
             }
           EOF
-
+          echo "export NAMESPACE=$NAMESPACE" >> ~/.bashrc
           cp ~/.bashrc /home/demo/.bashrc
           chown demo:demo /home/demo/.bashrc
 
