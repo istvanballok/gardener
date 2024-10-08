@@ -588,12 +588,12 @@ spec:
           sed 's/^  //' <<"SCRIPT_EOF" > /usr/local/bin/tmux_functions.sh
             function wait_for_prompt {
               # wait for the character '#' or '>' to appear in the last non empty line of the tmux pane indicating that the bash prompt is ready
-              while ! tmux capture-pane -p | grep -v ^$ | tail -n 1 | grep -E '(\$|#|>)$' >/dev/null; do sleep .3; done
+              while ! tmux capture-pane -p | grep -v ^$ | tr -d '\n' | grep -E '(\$|#|>)$' >/dev/null; do sleep .3; done
             }
 
             function wait_for_line {
               # wait for a line to appear in the last non empty line of the tmux pane indicating that the input was echoed back by bash
-              while ! tmux capture-pane -p | grep -v ^$ | tail -n 1 | grep -F -- "$1" >/dev/null; do sleep .3; done
+              while ! tmux capture-pane -p | grep -v ^$ | tr -d '\n' | grep -F -- "$1\$" >/dev/null; do sleep .3; done
             }
 
             function send_line {
