@@ -1301,9 +1301,10 @@ spec:
                   set -e
                   export DOCKER_HOST=unix://$HOME/.docker-rootless-socket/docker.sock
                   nice time make kind-operator-down kind-operator-up
-                  DOCKER_IP=$(docker exec gardener-operator-local-control-plane ip addr show eth0 | awk '/inet /{print $2}' | cut -d '/' -f 1)
-                  yq -i ".clusters[0].cluster.server=\"https://$DOCKER_IP:6443\"" $PWD/example/gardener-local/kind/operator/kubeconfig
+                  PORT=$(yq '.clusters[0].cluster.server' $PWD/example/gardener-local/kind/operator/kubeconfig | sed -E 's/.*:([^:]+)$/\1/')
                   flag_notify rootless_kind-operator-up
+                  yq -i ".clusters[0].cluster.server=\"https://172.18.255.1:6443\"" $PWD/example/gardener-local/kind/operator/kubeconfig
+                  socat TCP-LISTEN:6443,fork,reuseaddr,bind=172.18.255.1 TCP:127.0.0.1:$PORT
                 DEMO_EOF
               NETWORK_EOF
             EOF
