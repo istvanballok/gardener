@@ -1310,10 +1310,10 @@ spec:
               flag_wait rootless_kind-operator-up &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
-                export DOCKER_HOST=unix://$HOME/.docker-rootless-socket/docker.sock
+                export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket/docker.sock
                 DOCKER_IP=$(docker exec gardener-operator-local-control-plane ip addr show eth0 | awk '/inet /{print $2}' | cut -d '/' -f 1)
                 ip address add $DOCKER_IP dev lo
-                yq -i ".clusters[0].cluster.server=\"https://$DOCKER_IP:6443\"" $PWD/example/gardener-local/kind/operator/kubeconfig
+                yq -i ".clusters[0].cluster.server=\"https://$DOCKER_IP:6443\"" /home/demo/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator/kubeconfig
                 sed 's/^  //' <<DEMO_EOF | xargs -d '\0' \
                 su demo -c -l
                   set -e
