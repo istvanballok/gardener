@@ -377,7 +377,6 @@ spec:
             set -g status-left-length 30
           EOF
 
-
           sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su demo -c -l
             set -x
 
