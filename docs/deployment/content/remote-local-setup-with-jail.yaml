@@ -1313,7 +1313,9 @@ spec:
                 export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket/docker.sock
                 DOCKER_IP=$(docker exec gardener-operator-local-control-plane ip addr show eth0 | awk '/inet /{print $2}' | cut -d '/' -f 1)
                 ip address add $DOCKER_IP dev lo
-                yq -i ".clusters[0].cluster.server=\"https://$DOCKER_IP:6443\"" /home/demo/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator/kubeconfig
+                KUBECONFIG=/home/demo/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator/kubeconfig
+                PORT=$(yq '.clusters[0].cluster.server' $KUBECONFIG | sed -E 's/.*:([^:]+)$/\1/')
+                yq -i ".clusters[0].cluster.server=\"https://$DOCKER_IP:6443\"" $KUBECONFIG
                 sed 's/^  //' <<DEMO_EOF | xargs -d '\0' \
                 su demo -c -l
                   set -e
