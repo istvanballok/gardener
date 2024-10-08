@@ -1144,8 +1144,6 @@ spec:
 
           sed 's/^  //' <<"SCRIPT_EOF" > /usr/local/bin/prepare-operator-complete.sh
             tmux kill-server 2>/dev/null || true
-            cd ~/go/src/github.com/gardener/gardener
-            cd - >/dev/null
             mkdir -p ~/.kube
             echo '{"current-context": "kind-gardener-operator-local"}' > ~/.kube/config
             source /usr/local/bin/tmux_functions.sh
