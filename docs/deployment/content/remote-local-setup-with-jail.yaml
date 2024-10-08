@@ -50,14 +50,6 @@ spec:
 
           useradd -m -s /bin/bash -u 2000 demo
 
-          sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
-            sed 's/^  //' <<"EOF" > ~/.bash_profile
-              source /etc/bash/bashrc
-              source ~/.bashrc
-            EOF
-            touch ~/.bashrc
-          DEMO_EOF
-
           mkdir -p ~/.cache/wget
           cd ~/.cache/wget
           echo golang
@@ -365,8 +357,10 @@ spec:
             }
           EOF
           echo "export NAMESPACE=$NAMESPACE" >> ~/.bashrc
+
+          cp ~/.bash_profile /home/demo/.bash_profile
           cp ~/.bashrc /home/demo/.bashrc
-          chown demo:demo /home/demo/.bashrc
+          chown demo:demo /home/demo/.bash_profile /home/demo/.bashrc
 
           sed 's/^  //' <<"EOF" > ~/.tmux.conf
             set -g mouse on
