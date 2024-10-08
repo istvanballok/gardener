@@ -1172,10 +1172,12 @@ spec:
                   tee /etc/apt/sources.list.d/docker.list > /dev/null
                 RUN apt-get update
 
+                # https://docs.docker.com/engine/security/rootless/
                 # Install the latest version of Docker that includes /usr/bin/dockerd-rootless-setuptool.sh
                 RUN apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-                # Allow delegation of all controllers
+                # https://kind.sigs.k8s.io/docs/user/rootless/#host-requirements
+                # Allow delegation of all [cgroup] controllers
                 RUN mkdir -p /etc/systemd/system/user@.service.d
                 RUN cat > /etc/systemd/system/user@.service.d/delegate.conf <<EOF
                 [Service]
