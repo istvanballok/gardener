@@ -1225,10 +1225,11 @@ spec:
               cd docker
               docker build -t sysd --progress plain . && flag_notify sysd_docker-build
             EOF
-            new_pane "docker run" <<"EOF"
+            new_pane "docker run" Enter <<"EOF"
               rm -rf   /home/demo/.docker-rootless-socket
               mkdir -p        /home/demo/.docker-rootless /home/demo/.docker-rootless-socket
               chown demo:demo /home/demo/.docker-rootless /home/demo/.docker-rootless-socket
+              flag_wait sysd_docker-build &&
               docker run -it --privileged --rm \
                      -v /root/go/src/github.com/gardener/gardener/dev:/root/go/src/github.com/gardener/gardener/dev \
                      -v /home/demo/.docker-rootless-socket:/run/user/2000 \
