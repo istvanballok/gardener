@@ -1265,13 +1265,6 @@ spec:
               SYSD
             EOF
 
-            new_window "etcd-druid" "make" Enter <<"EOF"
-              su -l demo
-              export DOCKER_HOST=unix://$HOME/.docker-rootless-socket/docker.sock
-              cd ../etcd-druid
-              make REGISTRY=localhost:5001 docker-build docker-push
-            EOF
-
             new_window "rootless2" "interact" <<"EOF"
               # machinectl shell demo@
               # systemctl --user status docker.service
@@ -1288,28 +1281,102 @@ spec:
               export DOCKER_HOST=unix://$HOME/.docker-rootless-socket/docker.sock
               make kind-operator-down
             EOF
-            new_pane "kind-operator-up" <<"EOF"
-              # TODO https://github.com/moby/moby/issues/47812 Need to use different IPs for the host and the container
-              # https://github.com/docker/compose/issues/11169#issuecomment-1826846604 seems to be supported by podman
-              # sysctl: check if the value is low: https://kind.sigs.k8s.io/docs/user/known-issues/#pod-errors-due-to-too-many-open-files
-              # etcd change-backup-bucket-permissions
-              # https://github.com/gardener/etcd-druid/blob/549d4a417905d66425cd3b91b26d9779de529223/internal/component/statefulset/stsmatcher.go#L187
-              # chown -R 165536:165536 dev/local-backupbuckets/gardener-operator/ is the root 0 user in the user namespace
-              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n
+            new_pane "sync kubeconfig" Enter <<"EOF"
               su -l demo
-              export DOCKER_HOST=unix://$HOME/.docker-rootless-socket/docker.sock
-              make kind-operator-up
+              sync_kubeconfig example/gardener-local/kind/operator
             EOF
-            new_pane "kind-operator-up fix" <<"EOF"
-              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n
-              su -l demo
-              {
-                socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.1  TCP:172.18.255.1:444 &
-                socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.10 TCP:172.18.255.10:445 &
-                socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.11 TCP:172.18.255.11:446 &
-                socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.12 TCP:172.18.255.12:447 &
-                wait
-              }
+            new_pane "kind-operator-up" Enter <<"EOF"
+              flag_wait sysd_rootless-docker-service &&
+              sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
+                sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
+                su demo -c -l
+                  set -e
+                  export DOCKER_HOST=unix://$HOME/.docker-rootless-socket/docker.sock
+                  nice time make kind-operator-down kind-operator-up
+                  DOCKER_IP=$(docker exec gardener-operator-local-control-plane ip addr show eth0 | awk '/inet /{print $2}' | cut -d '/' -f 1)
+                  yq -i ".clusters[0].cluster.server=\"https://$DOCKER_IP:6443\"" $PWD/example/gardener-local/kind/operator/kubeconfig
+                  flag_notify rootless_kind-operator-up
+                DEMO_EOF
+              NETWORK_EOF
+            EOF
+            new_pane "wait for the KinD cluster" Enter <<"EOF"
+              flag_wait rootless_kind-operator-up &&
+              sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
+                sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
+                su demo -c -l
+                  set -e
+                  time (kubectl wait --for=jsonpath='{.status.numberReady}'=3 daemonset   -A --all --timeout=-1s &
+                        kubectl wait --for=condition=available                deployments -A --all --timeout=-1s &
+                        wait)
+                  flag_notify rootless_kind-operator-up-ready
+                DEMO_EOF
+              NETWORK_EOF
+            EOF
+            new_pane "patched etcd-druid" Enter <<"EOF"
+              flag_wait rootless_kind-operator-up-ready &&
+              sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
+                sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
+                su demo -c -l
+                  set -e
+                  export DOCKER_HOST=unix://$HOME/.docker-rootless-socket/docker.sock
+                  cd ../etcd-druid
+                  nice time make REGISTRY=localhost:5001 docker-build docker-push
+                  flag_notify rootless_etcd-druid-patched
+                DEMO_EOF
+              NETWORK_EOF
+            EOF
+            new_pane "kind-operator-up fix" Enter <<"EOF"
+              flag_wait rootless_kind-operator-up-ready &&
+              sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
+                sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
+                su demo -c -l
+                  set -e
+                  socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.1  TCP:172.18.255.1:444  &
+                  socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.10 TCP:172.18.255.10:445 &
+                  socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.11 TCP:172.18.255.11:446 &
+                  socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.12 TCP:172.18.255.12:447 &
+                  netstat -ntlp
+                  sleep 1
+                  netstat -ntlp
+                  flag_notify rootless_kind-operator-up-fix
+                  wait
+                DEMO_EOF
+              NETWORK_EOF
+            EOF
+
+            new_window "rootless3" "operator-up" Enter <<"EOF"
+              flag_wait rootless_etcd-druid-patched &&
+              flag_wait rootless_kind-operator-up-fix &&
+              sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
+                sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
+                su demo -c -l
+                  set -e
+                  nice time make operator-up
+                  flag_notify rootless_operator-up
+                DEMO_EOF
+              NETWORK_EOF
+            EOF
+            new_pane "operator-seed-up" Enter <<"EOF"
+              flag_wait rootless_operator-up &&
+              sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
+                sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
+                su demo -c -l
+                  set -e
+                  nice time make operator-seed-up
+                  flag_notify rootless_operator-seed-up
+                DEMO_EOF
+              NETWORK_EOF
+            EOF
+            new_pane "debug" Enter <<"EOF"
+              flag_wait rootless_operator-up &&
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n \
+              su demo -l
             EOF
 
             new_window "make" "make kind-operator-up" <<"EOF"
