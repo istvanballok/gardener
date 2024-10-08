@@ -243,7 +243,6 @@ spec:
             source ~/.bashrc
           EOF
 
-          mkdir -p /tmp/sync
           sed 's/^  //' <<"EOF" > ~/.bashrc
             [ -z "$TMUX" ] && export TERM=xterm-256color
             set -o pipefail
@@ -278,12 +277,15 @@ spec:
               cd ~/go/src/github.com/gardener/gardener || true
             fi
             function flag_notify {
+              mkdir -p /tmp/sync
               touch /tmp/sync/$1
             }
             function flag_wait {
+              mkdir -p /tmp/sync
               [ -f /tmp/sync/$1 ] || inotifywait -qq /tmp/sync --include /$1$
             }
             function flag_delete {
+              mkdir -p /tmp/sync
               rm /tmp/sync/$1
             }
             function token {
