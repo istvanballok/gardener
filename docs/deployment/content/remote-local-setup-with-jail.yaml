@@ -129,6 +129,11 @@ spec:
           EOF
           chmod +x ~/.install.sh
           ~/.install.sh
+
+          kubectl   completion bash        > /usr/share/bash-completion/completions/kubectl
+          gardenctl completion bash        > /usr/share/bash-completion/completions/gardenctl
+          ~/go/bin/stern --completion=bash > /usr/share/bash-completion/completions/stern
+
           su -l demo -c -l ~/.install.sh
 
           bash -c "
@@ -229,10 +234,6 @@ spec:
               echo
             fi
           EOF
-
-          kubectl   completion bash        > /usr/share/bash-completion/completions/kubectl
-          gardenctl completion bash        > /usr/share/bash-completion/completions/gardenctl
-          ~/go/bin/stern --completion=bash > /usr/share/bash-completion/completions/stern
 
           sed 's/^  //' <<"EOF" > ~/.bash_profile
             source /etc/bash/bashrc
