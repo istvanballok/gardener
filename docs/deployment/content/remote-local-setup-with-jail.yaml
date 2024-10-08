@@ -380,6 +380,10 @@ spec:
 
           sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
             set -x
+
+            git config --global user.name  dev
+            git config --global user.email dev
+
             mkdir -p ~/go/src/github.com/gardener
             cd ~/go/src/github.com/gardener
             [ -d gardener/.git ] || git clone -q https://github.com/gardener/gardener
@@ -484,8 +488,6 @@ spec:
               2.45.2
             PATCH_EOF
 
-            git config --global user.name  dev
-            git config --global user.email dev
             if [[ $NAMESPACE == demo* ]] || [[ $NAMESPACE == test* ]]; then
               if ! git am ~/gardener-patches/00*.patch; then
                 echo "Please check/rebase the patches as needed."
