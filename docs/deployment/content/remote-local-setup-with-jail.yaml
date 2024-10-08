@@ -1221,9 +1221,9 @@ spec:
               DOCKERFILE
               vim Dockerfile
             EOF
-            new_pane "docker build" <<"EOF"
+            new_pane "docker build" Enter <<"EOF"
               cd docker
-              docker build -t sysd --progress plain .
+              docker build -t sysd --progress plain . && flag_notify sysd_docker-build
             EOF
             new_pane "docker run" <<"EOF"
               rm -rf   /home/demo/.docker-rootless-socket
