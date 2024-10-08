@@ -461,7 +461,7 @@ spec:
               2.45.2
             PATCH_EOF
 
-            sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0002-Only-set-sysctl-if-it-is-not-already-set.patch
+            sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0003-Use-a-patched-version-of-etcd-druid.patch
               From 3c0699f7bf49644833712cddf3c059e8e7e262d8 Mon Sep 17 00:00:00 2001
               From: dev <dev>
               Date: Mon, 7 Oct 2024 15:26:06 +0200
