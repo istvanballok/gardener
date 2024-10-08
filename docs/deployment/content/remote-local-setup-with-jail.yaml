@@ -1241,7 +1241,7 @@ spec:
               chown demo:demo /home/demo/.docker-rootless /home/demo/.docker-rootless-socket
               flag_wait sysd_docker-build &&
               docker run -it --privileged --rm \
-                     -v /root/go/src/github.com/gardener/gardener/dev:/root/go/src/github.com/gardener/gardener/dev \
+                     -v /home/demo/go/src/github.com/gardener/gardener/dev:/home/demo/go/src/github.com/gardener/gardener/dev \
                      -v /home/demo/.docker-rootless-socket:/run/user/2000 \
                      -v /home/demo/.docker-rootless:/home/demo/.local \
                      --tmpfs /tmp --tmpfs /run --tmpfs /run/lock \
