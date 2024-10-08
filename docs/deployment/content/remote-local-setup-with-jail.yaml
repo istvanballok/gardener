@@ -461,38 +461,14 @@ spec:
               2.45.2
             PATCH_EOF
 
-            sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0003-Use-a-patched-version-of-etcd-druid.patch
-              From 3c0699f7bf49644833712cddf3c059e8e7e262d8 Mon Sep 17 00:00:00 2001
-              From: dev <dev>
-              Date: Mon, 7 Oct 2024 15:26:06 +0200
-              Subject: [PATCH 3/3] Use a patched version of etcd druid
-
-              ---
-               imagevector/containers.yaml | 2 +-
-               1 file changed, 1 insertion(+), 1 deletion(-)
-
-              diff --git a/imagevector/containers.yaml b/imagevector/containers.yaml
-              index e1fb1cde8..a1c8dfbae 100644
-              --- a/imagevector/containers.yaml
-              +++ b/imagevector/containers.yaml
-              @@ -67,7 +67,7 @@ images:
-                       interacted with from other containers or other systems
-               - name: etcd-druid
-                 sourceRepository: github.com/gardener/etcd-druid
-              -  repository: europe-docker.pkg.dev/gardener-project/releases/gardener/etcd-druid
-              +  repository: localhost:5001/gardener/etcd-druid
-                 tag: "v0.22.7"
-               - name: dependency-watchdog
-                 sourceRepository: github.com/gardener/dependency-watchdog
-              --
-              2.45.2
-            PATCH_EOF
-
             if [[ $NAMESPACE == demo* ]] || [[ $NAMESPACE == test* ]]; then
               if ! git am ~/gardener-patches/00*.patch; then
                 echo "Please check/rebase the patches as needed."
                 exit 1
               fi
+              sed -i 's|europe-docker.pkg.dev/gardener-project/releases/gardener/etcd-druid|localhost:5001/gardener/etcd-druid|' imagevector/containers.yaml
+              git add imagevector/containers.yaml
+              git commit -m "Use a patched version of etcd druid"
             fi
 
             cd ~/go/src/github.com/gardener
