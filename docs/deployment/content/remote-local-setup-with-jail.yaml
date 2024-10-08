@@ -513,7 +513,7 @@ spec:
                					Image:        *initContainerImage,
                					Command:      []string{"sh", "-c", "--"},
               -					Args:         []string{fmt.Sprintf("%s%s%s%s", "chown -R 65532:65532 /home/nonroot/", *targetStore.Container, " /home/nonroot/", *sourceStore.Container)},
-              +					Args:         []string{fmt.Sprintf("[ $(stat -c '%u' /home/nonroot) -eq 65532 ] || %s%s%s%s", "chown -R 65532:65532 /home/nonroot/", *targetStore.Container, " /home/nonroot/", *sourceStore.Container)},
+              +					Args:         []string{fmt.Sprintf("[ $(stat -c '%%u' /home/nonroot) -eq 65532 ] || %s%s%s%s", "chown -R 65532:65532 /home/nonroot/", *targetStore.Container, " /home/nonroot/", *sourceStore.Container)},
                					VolumeMounts: volumeMounts,
                					SecurityContext: &corev1.SecurityContext{
                						RunAsGroup:   pointer.Int64(0),
@@ -526,7 +526,7 @@ spec:
                					ImagePullPolicy: corev1.PullIfNotPresent,
                					Command:         []string{"sh", "-c", "--"},
               -					Args:            []string{"chown -R 65532:65532 /var/etcd/data"},
-              +					Args:            []string{"[ $(stat -c '%u' /var/etcd/data) -eq 65532 ] || chown -R 65532:65532 /var/etcd/data"},
+              +					Args:            []string{"[ $(stat -c '%%u' /var/etcd/data) -eq 65532 ] || chown -R 65532:65532 /var/etcd/data"},
                					VolumeMounts:    getEtcdVolumeMounts(c.values),
                					SecurityContext: &corev1.SecurityContext{
                						RunAsGroup:   pointer.Int64(0),
@@ -535,7 +535,7 @@ spec:
                						ImagePullPolicy: corev1.PullIfNotPresent,
                						Command:         []string{"sh", "-c", "--"},
               -						Args:            []string{fmt.Sprintf("chown -R 65532:65532 /home/nonroot/%s", *c.values.BackupStore.Container)},
-              +						Args:            []string{fmt.Sprintf("[ $(stat -c '%u' /home/nonroot) -eq 65532 ] || chown -R 65532:65532 /home/nonroot/%s", *c.values.BackupStore.Container)},
+              +						Args:            []string{fmt.Sprintf("[ $(stat -c '%%u' /home/nonroot) -eq 65532 ] || chown -R 65532:65532 /home/nonroot/%s", *c.values.BackupStore.Container)},
                						VolumeMounts:    getBackupRestoreVolumeMounts(c),
                						SecurityContext: &corev1.SecurityContext{
                							RunAsGroup:   pointer.Int64(0),
