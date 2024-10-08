@@ -386,6 +386,7 @@ spec:
             [ -d gardener/.git ] || git clone -q https://github.com/gardener/gardener
             cd gardener
             git fetch
+            git am --abort || true
             if [[ $NAMESPACE == "demo*" ]]; then
               git checkout $(git tag | sort -V | tail -n 1)
             elif [[ $NAMESPACE == "test*" ]]; then
