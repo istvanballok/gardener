@@ -89,7 +89,7 @@ spec:
           echo krew
                VERSION=$(curl -sL https://api.github.com/repos/kubernetes-sigs/krew/releases/latest | jq .tag_name -r)
                wget -N "https://github.com/kubernetes-sigs/krew/releases/download/$VERSION/krew-linux_amd64.tar.gz"
-               tar -xzf krew-linux_amd64.tar.gz ./krew-linux_amd64
+               tar --no-same-owner -xzf krew-linux_amd64.tar.gz ./krew-linux_amd64
                mv krew-linux_amd64 /usr/local/bin/krew
                krew install krew
                su -l demo -c -l "krew install krew"
