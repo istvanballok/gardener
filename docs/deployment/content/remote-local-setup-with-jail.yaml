@@ -1250,8 +1250,14 @@ spec:
               docker stop sysd
             EOF
             new_pane "install" Enter <<"EOF"
+              set -x
               flag_wait sysd_docker-build &&
-              while ! docker exec sysd systemctl status | grep -E 'State: running' >/dev/null; do sleep 1; done &&
+              while ! docker exec sysd systemctl status | grep -E 'State: running' >/dev/null; do
+                sleep 1;
+                if docker exec sysd systemctl status | grep -E 'State: degraded' >/dev/null; then
+                  docker exec sysd bash -c 'systemctl list-units --state=failed --no-pager --no-legend | awk "{print \$1}" | xargs -r systemctl start'
+                fi
+              done &&
               sed 's/^  //' <<"SYSD" | xargs -d '\0' \
               docker exec sysd bash -c && flag_notify sysd_rootless-docker-service
                 sysctl -w net.ipv4.ping_group_range="0 2147483647"
