@@ -1228,7 +1228,7 @@ spec:
 
                 CMD ["/sbin/init"]
               DOCKERFILE
-              vim Dockerfile
+              vim -n Dockerfile
             EOF
             new_pane "docker build" Enter <<"EOF"
               cd docker
