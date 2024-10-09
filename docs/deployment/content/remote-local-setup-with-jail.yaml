@@ -1274,6 +1274,7 @@ spec:
             EOF
             new_pane "sysctl" Enter <<"EOF"
               # To support longer messages for the iptables-save command executed by the calico node pods
+              nsenter -t 1 -n
               sysctl -w net.core.wmem_default=$((2*1024*1024))
               sysctl -w net.core.rmem_default=$((16*1024*1024))
               tail -n +1 /proc/sys/net/core/*mem*
