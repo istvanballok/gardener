@@ -1292,7 +1292,7 @@ spec:
                 sleep 1;
                 if docker exec sysd systemctl status | grep -E 'State: degraded' >/dev/null; then
                   echo "Restarting failed services"
-                  docker exec sysd bash -c 'systemctl list-units --state=failed --no-pager --no-legend | awk "{print \$1}" | xargs -r systemctl start'
+                  docker exec sysd bash -c 'systemctl list-units --state=failed --no-pager --no-legend --plain | awk "{print \$1}" | xargs -r systemctl start'
                 fi
               done &&
               sed 's/^  //' <<"SYSD" | xargs -d '\0' \
