@@ -1441,44 +1441,6 @@ spec:
               su demo -l
             EOF
 
-            new_window "make" "make kind-operator-up" <<"EOF"
-              sync_kubeconfig example/gardener-local/kind/operator & sleep 1
-              nice time make kind-operator-down kind-operator-up &&
-              DOCKER_IP=$(docker exec gardener-operator-local-control-plane ip addr show eth0 | awk '/inet /{print $2}' | cut -d '/' -f 1) &&
-              yq -i ".clusters[0].cluster.server=\"https://$DOCKER_IP:6443\"" $PWD/example/gardener-local/kind/operator/kubeconfig &&
-              flag_notify kind-operator-up
-            EOF
-            new_pane "wait for the KinD cluster" Enter <<"EOF"
-              flag_wait kind-operator-up &&
-              time ( kubectl wait --for=jsonpath='{.status.numberReady}'=3 daemonset -A --all --timeout=-1s &
-                     kubectl wait --for=condition=available deployments -A --all --timeout=-1s &
-                     wait ) &&
-              flag_notify kind-operator-up-ready
-            EOF
-            new_pane "make operator-up" Enter <<"EOF"
-              export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig
-              flag_wait kind-operator-up-ready &&
-              nice time make operator-up &&
-              flag_notify operator-up
-            EOF
-            new_pane "make operator-seed-up" Enter <<"EOF"
-              export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig
-              flag_wait operator-up &&
-              nice time make operator-seed-up &&
-              flag_notify operator-seed-up
-            EOF
-            new_pane "make the virtual cluster HA " Enter <<"EOF"
-              flag_wait operator-seed-up &&
-              k get garden local -o json | jq '
-                .spec.virtualCluster.controlPlane.highAvailability = {}
-              ' | k apply -f - &&
-              time ( kubectl wait --for=jsonpath='{.status.lastOperation.state}'=Processing garden local --timeout=-1s &&
-                     kubectl wait --for=jsonpath='{.status.lastOperation.state}'=Succeeded garden local --timeout=-1s &&
-                     kubectl wait --for=condition=VirtualComponentsHealthy garden local --timeout=-1s &&
-                     kubectl wait --for=condition=RuntimeComponentsHealthy garden local --timeout=-1s &&
-                     kubectl wait --for=condition=VirtualGardenAPIServerAvailable garden local --timeout=-1s) &&
-              flag_notify virtual-garden-ha
-            EOF
             new_window "garden" "garden" Enter <<"EOF"
               watch -n 10 is_tmux_window_shown.sh "&&" k get garden
             EOF
