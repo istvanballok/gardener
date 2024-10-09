@@ -1534,8 +1534,10 @@ spec:
               }
             EOF
             new_window "seed&shoots" "seed&shoots" Enter <<"EOF"
-              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              watch -n 10 is_tmux_window_shown.sh "&&" k get -A seeds,managedseeds,shoots
+              # nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n
+              # su -l demo
+              # export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              # watch -n 10 is_tmux_window_shown.sh "&&" k get -A seeds,managedseeds,shoots
             EOF
             new_pane "last operations seed" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
@@ -1667,21 +1669,25 @@ spec:
               }
             EOF
             new_window "runtime&seed pods" "pods" Enter <<"EOF"
-              # the while loop is used instead of watch to allow for scrolling a longer list in the tmux pane
-              while true; do
-                clear
-                is_tmux_window_shown.sh &&
-                k get pods -A -o wide | nl
-                sleep 10s
-              done
+              # nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n
+              # su -l demo
+              # # the while loop is used instead of watch to allow for scrolling a longer list in the tmux pane
+              # while true; do
+              #   clear
+              #   is_tmux_window_shown.sh &&
+              #   k get pods -A -o wide | nl
+              #   sleep 10s
+              # done
             EOF
             new_pane "not ready pods" Enter <<"EOF"
-              watch -n 10 "
-                is_tmux_window_shown.sh &&
-                k get pods -A -o wide | awk '
-                  {split(\$3, a, \"/\")
-                   if (a[1]!=a[2] || \$4 != \"Running\") {
-                     print}}'"
+              # nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n
+              # su -l demo
+              # watch -n 10 "
+              #   is_tmux_window_shown.sh &&
+              #   k get pods -A -o wide | awk '
+              #     {split(\$3, a, \"/\")
+              #      if (a[1]!=a[2] || \$4 != \"Running\") {
+              #        print}}'"
             EOF
             new_window "shoot pods" "pods" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
