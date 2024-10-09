@@ -526,7 +526,7 @@ spec:
                					ImagePullPolicy: corev1.PullIfNotPresent,
                					Command:         []string{"sh", "-c", "--"},
               -					Args:            []string{"chown -R 65532:65532 /var/etcd/data"},
-              +					Args:            []string{"[ $(stat -c '%%u' /var/etcd/data) -eq 65532 ] || chown -R 65532:65532 /var/etcd/data"},
+              +					Args:            []string{"[ $(stat -c '%u' /var/etcd/data) -eq 65532 ] || chown -R 65532:65532 /var/etcd/data"},
                					VolumeMounts:    getEtcdVolumeMounts(c.values),
                					SecurityContext: &corev1.SecurityContext{
                						RunAsGroup:   pointer.Int64(0),
