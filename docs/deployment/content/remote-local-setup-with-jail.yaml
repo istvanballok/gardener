@@ -1,3 +1,39 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: remote-local-setup-sysctl
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: remote-local-setup-sysctl-daemonset
+  namespace: remote-local-setup-sysctl
+spec:
+  selector:
+    matchLabels:
+      component: remote-local-setup-with-jail
+  template:
+    metadata:
+      labels:
+        component: remote-local-setup-with-jail
+    spec:
+      hostNetwork: true
+      containers:
+      - name: remote-local-setup-sysctl
+        image: alpine
+        command:
+        - /bin/sh
+        - -c
+        - |
+          set -ex -o pipefail
+          sysctl -w net.core.wmem_default=$(( 2 * 1024 * 1024 ))
+          sysctl -w net.core.rmem_default=$(( 16 * 1024 * 1024 ))
+          tail /proc/sys/net/core/*mem*
+          sleep inf &
+          wait
+        securityContext:
+          privileged: true
+---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
