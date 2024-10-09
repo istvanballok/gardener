@@ -1264,7 +1264,10 @@ spec:
                 RUN apt-get install -y net-tools
 
                 CMD ["/sbin/init"]
+
+                RUN apt-get update && apt-get upgrade -y
               DOCKERFILE
+              echo "RUN echo $(date +%Y-%m-%d) && apt-get update && apt-get upgrade -y" >> Dockerfile
               vim -n Dockerfile
             EOF
             new_pane "docker build" Enter <<"EOF"
