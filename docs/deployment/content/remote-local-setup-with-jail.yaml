@@ -1420,6 +1420,7 @@ spec:
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
                 su demo -c -l
                   set -e
+                  export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket/docker.sock
                   nice time make operator-seed-up
                   flag_notify rootless_operator-seed-up
                 DEMO_EOF
