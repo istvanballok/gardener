@@ -1491,15 +1491,23 @@ spec:
               done
             EOF
             new_window "shoot lifecycle" "Create" Enter <<"EOF"
-              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              is_state_tested || {
-                time flag_wait virtual-garden-ha &&
-                k apply -f example/provider-local/shoot.yaml &&
-                time (k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Processing shoot local --timeout=-1s
-                      k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot local --timeout=-1s
-                      k -n garden-local wait shoot local --for=condition=SystemComponentsHealthy --timeout=-1s) &&
-                flag_notify shoot-ready
-              }
+              flag_wait rootless_virtual-garden-ha &&
+              sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
+                sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
+                su demo -c -l
+                  set -e
+                  export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+                  is_state_tested || {
+                    time flag_wait rootless_virtual-garden-ha &&
+                    k apply -f example/provider-local/shoot.yaml &&
+                    time (k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Processing shoot local --timeout=-1s
+                          k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot local --timeout=-1s
+                          k -n garden-local wait shoot local --for=condition=SystemComponentsHealthy --timeout=-1s) &&
+                    flag_notify rootless_shoot-ready
+                  }
+                DEMO_EOF
+              NETWORK_EOF
             EOF
             new_pane "HA" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
