@@ -1322,7 +1322,7 @@ spec:
             EOF
             new_pane "use rootless docker" <<"EOF"
               su -l demo
-              export DOCKER_HOST=unix://$HOME/.docker-rootless-socket/docker.sock
+              export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket/docker.sock
               docker ps
             EOF
 
@@ -1332,7 +1332,7 @@ spec:
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
               su -l demo -c -l
                 set -e
-                export DOCKER_HOST=unix://$HOME/.docker-rootless-socket/docker.sock
+                export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket/docker.sock
                 time make kind-operator-down
                 flag_notify rootless_kind_operator_down
               DEMO_EOF
@@ -1349,7 +1349,7 @@ spec:
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
                 su -l demo -c -l
                   set -e
-                  export DOCKER_HOST=unix://$HOME/.docker-rootless-socket/docker.sock
+                  export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket/docker.sock
                   nice time make kind-operator-up
                   flag_notify rootless_kind_operator_up
                 DEMO_EOF
@@ -1409,7 +1409,7 @@ spec:
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
                 su -l demo -c -l
                   set -e
-                  export DOCKER_HOST=unix://$HOME/.docker-rootless-socket/docker.sock
+                  export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket/docker.sock
                   cd ../etcd-druid
                   nice time make REGISTRY=localhost:5001 docker-build docker-push
                   docker system prune -f
