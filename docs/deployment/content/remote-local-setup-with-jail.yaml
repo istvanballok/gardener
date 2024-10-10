@@ -2292,6 +2292,9 @@ spec:
               eval $(gardenctl kubectl-env bash)
               g target --shoot local
             EOF
+
+            tmux select-window -t 0
+            tmux select-pane -t 0
           SCRIPT_EOF
 
           chmod +x ~/prepare_tmux.sh /home/demo/prepare_tmux.sh
