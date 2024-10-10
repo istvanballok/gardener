@@ -1403,8 +1403,7 @@ spec:
               su -l demo
               sync_kubeconfig example/gardener-local/kind/operator | ts
             EOF
-
-            new_window "patch etcd-druid" "build and push the patched etcd-druid" Enter <<"EOF"
+            new_pane "patch etcd-druid" Enter <<"EOF"
               flag_wait rootless_kind_operator_up_ready &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
