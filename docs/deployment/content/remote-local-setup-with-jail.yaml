@@ -2194,13 +2194,12 @@ spec:
               flag_notify rootless_managedseed_shoot_ready
             EOF
             new_pane "create managed seed" Enter <<"EOF"
-              flag_wait rootless_managedseed_shoot_ready &&
-                export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-                time flag_wait rootless_managedseed-shoot-ready &&
-                k apply -f example/provider-local/managedseeds/managedseed.yaml &&
-                time ( k wait -n garden managedseed managedseed --for=condition=SeedRegistered --timeout=-1s &&
-                      until k wait seed managedseed --for=condition=SeedSystemComponentsHealthy --timeout=-1s 2>/dev/null; do sleep 1; done ) &&
-                flag_notify rootless_managedseed_seed_ready
+              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              time flag_wait rootless_managedseed_shoot_ready &&
+              k apply -f example/provider-local/managedseeds/managedseed.yaml &&
+              time ( k wait -n garden managedseed managedseed --for=condition=SeedRegistered --timeout=-1s &&
+                    until k wait seed managedseed --for=condition=SeedSystemComponentsHealthy --timeout=-1s 2>/dev/null; do sleep 1; done ) &&
+              flag_notify rootless_managedseed_seed_ready
             EOF
             new_pane "managed seed pods" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
