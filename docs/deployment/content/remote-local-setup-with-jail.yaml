@@ -282,7 +282,7 @@ spec:
             export GOPATH=~/go
             export PATH=$PATH:$GOPATH/bin:~/.krew/bin
             if [ "$(whoami)" == "demo" ]; then
-              export DOCKER_HOST=unix://~/.docker-rootless-socket/docker.sock
+              export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket/docker.sock
               export PATH=$PATH:~/go/src/github.com/gardener/gardener/hack/usage
             fi
             export XDG_CONFIG_HOME=~/.config
