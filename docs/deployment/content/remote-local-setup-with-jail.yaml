@@ -1518,6 +1518,37 @@ spec:
               su -l demo
             EOF
 
+            new_window "debug" "debug" Enter <<"EOF"
+              # nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n
+              # su -l demo
+              # export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket/docker.sock
+              # k exec -it $(k get pods | grep machine-shoot | awk '{print $1}') -- bash
+              # ctr image pull docker.io/library/alpine:latest
+              # ctr run --privileged -t docker.io/library/alpine:latest mycontainer
+              # mount | grep ' /sys '
+
+              # ps aux | grep ' /sbin/init' | grep -v 'grep' | grep demo | awk '{print $2}'
+              # nsenter -t 2054800 -m -p -e -C /bin/sh
+              # mount -o remount,rw /sys
+              # nsenter -t 2145590 -m -p -e -C /bin/sh -c 'mount | grep " /sys " | grep rw || mount -o remount,rw /sys'
+              while true; do
+                for i in $(ps aux | grep ' /sbin/init' | grep -v 'grep' | grep demo | awk '{print $2}'); do
+                  echo $i
+                  nsenter -t $i -m -p -e -C /bin/sh -c '
+                    if ! mount | grep " /sys " | grep rw; then
+                      echo "Remounting /sys as read-write as root for the K8s machine pods in the rootless Docker environment"
+                      mount -o remount,rw /sys
+                    else
+                      echo "/sys is already mounted as read-write"
+                    fi
+                  '
+                  echo
+                done
+                echo
+                sleep 1m
+              done | ts
+            EOF
+
             new_window "demo" "demo" Enter <<"EOF"
               # tmux a
               flag_wait sysd_rootless_docker_service &&
