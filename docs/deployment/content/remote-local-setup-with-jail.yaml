@@ -1452,8 +1452,8 @@ spec:
               su demo -l
             EOF
 
-            new_window "rootless4" "make the virtual cluster HA " Enter <<"EOF"
-              flag_wait rootless_operator-seed-up &&
+            new_window "virtual garden HA" "virtual garden HA" Enter <<"EOF"
+              flag_wait rootless_operator_seed_up &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
@@ -1462,15 +1462,16 @@ spec:
                   k get garden local -o json | jq '
                     .spec.virtualCluster.controlPlane.highAvailability = {}
                   ' | k apply -f - &&
-                  time ( kubectl wait --for=jsonpath='{.status.lastOperation.state}'=Processing garden local --timeout=-1s &&
-                        kubectl wait --for=jsonpath='{.status.lastOperation.state}'=Succeeded garden local --timeout=-1s &&
-                        kubectl wait --for=condition=VirtualComponentsHealthy garden local --timeout=-1s &&
-                        kubectl wait --for=condition=RuntimeComponentsHealthy garden local --timeout=-1s &&
-                        kubectl wait --for=condition=VirtualGardenAPIServerAvailable garden local --timeout=-1s) &&
-                  flag_notify rootless_virtual-garden-ha
+                  time (kubectl wait --for=jsonpath='{.status.lastOperation.state}'=Processing garden local --timeout=-1s  &&
+                        kubectl wait --for=jsonpath='{.status.lastOperation.state}'=Succeeded  garden local --timeout=-1s  &&
+                        kubectl wait --for=condition=VirtualComponentsHealthy                  garden local --timeout=-1s  &&
+                        kubectl wait --for=condition=RuntimeComponentsHealthy                  garden local --timeout=-1s  &&
+                        kubectl wait --for=condition=VirtualGardenAPIServerAvailable           garden local --timeout=-1s) &&
+                  flag_notify rootless_virtual_garden_ha
                 DEMO_EOF
               NETWORK_EOF
             EOF
+
             new_window "garden" "garden" Enter <<"EOF"
               watch -n 10 is_tmux_window_shown.sh "&&" k get garden
             EOF
