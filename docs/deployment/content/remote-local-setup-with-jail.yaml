@@ -510,6 +510,50 @@ spec:
               2.45.2
             PATCH_EOF
 
+            sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0003-tmpfs.patch
+              From 1515887793170b8602a0ad1ef9af5bbbef733f11 Mon Sep 17 00:00:00 2001
+              From: dev <dev>
+              Date: Thu, 10 Oct 2024 16:00:32 +0200
+              Subject: [PATCH] tmpfs
+
+              ---
+               .../machine-provider/local/create_machine.go         | 12 ++++++++++++
+               1 file changed, 12 insertions(+)
+
+              diff --git a/pkg/provider-local/machine-provider/local/create_machine.go b/pkg/provider-local/machine-provider/local/create_machine.go
+              index a89db8866..510774ebf 100644
+              --- a/pkg/provider-local/machine-provider/local/create_machine.go
+              +++ b/pkg/provider-local/machine-provider/local/create_machine.go
+              @@ -109,6 +109,10 @@ func (d *localDriver) applyPod(
+               						Name:      "userdata",
+               						MountPath: "/etc/machine",
+               					},
+              +					{
+              +						Name:      "tmpfs",
+              +						MountPath: "/tmp",
+              +					},
+               					{
+               						Name:      "containerd",
+               						MountPath: "/var/lib/containerd",
+              @@ -143,6 +147,14 @@ func (d *localDriver) applyPod(
+               					},
+               				},
+               			},
+              +			{
+              +				Name: "tmpfs",
+              +				VolumeSource: corev1.VolumeSource{
+              +					EmptyDir: &corev1.EmptyDirVolumeSource{
+              +						Medium: corev1.StorageMediumMemory,
+              +					},
+              +				},
+              +			},
+               			{
+               				Name: "containerd",
+               				VolumeSource: corev1.VolumeSource{
+              --
+              2.45.2
+            PATCH_EOF
+
             if [[ $NAMESPACE == demo* ]] || [[ $NAMESPACE == test* ]]; then
               if ! git am ~/gardener-patches/00*.patch; then
                 echo "Please check/rebase the patches as needed."
