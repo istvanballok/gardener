@@ -1326,7 +1326,7 @@ spec:
               docker ps
             EOF
 
-            new_window "gardener" "make kind-operator-down" <<"EOF"
+            new_window "gardener" "make kind-operator-down" Enter <<"EOF"
               rm -rf /home/demo/go/src/github.com/gardener/gardener/dev/local-backupbuckets &&
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
               su -l demo -c -l
