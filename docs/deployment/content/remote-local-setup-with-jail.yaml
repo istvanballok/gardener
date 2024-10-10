@@ -307,10 +307,12 @@ spec:
             [ -n "$GCTL_SESSION_ID" ] || [ -n "$TERM_SESSION_ID" ] || export GCTL_SESSION_ID=$(uuidgen)
             if [ "$(whoami)" == "demo" ]; then
               cd ~/go/src/github.com/gardener/gardener || true
-              if [ ! -f ~/.garden/gardenctl-v2.yaml ]; then
-                gardenctl config set-garden local --kubeconfig $PWD/example/operator/virtual-garden/kubeconfig >/dev/null
+              if [ -f $PWD/example/operator/virtual-garden/kubeconfig ]; then
+                if [ ! -f ~/.garden/gardenctl-v2.yaml ]; then
+                  gardenctl config set-garden local --kubeconfig $PWD/example/operator/virtual-garden/kubeconfig >/dev/null
+                fi
+                gardenctl target --garden local >/dev/null
               fi
-              gardenctl target --garden local >/dev/null
             else
               cd ~
             fi
