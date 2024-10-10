@@ -1480,80 +1480,6 @@ spec:
               su -l demo
             EOF
 
-
-            new_window "managed seed" "create shoot" Enter <<"EOF"
-              flag_wait rootless_virtual-garden-ha &&
-              sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
-              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
-                sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
-                su -l demo -c -l
-                  set -e
-                  export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-                  time flag_wait rootless_virtual-garden-ha &&
-                  k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type="zone"' example/provider-local/managedseeds/shoot-managedseed.yaml) &&
-                  time (k wait -n garden --for=jsonpath='{.status.lastOperation.state}'=Processing shoot managedseed --timeout=-1s
-                        k wait -n garden --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot managedseed --timeout=-1s
-                        k -n garden wait shoot managedseed --for=condition=SystemComponentsHealthy --timeout=-1s) &&
-                  flag_notify rootless_managedseed-shoot-ready
-                DEMO_EOF
-              NETWORK_EOF
-            EOF
-            new_pane "create managed seed" Enter <<"EOF"
-              flag_wait rootless_managedseed-shoot-ready &&
-              sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
-              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
-                sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
-                su -l demo -c -l
-                  set -e
-                  export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-                  time flag_wait rootless_managedseed-shoot-ready &&
-                  k apply -f example/provider-local/managedseeds/managedseed.yaml &&
-                  time ( k wait -n garden managedseed managedseed --for=condition=SeedRegistered --timeout=-1s &&
-                        until k wait seed managedseed --for=condition=SeedSystemComponentsHealthy --timeout=-1s 2>/dev/null; do sleep 1; done ) &&
-                  flag_notify managedseed-seed-ready
-                DEMO_EOF
-              NETWORK_EOF
-            EOF
-            new_pane "managed seed pods" Enter <<"EOF"
-              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              time flag_wait managedseed-seed-ready &&
-              while true; do
-                if is_tmux_window_shown.sh; then
-                  bash -o pipefail generate-admin-kubeconf.sh --namespace garden --shoot-name managedseed > /tmp/managedseed.kubeconfig &&
-                  clear &&
-                  while is_tmux_window_shown.sh &&
-                        k --kubeconfig /tmp/managedseed.kubeconfig get pods -A -o wide | nl; do
-                          sleep 10s
-                          clear
-                  done
-                fi
-                sleep 10s
-              done
-            EOF
-            new_pane "workerless shoot on managed seed" Enter <<"EOF"
-              # Note: regular shoots do not work due to nesting overlayfs, see errors in dmesg
-              # Note: the managed seed has 1 node and no zones, so it is not HA
-              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              is_state_tested || {
-                time flag_wait managedseed-seed-ready &&
-                k apply -f <(yq '.metadata.name="local-wl-ms" |
-                                .spec.seedName="managedseed" |
-                                .spec.networking.services="10.6.0.0/16"' example/provider-local/shoot-workerless.yaml) &&
-                time (k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Processing shoot local-wl-ms --timeout=-1s
-                      k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot local-wl-ms --timeout=-1s
-                      k -n garden-local wait shoot local-wl-ms --for=condition=SystemComponentsHealthy --timeout=-1s) &&
-                flag_notify managedseed-nested-shoot-ready
-              }
-            EOF
-            new_pane "delete workerless shoot on managed seed" Enter <<"EOF"
-              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              is_state_tested || {
-                time flag_wait managedseed-nested-shoot-ready &&
-                k annotate shoot local-wl-ms -n garden-local 'confirmation.gardener.cloud/deletion=true' &&
-                time k delete shoot local-wl-ms -n garden-local &&
-                flag_notify managedseed-nested-shoot-ready-deleted
-              }
-            EOF
             new_window "runtime&seed pods" "pods" Enter <<"EOF"
               # nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n
               # su -l demo
@@ -2303,6 +2229,65 @@ spec:
                 ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl
                 sleep 10s
               done
+            EOF
+
+            new_window "managed seed" "create shoot" Enter <<"EOF"
+              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              time flag_wait rootless_virtual_garden_ha &&
+              k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type="zone"' example/provider-local/managedseeds/shoot-managedseed.yaml) &&
+              time (k wait -n garden --for=jsonpath='{.status.lastOperation.state}'=Processing shoot managedseed --timeout=-1s
+                    k wait -n garden --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot managedseed --timeout=-1s
+                    k -n garden wait shoot managedseed --for=condition=SystemComponentsHealthy --timeout=-1s) &&
+              flag_notify rootless_managedseed_shoot_ready
+            EOF
+            new_pane "create managed seed" Enter <<"EOF"
+              flag_wait rootless_managedseed_shoot_ready &&
+                export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+                time flag_wait rootless_managedseed-shoot-ready &&
+                k apply -f example/provider-local/managedseeds/managedseed.yaml &&
+                time ( k wait -n garden managedseed managedseed --for=condition=SeedRegistered --timeout=-1s &&
+                      until k wait seed managedseed --for=condition=SeedSystemComponentsHealthy --timeout=-1s 2>/dev/null; do sleep 1; done ) &&
+                flag_notify rootless_managedseed_seed_ready
+            EOF
+            new_pane "managed seed pods" Enter <<"EOF"
+              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              time flag_wait rootless_managedseed_seed_ready &&
+              while true; do
+                if is_tmux_window_shown.sh; then
+                  bash -o pipefail generate-admin-kubeconf.sh --namespace garden --shoot-name managedseed > /tmp/managedseed.kubeconfig &&
+                  clear &&
+                  while is_tmux_window_shown.sh &&
+                        k --kubeconfig /tmp/managedseed.kubeconfig get pods -A -o wide | nl; do
+                          sleep 10s
+                          clear
+                  done
+                fi
+                sleep 10s
+              done
+            EOF
+            new_pane "workerless shoot on managed seed" Enter <<"EOF"
+              # Note: regular shoots do not work due to nesting overlayfs, see errors in dmesg
+              # Note: the managed seed has 1 node and no zones, so it is not HA
+              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              is_state_tested || {
+                time flag_wait rootless_managedseed_seed_ready &&
+                k apply -f <(yq '.metadata.name="local-wl-ms" |
+                                .spec.seedName="managedseed" |
+                                .spec.networking.services="10.6.0.0/16"' example/provider-local/shoot-workerless.yaml) &&
+                time (k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Processing shoot local-wl-ms --timeout=-1s
+                      k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot local-wl-ms --timeout=-1s
+                      k -n garden-local wait shoot local-wl-ms --for=condition=SystemComponentsHealthy --timeout=-1s) &&
+                flag_notify managedseed_nested_workerless_shoot_ready
+              }
+            EOF
+            new_pane "delete workerless shoot on managed seed" Enter <<"EOF"
+              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              is_state_tested || {
+                time flag_wait managedseed_nested_workerless_shoot_ready &&
+                k annotate shoot local-wl-ms -n garden-local 'confirmation.gardener.cloud/deletion=true' &&
+                time k delete shoot local-wl-ms -n garden-local &&
+                flag_notify managedseed_nested_workerless_shoot_deleted
+              }
             EOF
 
           SCRIPT_EOF
