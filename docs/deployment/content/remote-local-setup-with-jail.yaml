@@ -2044,6 +2044,8 @@ spec:
           SCRIPT_EOF
 
           sed 's/^  //' <<"SCRIPT_EOF" > /home/demo/prepare_tmux.sh
+            #!/bin/bash
+
             tmux kill-server 2>/dev/null || true
             source /usr/local/bin/tmux_functions.sh
 
