@@ -1273,7 +1273,9 @@ spec:
             EOF
             new_pane "docker build sysd" Enter <<"EOF"
               cd docker
-              docker build -t sysd --progress plain . && flag_notify sysd_docker-build
+              docker build -t sysd --progress plain . &&
+              docker system prune -f &&
+              flag_notify sysd_docker-build
             EOF
             new_pane "docker run sysd" Enter <<"EOF"
               rm -rf   /home/demo/.docker-rootless-socket
