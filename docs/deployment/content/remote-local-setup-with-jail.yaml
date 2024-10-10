@@ -1480,27 +1480,6 @@ spec:
               su -l demo
             EOF
 
-            new_window "runtime&seed pods" "pods" Enter <<"EOF"
-              # nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n
-              # su -l demo
-              # # the while loop is used instead of watch to allow for scrolling a longer list in the tmux pane
-              # while true; do
-              #   clear
-              #   is_tmux_window_shown.sh &&
-              #   k get pods -A -o wide | nl
-              #   sleep 10s
-              # done
-            EOF
-            new_pane "not ready pods" Enter <<"EOF"
-              # nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n
-              # su -l demo
-              # watch -n 10 "
-              #   is_tmux_window_shown.sh &&
-              #   k get pods -A -o wide | awk '
-              #     {split(\$3, a, \"/\")
-              #      if (a[1]!=a[2] || \$4 != \"Running\") {
-              #        print}}'"
-            EOF
             new_window "shoot pods" "pods" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               flag_wait shoot-ready &&
@@ -2288,6 +2267,26 @@ spec:
                 time k delete shoot local-wl-ms -n garden-local &&
                 flag_notify managedseed_nested_workerless_shoot_deleted
               }
+            EOF
+
+            new_window "runtime&seed pods" "pods" Enter <<"EOF"
+              # the while loop is used instead of watch to allow for scrolling a longer list in the tmux pane
+              flag_wait rootless_kind_operator_up_ready &&
+              while true; do
+                clear
+                is_tmux_window_shown.sh &&
+                k get pods -A -o wide | nl
+                sleep 10s
+              done
+            EOF
+            new_pane "not ready pods" Enter <<"EOF"
+              flag_wait rootless_kind_operator_up_ready &&
+              watch -n 10 "
+                is_tmux_window_shown.sh &&
+                k get pods -A -o wide | awk '
+                  {split(\$3, a, \"/\")
+                   if (a[1]!=a[2] || \$4 != \"Running\") {
+                     print}}'"
             EOF
 
           SCRIPT_EOF
