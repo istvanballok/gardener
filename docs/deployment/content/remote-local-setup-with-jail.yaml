@@ -1194,7 +1194,7 @@ spec:
               git log --color -p origin/master.. --author dev | less -RN
             EOF
 
-            new_window "rootless" "Dockerfile" Enter <<"EOF"
+            new_window "rootless" "Dockerfile sysd" Enter <<"EOF"
               mkdir -p docker
               cd docker
               sed 's/^  //' <<"DOCKERFILE" > Dockerfile
@@ -1271,11 +1271,11 @@ spec:
               echo "RUN echo $(date +%Y-%m-%d) && apt-get update && apt-get upgrade -y" >> Dockerfile
               vim -n Dockerfile
             EOF
-            new_pane "docker build" Enter <<"EOF"
+            new_pane "docker build sysd" Enter <<"EOF"
               cd docker
               docker build -t sysd --progress plain . && flag_notify sysd_docker-build
             EOF
-            new_pane "docker run" Enter <<"EOF"
+            new_pane "docker run sysd" Enter <<"EOF"
               rm -rf   /home/demo/.docker-rootless-socket
               mkdir -p        /home/demo/.docker-rootless /home/demo/.docker-rootless-socket
               chown demo:demo /home/demo/.docker-rootless /home/demo/.docker-rootless-socket
@@ -1287,10 +1287,7 @@ spec:
                      --tmpfs /tmp --tmpfs /run --tmpfs /run/lock \
                      --name sysd sysd
             EOF
-            new_pane "docker stop" <<"EOF"
-              docker stop sysd
-            EOF
-            new_pane "install" Enter <<"EOF"
+            new_pane "install rootless docker in sysd" Enter <<"EOF"
               flag_wait sysd_docker-build &&
               while ! docker exec sysd systemctl status | grep -E 'State: running' >/dev/null; do
                 sleep 1;
@@ -1310,6 +1307,9 @@ spec:
                   dockerd-rootless-setuptool.sh install
                 DEMO_EOF
               SYSD
+            EOF
+            new_pane "docker stop sysd" <<"EOF"
+              docker stop sysd
             EOF
 
             new_window "rootless2" "interact" <<"EOF"
