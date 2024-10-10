@@ -1326,7 +1326,7 @@ spec:
               docker ps
             EOF
 
-            new_window "make kind-up" "make kind-operator-down" Enter <<"EOF"
+            new_window "make kind-operator" "make kind-operator-down" Enter <<"EOF"
               rm -rf /home/demo/go/src/github.com/gardener/gardener/dev/local-backupbuckets &&
               flag_wait sysd_rootless_docker_service &&
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
@@ -1418,21 +1418,20 @@ spec:
               NETWORK_EOF
             EOF
 
-            new_window "make gardener-up" "operator-up" Enter <<"EOF"
-              flag_wait rootless_etcd-druid-patched &&
-              flag_wait rootless_kind-operator-up-fix &&
+            new_window "make operator-(seed)-up" "make operator-up" Enter <<"EOF"
+              flag_wait rootless_etcd_druid_patched &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
                 su -l demo -c -l
                   set -e
                   nice time make operator-up
-                  flag_notify rootless_operator-up
+                  flag_notify rootless_operator_up
                 DEMO_EOF
               NETWORK_EOF
             EOF
-            new_pane "operator-seed-up" Enter <<"EOF"
-              flag_wait rootless_operator-up &&
+            new_pane "make operator-seed-up" Enter <<"EOF"
+              flag_wait rootless_operator_up &&
               sysctl -w kernel.keys.maxkeys=$((200 * 10)) &&
               sysctl -w kernel.keys.maxbytes=$((20000 * 10)) &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
@@ -1442,7 +1441,7 @@ spec:
                   set -e
                   export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket/docker.sock
                   nice time make operator-seed-up
-                  flag_notify rootless_operator-seed-up
+                  flag_notify rootless_operator_seed_up
                 DEMO_EOF
               NETWORK_EOF
             EOF
