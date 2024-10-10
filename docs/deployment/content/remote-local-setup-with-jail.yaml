@@ -1474,12 +1474,13 @@ spec:
 
             new_window "demo" "demo" Enter <<"EOF"
               # tmux a
-              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n su -l demo
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n \
+              su -l demo -c -l '~/prepare_tmux.sh' &
+              wait &&
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n \
+              su -l demo
             EOF
 
-            new_window "garden" "garden" Enter <<"EOF"
-              watch -n 10 is_tmux_window_shown.sh "&&" k get garden
-            EOF
             new_pane "last operations" Enter <<"EOF"
               flag_wait operator-up &&
               while true; do k get garden local -o json -w 2>/dev/null \
@@ -2296,7 +2297,19 @@ spec:
             tmux select-pane -t 0
           SCRIPT_EOF
 
+          sed 's/^  //' <<"SCRIPT_EOF" > /home/demo/prepare_tmux.sh
+            tmux kill-server 2>/dev/null || true
+            mkdir -p ~/.kube
+            echo '{"current-context": "kind-gardener-operator-local"}' > ~/.kube/config
+            source /usr/local/bin/tmux_functions.sh
+            tmux new -d -s demo -n garden -x 2000 -y 2000
+            new_pane "garden" Enter <<"EOF"
+              watch -n 10 is_tmux_window_shown.sh "&&" k get garden
+            EOF
+          SCRIPT_EOF
+
           chmod +x /home/root/prepare_tmux.sh /home/demo/prepare_tmux.sh
+          chown demo:demo /home/demo/prepare_tmux.sh
           /home/root/prepare_tmux.sh
 
           end=$(date +%s)
