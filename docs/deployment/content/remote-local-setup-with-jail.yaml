@@ -1337,7 +1337,7 @@ spec:
             EOF
             new_pane "sync kubeconfig" Enter <<"EOF"
               su -l demo
-              sync_kubeconfig example/gardener-local/kind/operator
+              sync_kubeconfig example/gardener-local/kind/operator | ts
             EOF
             new_pane "kind-operator-up" Enter <<"EOF"
               flag_wait sysd_rootless-docker-service &&
