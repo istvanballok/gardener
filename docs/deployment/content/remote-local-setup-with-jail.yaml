@@ -1388,7 +1388,7 @@ spec:
               NETWORK_EOF
             EOF
             new_pane "wait for the KinD cluster" Enter <<"EOF"
-              flag_wait rootless_kind-operator-up-fix &&
+              flag_wait rootless_kind_operator_up_fix &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
@@ -1397,12 +1397,13 @@ spec:
                   time (kubectl wait --for=jsonpath='{.status.numberReady}'=3 daemonset   -A --all --timeout=-1s &
                         kubectl wait --for=condition=available                deployments -A --all --timeout=-1s &
                         wait)
-                  flag_notify rootless_kind-operator-up-ready
+                  flag_notify rootless_kind_operator_up_ready
                 DEMO_EOF
               NETWORK_EOF
             EOF
-            new_pane "patched etcd-druid" Enter <<"EOF"
-              flag_wait rootless_kind-operator-up-ready &&
+
+            new_window "etcd-druid" "build and push the patched etcd-druid" Enter <<"EOF"
+              flag_wait rootless_kind_operator_up_ready &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
@@ -1412,7 +1413,7 @@ spec:
                   cd ../etcd-druid
                   nice time make REGISTRY=localhost:5001 docker-build docker-push
                   docker system prune -f
-                  flag_notify rootless_etcd-druid-patched
+                  flag_notify rootless_etcd_druid_patched
                 DEMO_EOF
               NETWORK_EOF
             EOF
