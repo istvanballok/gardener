@@ -1181,7 +1181,7 @@ spec:
             new_horizontal_pane "man" Enter <<"EOF"
               man sar | sed -n '
                 1,5p; 98,141p; 1294,1298p; 1360,1386p; 1437,1512p; 1552,1602p; 1629,1636p;
-              ' | grep --color=Always -P '^              (?!following|that|values|are)[a-z%][^ ]*|$'
+              ' | grep --color=Always -P '^              (?!following|that|values|are)[a-z%][^ ]*|$' | less -RN
             EOF
 
             new_window "patches" "gardener" Enter <<"EOF"
