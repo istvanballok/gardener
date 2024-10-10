@@ -282,6 +282,7 @@ spec:
             export GOPATH=~/go
             export PATH=$PATH:$GOPATH/bin:~/.krew/bin
             if [ "$(whoami)" == "demo" ]; then
+              export DOCKER_HOST=unix://~/.docker-rootless-socket/docker.sock
               export PATH=$PATH:~/go/src/github.com/gardener/gardener/hack/usage
             fi
             export XDG_CONFIG_HOME=~/.config
@@ -1449,10 +1450,9 @@ spec:
             new_pane "debug" Enter <<"EOF"
               # export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               # unset KUBECONFIG
-              export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket/docker.sock
               flag_wait rootless_kind_operator_up &&
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n \
-              su demo -l
+              su -l demo
             EOF
 
             new_window "virtual garden HA" "virtual garden HA" Enter <<"EOF"
