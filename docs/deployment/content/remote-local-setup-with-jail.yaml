@@ -1471,6 +1471,11 @@ spec:
               NETWORK_EOF
             EOF
 
+            new_window "demo" "demo" Enter <<"EOF"
+              # tmux a
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n su -l demo
+            EOF
+
             new_window "garden" "garden" Enter <<"EOF"
               watch -n 10 is_tmux_window_shown.sh "&&" k get garden
             EOF
