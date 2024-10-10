@@ -1444,6 +1444,8 @@ spec:
               NETWORK_EOF
             EOF
             new_pane "debug" Enter <<"EOF"
+              # export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              # unset KUBECONFIG
               export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket/docker.sock
               flag_wait rootless_kind_operator_up &&
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n \
