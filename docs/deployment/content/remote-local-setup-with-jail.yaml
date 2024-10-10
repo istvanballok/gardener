@@ -1351,32 +1351,38 @@ spec:
                   set -e
                   export DOCKER_HOST=unix://$HOME/.docker-rootless-socket/docker.sock
                   nice time make kind-operator-up
-                  flag_notify rootless_kind-operator-up
+                  flag_notify rootless_kind_operator_up
                 DEMO_EOF
               NETWORK_EOF
             EOF
-            new_pane "kind-operator-up fix" Enter <<"EOF"
-              flag_wait rootless_kind-operator-up &&
+            new_pane "make kind-operator-up fix" Enter <<"EOF"
+              flag_wait rootless_kind_operator_up &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
+                set -e
                 export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket/docker.sock
-                DOCKER_IP=$(docker exec gardener-operator-local-control-plane ip addr show eth0 | awk '/inet /{print $2}' | cut -d '/' -f 1)
-                ip address add $DOCKER_IP dev lo
+                DOCKER_IP=$(docker exec gardener-operator-local-control-plane ip addr show eth0 \
+                            | awk '/inet /{print $2}' | cut -d '/' -f 1)
+                ip address add $DOCKER_IP dev lo || true
                 KUBECONFIG=/home/demo/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator/kubeconfig
                 PORT=$(yq '.clusters[0].cluster.server' $KUBECONFIG | sed -E 's/.*:([^:]+)$/\1/')
                 yq -i ".clusters[0].cluster.server=\"https://$DOCKER_IP:6443\"" $KUBECONFIG
                 sed 's/^  //' <<DEMO_EOF | xargs -d '\0' \
                 su -l demo -c -l
                   set -e
-                  netstat -ntlp
+                  # trap 'jobs -p | xargs kill' EXIT
+                  BEFORE=\$(netstat -ntlp)
                   socat TCP-LISTEN:6443,fork,reuseaddr,bind=$DOCKER_IP   TCP:127.0.0.1:$PORT   &
                   socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.1  TCP:172.18.255.1:444  &
                   socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.10 TCP:172.18.255.10:445 &
                   socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.11 TCP:172.18.255.11:446 &
                   socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.12 TCP:172.18.255.12:447 &
                   sleep 1
-                  netstat -ntlp
-                  flag_notify rootless_kind-operator-up-fix
+                  AFTER=\$(netstat -ntlp)
+                  echo "netstat -ntlp diff:"
+                  diff -U 100 -u --color=always <(echo "\$BEFORE") <(echo "\$AFTER") | grep -v /dev/fd || true
+                  echo "socat maps the expected IP:PORT combinations in the slightly different rootless docker setup."
+                  flag_notify rootless_kind_operator_up_fix
                   wait
                 DEMO_EOF
               NETWORK_EOF
