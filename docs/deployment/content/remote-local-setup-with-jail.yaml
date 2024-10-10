@@ -1166,7 +1166,7 @@ spec:
             EOF
           DEMO_EOF
 
-          sed 's/^  //' <<"SCRIPT_EOF" > /usr/local/bin/prepare-operator-complete.sh
+          sed 's/^  //' <<"SCRIPT_EOF" > /usr/local/bin/prepare_tmux.sh
             tmux kill-server 2>/dev/null || true
             mkdir -p ~/.kube
             echo '{"current-context": "kind-gardener-operator-local"}' > ~/.kube/config
@@ -2296,8 +2296,8 @@ spec:
             tmux select-pane -t 0
           SCRIPT_EOF
 
-          chmod +x /usr/local/bin/prepare-*.sh
-          /usr/local/bin/prepare-operator-complete.sh
+          chmod +x /home/root/prepare_tmux.sh /home/demo/prepare_tmux.sh
+          /home/root/prepare_tmux.sh
 
           end=$(date +%s)
           diff=$(( end - start ))
