@@ -1480,32 +1480,6 @@ spec:
               su -l demo
             EOF
 
-            new_window "shoot pods" "pods" Enter <<"EOF"
-              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              flag_wait shoot-ready &&
-              while true; do
-                is_tmux_window_shown.sh &&
-                bash -o pipefail generate-admin-kubeconf.sh > /tmp/shoot.kubeconfig &&
-                yes | watch -e -n 10 is_tmux_window_shown.sh "&&" k --kubeconfig /tmp/shoot.kubeconfig get pods -A
-                sleep 10s
-              done
-            EOF
-            new_pane "not ready pods" Enter <<"EOF"
-              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              flag_wait shoot-ready &&
-              while true; do
-                is_tmux_window_shown.sh &&
-                bash -o pipefail generate-admin-kubeconf.sh > /tmp/shoot.kubeconfig2 &&
-                yes | watch -e -n 10 "
-                        is_tmux_window_shown.sh &&
-                        k --kubeconfig /tmp/shoot.kubeconfig2 get pods -A -o wide \
-                        | awk '
-                            {split(\$3, a, \"/\")
-                             if (a[1]!=a[2] || \$4 != \"Running\") {
-                               print}}'"
-                sleep 10s
-              done
-            EOF
             new_window "gardenctl" "gardenctl" <<"EOF"
               gardenctl config set-garden local --kubeconfig $PWD/example/operator/virtual-garden/kubeconfig
               eval $(gardenctl kubectl-env bash)
@@ -2144,6 +2118,8 @@ spec:
                 k annotate shoot local -n garden-local 'confirmation.gardener.cloud/deletion=true' &&
                 time k delete shoot local -n garden-local &&
                 flag_notify rootless_shoot_ha_ready_deleted
+                flag_delete rootless_shoot_ready
+                flag_delete rootless_shoot_ha_ready
               }
             EOF
 
@@ -2287,6 +2263,33 @@ spec:
                   {split(\$3, a, \"/\")
                    if (a[1]!=a[2] || \$4 != \"Running\") {
                      print}}'"
+            EOF
+
+            new_window "shoot pods" "pods" Enter <<"EOF"
+              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              while true; do
+                flag_wait rootless_shoot_ready &&
+                is_tmux_window_shown.sh &&
+                bash -o pipefail generate-admin-kubeconf.sh > /tmp/shoot.kubeconfig &&
+                yes | watch -e -n 10 is_tmux_window_shown.sh "&&" k --kubeconfig /tmp/shoot.kubeconfig get pods -A
+                sleep 10s
+              done
+            EOF
+            new_pane "not ready pods" Enter <<"EOF"
+              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              while true; do
+                flag_wait rootless_shoot_ready &&
+                is_tmux_window_shown.sh &&
+                bash -o pipefail generate-admin-kubeconf.sh > /tmp/shoot.kubeconfig2 &&
+                yes | watch -e -n 10 "
+                        is_tmux_window_shown.sh &&
+                        k --kubeconfig /tmp/shoot.kubeconfig2 get pods -A -o wide \
+                        | awk '
+                            {split(\$3, a, \"/\")
+                             if (a[1]!=a[2] || \$4 != \"Running\") {
+                               print}}'"
+                sleep 10s
+              done
             EOF
 
           SCRIPT_EOF
