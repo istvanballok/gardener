@@ -1446,10 +1446,10 @@ spec:
               NETWORK_EOF
             EOF
             new_pane "debug" Enter <<"EOF"
-              export DOCKER_HOST=unix://$HOME/.docker-rootless-socket/docker.sock
-              flag_wait rootless_operator-up &&
+              export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket/docker.sock
+              flag_wait rootless_kind_operator_up &&
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n \
-              su -l demo -l
+              su demo -l
             EOF
 
             new_window "rootless4" "make the virtual cluster HA " Enter <<"EOF"
