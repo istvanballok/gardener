@@ -1332,16 +1332,16 @@ spec:
               su -l demo -c -l
                 set -e
                 export DOCKER_HOST=unix://$HOME/.docker-rootless-socket/docker.sock
-                make kind-operator-down
+                time make kind-operator-down
+                flag_notify rootless_kind_operator_down
               DEMO_EOF
             EOF
             new_pane "sync kubeconfig" Enter <<"EOF"
               su -l demo
               sync_kubeconfig example/gardener-local/kind/operator | ts
             EOF
-            new_pane "kind-operator-up" Enter <<"EOF"
-              flag_wait sysd_rootless-docker-service &&
-              rm -rf /home/demo/go/src/github.com/gardener/gardener/dev/local-backupbuckets &&
+            new_pane "make kind-operator-up" Enter <<"EOF"
+              flag_wait rootless_kind_operator_down &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
                 for i in 172.18.255.{1,3,10,11,12}; do ip address add $i dev lo; done
