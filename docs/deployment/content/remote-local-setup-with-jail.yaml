@@ -2302,7 +2302,9 @@ spec:
             echo '{"current-context": "kind-gardener-operator-local"}' > ~/.kube/config
             source /usr/local/bin/tmux_functions.sh
             tmux new -d -s demo -n garden -x 2000 -y 2000
-            new_pane "garden" Enter <<"EOF"
+
+            tmux select-pane -T garden;
+            send_commands Enter <<"EOF"
               watch -n 10 is_tmux_window_shown.sh "&&" k get garden
             EOF
           SCRIPT_EOF
