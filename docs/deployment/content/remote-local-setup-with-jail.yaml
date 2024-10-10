@@ -1326,7 +1326,7 @@ spec:
               docker ps
             EOF
 
-            new_window "gardener" "make kind-operator-down" Enter <<"EOF"
+            new_window "make kind-up" "make kind-operator-down" Enter <<"EOF"
               rm -rf /home/demo/go/src/github.com/gardener/gardener/dev/local-backupbuckets &&
               flag_wait sysd_rootless_docker_service &&
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
@@ -1402,7 +1402,7 @@ spec:
               NETWORK_EOF
             EOF
 
-            new_window "etcd-druid" "build and push the patched etcd-druid" Enter <<"EOF"
+            new_window "patch etcd-druid" "build and push the patched etcd-druid" Enter <<"EOF"
               flag_wait rootless_kind_operator_up_ready &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
@@ -1418,7 +1418,7 @@ spec:
               NETWORK_EOF
             EOF
 
-            new_window "rootless3" "operator-up" Enter <<"EOF"
+            new_window "make gardener-up" "operator-up" Enter <<"EOF"
               flag_wait rootless_etcd-druid-patched &&
               flag_wait rootless_kind-operator-up-fix &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
