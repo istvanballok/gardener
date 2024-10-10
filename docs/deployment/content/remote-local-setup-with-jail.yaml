@@ -2045,8 +2045,6 @@ spec:
 
           sed 's/^  //' <<"SCRIPT_EOF" > /home/demo/prepare_tmux.sh
             tmux kill-server 2>/dev/null || true
-            mkdir -p ~/.kube
-            echo '{"current-context": "kind-gardener-operator-local"}' > ~/.kube/config
             source /usr/local/bin/tmux_functions.sh
 
             tmux new -d -s demo -n garden -x 2000 -y 2000
