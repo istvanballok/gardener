@@ -170,7 +170,7 @@ spec:
           gardenctl completion bash        > /usr/share/bash-completion/completions/gardenctl
           ~/go/bin/stern --completion=bash > /usr/share/bash-completion/completions/stern
 
-          su demo -c -l ~/.install.sh
+          su -l demo -c -l ~/.install.sh
 
           bash -c "
             echo {{p,g}-seed,{gu,p,v}-local--local}.ingress.local.seed.local.gardener.cloud \
@@ -311,21 +311,21 @@ spec:
             fi
             function flag_notify {
               if [ "$(whoami)" == "root" ]; then
-                su demo -c -l "flag_notify $1"
+                su -l demo -c -l "flag_notify $1"
               fi
               mkdir -p /tmp/sync
               touch /tmp/sync/$1
             }
             function flag_wait {
               if [ "$(whoami)" == "root" ]; then
-                su demo -c -l "flag_wait $1"
+                su -l demo -c -l "flag_wait $1"
               fi
               mkdir -p /tmp/sync
               [ -f /tmp/sync/$1 ] || inotifywait -qq /tmp/sync --include /$1$
             }
             function flag_delete {
               if [ "$(whoami)" == "root" ]; then
-                su demo -c -l "flag_delete $1"
+                su -l demo -c -l "flag_delete $1"
               fi
               mkdir -p /tmp/sync
               rm /tmp/sync/$1
@@ -422,7 +422,7 @@ spec:
             set -g status-left-length 30
           EOF
 
-          sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su demo -c -l
+          sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
             set -x
 
             git config --global user.name  dev
@@ -682,7 +682,7 @@ spec:
             }
           SCRIPT_EOF
 
-          sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su demo -c -l
+          sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
             mkdir -p cell
             cd cell
             if [ -d gardener/.git ]; then
@@ -1329,7 +1329,7 @@ spec:
             new_window "gardener" "make kind-operator-down" <<"EOF"
               rm -rf /home/demo/go/src/github.com/gardener/gardener/dev/local-backupbuckets &&
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
-              su demo -c -l
+              su -l demo -c -l
                 set -e
                 export DOCKER_HOST=unix://$HOME/.docker-rootless-socket/docker.sock
                 make kind-operator-down
@@ -1346,7 +1346,7 @@ spec:
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
                 for i in 172.18.255.{1,3,10,11,12}; do ip address add $i dev lo; done
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
-                su demo -c -l
+                su -l demo -c -l
                   set -e
                   export DOCKER_HOST=unix://$HOME/.docker-rootless-socket/docker.sock
                   nice time make kind-operator-down kind-operator-up
@@ -1365,7 +1365,7 @@ spec:
                 PORT=$(yq '.clusters[0].cluster.server' $KUBECONFIG | sed -E 's/.*:([^:]+)$/\1/')
                 yq -i ".clusters[0].cluster.server=\"https://$DOCKER_IP:6443\"" $KUBECONFIG
                 sed 's/^  //' <<DEMO_EOF | xargs -d '\0' \
-                su demo -c -l
+                su -l demo -c -l
                   set -e
                   netstat -ntlp
                   socat TCP-LISTEN:6443,fork,reuseaddr,bind=$DOCKER_IP   TCP:127.0.0.1:$PORT   &
@@ -1385,7 +1385,7 @@ spec:
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
-                su demo -c -l
+                su -l demo -c -l
                   set -e
                   time (kubectl wait --for=jsonpath='{.status.numberReady}'=3 daemonset   -A --all --timeout=-1s &
                         kubectl wait --for=condition=available                deployments -A --all --timeout=-1s &
@@ -1399,7 +1399,7 @@ spec:
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
-                su demo -c -l
+                su -l demo -c -l
                   set -e
                   export DOCKER_HOST=unix://$HOME/.docker-rootless-socket/docker.sock
                   cd ../etcd-druid
@@ -1416,7 +1416,7 @@ spec:
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
-                su demo -c -l
+                su -l demo -c -l
                   set -e
                   nice time make operator-up
                   flag_notify rootless_operator-up
@@ -1430,7 +1430,7 @@ spec:
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
-                su demo -c -l
+                su -l demo -c -l
                   set -e
                   export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket/docker.sock
                   nice time make operator-seed-up
@@ -1442,7 +1442,7 @@ spec:
               export DOCKER_HOST=unix://$HOME/.docker-rootless-socket/docker.sock
               flag_wait rootless_operator-up &&
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n \
-              su demo -l
+              su -l demo -l
             EOF
 
             new_window "rootless4" "make the virtual cluster HA " Enter <<"EOF"
@@ -1450,7 +1450,7 @@ spec:
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
-                su demo -c -l
+                su -l demo -c -l
                   set -e
                   k get garden local -o json | jq '
                     .spec.virtualCluster.controlPlane.highAvailability = {}
@@ -1499,7 +1499,7 @@ spec:
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
-                su demo -c -l
+                su -l demo -c -l
                   set -e
                   export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
                   is_state_tested || {
@@ -1604,7 +1604,7 @@ spec:
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
-                su demo -c -l
+                su -l demo -c -l
                   set -e
                   export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
                   time flag_wait rootless_virtual-garden-ha &&
@@ -1621,7 +1621,7 @@ spec:
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
-                su demo -c -l
+                su -l demo -c -l
                   set -e
                   export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
                   time flag_wait rootless_managedseed-shoot-ready &&
