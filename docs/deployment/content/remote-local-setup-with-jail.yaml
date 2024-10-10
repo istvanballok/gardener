@@ -1422,7 +1422,8 @@ spec:
             EOF
             new_pane "operator-seed-up" Enter <<"EOF"
               flag_wait rootless_operator-up &&
-              sysctl -w kernel.keys.maxkeys=4000 &&
+              sysctl -w kernel.keys.maxkeys=$((200 * 10)) &&
+              sysctl -w kernel.keys.maxbytes=$((20000 * 10)) &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
