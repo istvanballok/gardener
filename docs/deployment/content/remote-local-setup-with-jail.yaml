@@ -2296,6 +2296,7 @@ spec:
               k annotate garden local 'gardener.cloud/operation=reconcile'
             EOF
             new_pane "garden conditions" Enter <<"EOF"
+              flag_wait rootless_kind_operator_up &&
               while true; do
                 clear
                 is_tmux_window_shown.sh &&
