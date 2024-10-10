@@ -1314,13 +1314,13 @@ spec:
               docker stop sysd
             EOF
 
-            new_window "rootless2" "interact" <<"EOF"
+            new_window "rootless debug" "exec sysd" <<"EOF"
               # machinectl shell demo@
               # systemctl --user status docker.service
               # journalctl --user -xeu docker.service
               docker exec -it sysd bash
             EOF
-            new_pane "outside" <<"EOF"
+            new_pane "use rootless docker" <<"EOF"
               su -l demo
               export DOCKER_HOST=unix://$HOME/.docker-rootless-socket/docker.sock
               docker ps
