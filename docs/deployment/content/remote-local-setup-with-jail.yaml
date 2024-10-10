@@ -1447,15 +1447,7 @@ spec:
                 DEMO_EOF
               NETWORK_EOF
             EOF
-            new_pane "debug" Enter <<"EOF"
-              # export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              # unset KUBECONFIG
-              flag_wait rootless_kind_operator_up &&
-              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n \
-              su -l demo
-            EOF
-
-            new_window "virtual garden HA" "virtual garden HA" Enter <<"EOF"
+            new_pane "virtual garden HA" Enter <<"EOF"
               flag_wait rootless_operator_seed_up &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
@@ -1473,6 +1465,13 @@ spec:
                   flag_notify rootless_virtual_garden_ha
                 DEMO_EOF
               NETWORK_EOF
+            EOF
+            new_pane "debug" Enter <<"EOF"
+              # export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              # unset KUBECONFIG
+              flag_wait rootless_kind_operator_up &&
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n \
+              su -l demo
             EOF
 
             new_window "demo" "demo" Enter <<"EOF"
