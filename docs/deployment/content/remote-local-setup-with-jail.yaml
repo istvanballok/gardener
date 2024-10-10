@@ -1480,21 +1480,6 @@ spec:
               su -l demo
             EOF
 
-            new_pane "Reconcile" <<"EOF"
-              k annotate garden local 'gardener.cloud/operation=reconcile'
-            EOF
-            new_pane "garden conditions" Enter <<"EOF"
-              while true; do
-                clear
-                is_tmux_window_shown.sh &&
-                k get garden -o json | jq '
-                  [.items[] |
-                   { name: .metadata.name,
-                     conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
-                ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl
-                sleep 10s
-              done
-            EOF
             new_window "shoot lifecycle" "Create" Enter <<"EOF"
               flag_wait rootless_virtual-garden-ha &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
@@ -2304,6 +2289,21 @@ spec:
                   ' | uniq_unbuffered \
                 | sed --unbuffered 's/, /,\n+ /g' | ts
                 echo "Restarting the watch" >&2
+                sleep 10s
+              done
+            EOF
+            new_pane "Reconcile" <<"EOF"
+              k annotate garden local 'gardener.cloud/operation=reconcile'
+            EOF
+            new_pane "garden conditions" Enter <<"EOF"
+              while true; do
+                clear
+                is_tmux_window_shown.sh &&
+                k get garden -o json | jq '
+                  [.items[] |
+                   { name: .metadata.name,
+                     conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
+                ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl
                 sleep 10s
               done
             EOF
