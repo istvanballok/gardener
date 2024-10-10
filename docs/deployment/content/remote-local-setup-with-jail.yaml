@@ -404,10 +404,6 @@ spec:
           EOF
           echo "export NAMESPACE=$NAMESPACE" >> ~/.bashrc
 
-          cp ~/.bash_profile /home/demo/.bash_profile
-          cp ~/.bashrc /home/demo/.bashrc
-          chown demo:demo /home/demo/.bash_profile /home/demo/.bashrc
-
           sed 's/^  //' <<"EOF" > ~/.tmux.conf
             set -g mouse on
             bind -T copy-mode-vi MouseDown3Pane    send -X copy-selection-and-cancel
@@ -421,6 +417,9 @@ spec:
             set -g history-limit 100000
             set -g status-left-length 30
           EOF
+
+          cp ~/.bash_profile ~/.bashrc ~/.tmux.conf /home/demo
+          chown demo:demo /home/demo/.bash_profile /home/demo/.bashrc /home/demo/.tmux.conf
 
           sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
             set -x
