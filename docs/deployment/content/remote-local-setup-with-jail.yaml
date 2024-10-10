@@ -1480,68 +1480,7 @@ spec:
               su -l demo
             EOF
 
-            new_window "seed&shoots" "seed&shoots" Enter <<"EOF"
-              # nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n
-              # su -l demo
-              # export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              # watch -n 10 is_tmux_window_shown.sh "&&" k get -A seeds,managedseeds,shoots
-            EOF
-            new_pane "last operations seed" Enter <<"EOF"
-              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              flag_wait operator-seed-up &&
-              while true; do
-                k get seed -o json -w 2>/dev/null \
-                | jq -r --unbuffered '[ "[seed=\(.metadata.name)]",
-                                        (.status.lastOperation |
-                                         [.progress, .description] |
-                                         join(" "))
-                                      ] | join(" ")
-                  ' | uniq_unbuffered | sed --unbuffered 's/, /,\n+ /g' | ts
-                echo "Restarting the watch" >&2
-                sleep 10s
-              done
-            EOF
-            new_pane "last operations shoot" Enter <<"EOF"
-              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              flag_wait operator-seed-up &&
-              while true; do
-                k get shoot -A -o json -w 2>/dev/null  \
-                | jq -r --unbuffered '[ "[shoot=\(.metadata.namespace)/\(.metadata.name)]",
-                                        (.status.lastOperation |
-                                         [.progress, .description] |
-                                         join(" "))
-                                      ] | join(" ")
-                  ' | uniq_unbuffered | sed --unbuffered 's/, /,\n+ /g' | ts
-                echo "Restarting the watch" >&2
-                sleep 10s
-              done
-            EOF
-            new_pane "seed conditions" Enter <<"EOF"
-              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              while true; do
-                clear
-                is_tmux_window_shown.sh &&
-                k get seeds -o json | jq '
-                  [.items[] |
-                   { name: .metadata.name,
-                     conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
-                ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl
-                sleep 10s
-              done
-            EOF
-            new_horizontal_pane "shoot conditions" Enter <<"EOF"
-              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              while true; do
-                clear
-                is_tmux_window_shown.sh &&
-                k get shoots -A -o json | jq '
-                  [.items[] |
-                   { name: [.metadata.namespace, .metadata.name] | join("/"),
-                     conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
-                ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl
-                sleep 10s
-              done
-            EOF
+
             new_window "managed seed" "create shoot" Enter <<"EOF"
               flag_wait rootless_virtual-garden-ha &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
@@ -2301,6 +2240,69 @@ spec:
                 time k delete shoot local -n garden-local &&
                 flag_notify rootless_shoot_ha_ready_deleted
               }
+            EOF
+
+            new_window "seed&shoots" "seed&shoots" Enter <<"EOF"
+              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              watch -n 10 is_tmux_window_shown.sh "&&" k get -A seeds,managedseeds,shoots
+            EOF
+            new_pane "last operations seed" Enter <<"EOF"
+              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              flag_wait rootless_operator_seed_up &&
+              while true; do
+                k get seed -o json -w 2>/dev/null \
+                | jq -r --unbuffered '[ "[seed=\(.metadata.name)]",
+                                        (.status.lastOperation |
+                                         [.progress, .description] |
+                                         join(" "))
+                                      ] | join(" ")
+                  ' | uniq_unbuffered | sed --unbuffered 's/, /,\n+ /g' | ts
+                echo "Restarting the watch" >&2
+                sleep 10s
+              done
+            EOF
+            new_pane "last operations shoot" Enter <<"EOF"
+              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              flag_wait rootless_operator_seed_up &&
+              while true; do
+                k get shoot -A -o json -w 2>/dev/null  \
+                | jq -r --unbuffered '[ "[shoot=\(.metadata.namespace)/\(.metadata.name)]",
+                                        (.status.lastOperation |
+                                         [.progress, .description] |
+                                         join(" "))
+                                      ] | join(" ")
+                  ' | uniq_unbuffered | sed --unbuffered 's/, /,\n+ /g' | ts
+                echo "Restarting the watch" >&2
+                sleep 10s
+              done
+            EOF
+            new_pane "seed conditions" Enter <<"EOF"
+              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              flag_wait rootless_operator_seed_up &&
+              while true; do
+                clear
+                is_tmux_window_shown.sh &&
+                k get seeds -o json | jq '
+                  [.items[] |
+                   { name: .metadata.name,
+                     conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
+                ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl
+                sleep 10s
+              done
+            EOF
+            new_horizontal_pane "shoot conditions" Enter <<"EOF"
+              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              flag_wait rootless_operator_seed_up &&
+              while true; do
+                clear
+                is_tmux_window_shown.sh &&
+                k get shoots -A -o json | jq '
+                  [.items[] |
+                   { name: [.metadata.namespace, .metadata.name] | join("/"),
+                     conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
+                ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl
+                sleep 10s
+              done
             EOF
 
           SCRIPT_EOF
