@@ -1475,8 +1475,7 @@ spec:
             new_window "demo" "demo" Enter <<"EOF"
               # tmux a
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n \
-              su -l demo -c -l '~/prepare_tmux.sh' &
-              wait &&
+              su -l demo -c -l '~/prepare_tmux.sh' &&
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n \
               su -l demo
             EOF
