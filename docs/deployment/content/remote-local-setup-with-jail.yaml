@@ -1380,7 +1380,6 @@ spec:
                   AFTER=\$(netstat -ntlp)
                   echo "netstat -ntlp diff:"
                   diff -U 100 -u --color=always <(echo "\$BEFORE") <(echo "\$AFTER") | grep -v /dev/fd || true
-                  echo "socat maps the expected IP:PORT combinations in the slightly different rootless docker setup."
                   flag_notify rootless_kind_operator_up_fix
                   wait
                 DEMO_EOF
