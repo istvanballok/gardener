@@ -631,6 +631,48 @@ spec:
               2.45.2
             PATCH_EOF
 
+            sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0005-support-shoots-on-the-managed-seed.patch
+              From e722b0d9e3f1b8d01e8e476617e52b48195c8836 Mon Sep 17 00:00:00 2001
+              From: dev <dev>
+              Date: Fri, 11 Oct 2024 14:50:38 +0200
+              Subject: [PATCH] support shoots on the managed seed
+
+              ---
+               .../machine-provider/local/create_machine.go           | 10 ++++++++++
+               1 file changed, 10 insertions(+)
+
+              diff --git a/pkg/provider-local/machine-provider/local/create_machine.go b/pkg/provider-local/machine-provider/local/create_machine.go
+              index 510774ebf..83ecf9956 100644
+              --- a/pkg/provider-local/machine-provider/local/create_machine.go
+              +++ b/pkg/provider-local/machine-provider/local/create_machine.go
+              @@ -113,6 +113,10 @@ func (d *localDriver) applyPod(
+               						Name:      "tmpfs",
+               						MountPath: "/tmp",
+               					},
+              +					{
+              +						Name:      "kubelet",
+              +						MountPath: "/var/lib/kubelet",
+              +					},
+               					{
+               						Name:      "containerd",
+               						MountPath: "/var/lib/containerd",
+              @@ -155,6 +159,12 @@ func (d *localDriver) applyPod(
+               					},
+               				},
+               			},
+              +			{
+              +				Name: "kubelet",
+              +				VolumeSource: corev1.VolumeSource{
+              +					EmptyDir: &corev1.EmptyDirVolumeSource{},
+              +				},
+              +			},
+               			{
+               				Name: "containerd",
+               				VolumeSource: corev1.VolumeSource{
+              --
+              2.45.2
+            PATCH_EOF
+
             if [[ $NAMESPACE == demo* ]] || [[ $NAMESPACE == test* ]]; then
               if ! git am ~/gardener-patches/00*.patch; then
                 echo "Please check/rebase the patches as needed."
