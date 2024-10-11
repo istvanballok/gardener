@@ -2221,7 +2221,6 @@ spec:
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               flag_wait rootless_virtual_garden_ha &&
               is_state_tested || {
-                time flag_wait rootless_virtual-garden-ha &&
                 k apply -f example/provider-local/shoot.yaml &&
                 time (k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Processing shoot local --timeout=-1s
                       k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot local --timeout=-1s
