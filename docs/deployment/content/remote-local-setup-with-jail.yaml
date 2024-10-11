@@ -2228,7 +2228,7 @@ spec:
                 flag_notify rootless_shoot_ready
               }
             EOF
-            new_pane "HA" Enter <<"EOF"
+            new_pane "upgrade to HA" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               is_state_tested || {
                 time flag_wait rootless_shoot_ready &&
@@ -2238,10 +2238,6 @@ spec:
                       k -n garden-local wait shoot local --for=condition=SystemComponentsHealthy --timeout=-1s) &&
                 flag_notify rootless_shoot_ha_ready
               }
-            EOF
-            new_pane "Reconcile" <<"EOF"
-              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              k annotate shoot local -n garden-local 'gardener.cloud/operation=reconcile'
             EOF
             new_pane "Delete" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
@@ -2253,6 +2249,10 @@ spec:
                 flag_delete rootless_shoot_ready
                 flag_delete rootless_shoot_ha_ready
               }
+            EOF
+            new_pane "Reconcile" <<"EOF"
+              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              k annotate shoot local -n garden-local 'gardener.cloud/operation=reconcile'
             EOF
 
             new_window "seed&shoots" "seed&shoots" Enter <<"EOF"
