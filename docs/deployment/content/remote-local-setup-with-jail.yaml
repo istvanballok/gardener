@@ -1770,15 +1770,17 @@ spec:
                   echo
                   echo "Diff:"
                   diff -U 10 -u --color=always <(echo "$BEFORE") <(echo "$AFTER") | grep -v /dev/fd || true
-                ) && flag_notify registry-mitigation
+                ) && flag_notify registry_mitigation
               }
             EOF
             new_pane "offline" Enter <<"EOF"
               nsenter -t 1 -n
-              flag_wait managedseed-seed-ready &&
+              flag_wait rootless_managedseed_seed_ready &&
               if ! is_state_tested; then
-                flag_wait shoot-ha-ready-deleted && # managedseed-nested-shoot-ready-deleted once the workerless shoot bug is fixed
-                flag_wait registry-mitigation
+                flag_wait rootless_shoot_ha_ready_deleted &&
+                flag_wait managedseed_nested_workerless_shoot_deleted &&
+                # flag_wait managedseed_nested_shoot_deleted && # TODO overlayfs issue
+                flag_wait registry_mitigation
               fi &&
               {
                 iptables -I FORWARD -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
