@@ -2188,12 +2188,28 @@ spec:
               flag_wait rootless_kind_operator_up &&
               while true; do
                 clear
-                is_tmux_window_shown.sh &&
-                k get garden -o json | jq '
-                  [.items[] |
-                   { name: .metadata.name,
-                     conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
-                ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl
+                if is_tmux_window_shown.sh; then
+                  while true; do
+                    k get garden -w | while read line; do
+                                        flag_notify watch_garden
+                                      done
+                    sleep 10
+                  done &
+                  while flag_wait watch_garden; do
+                    flag_delete watch_garden
+                    clear
+                    k get garden -o json | jq '
+                      [.items[] |
+                       { name: .metadata.name,
+                         conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
+                    ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl
+                    sleep 1
+                    if ! is_tmux_window_shown.sh; then
+                      kill %1
+                      break
+                    fi
+                  done
+                fi
                 sleep 10s
               done
             EOF
