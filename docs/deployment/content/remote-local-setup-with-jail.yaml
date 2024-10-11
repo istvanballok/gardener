@@ -2407,6 +2407,33 @@ spec:
                 flag_notify managedseed_nested_workerless_shoot_deleted
               }
             EOF
+            new_pane "regular shoot on managed seed" Enter <<"EOF"
+              # Note: regular shoots do not work due to nesting overlayfs, see errors in dmesg
+              # Note: the managed seed has 1 node and no zones, so it is not HA
+              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              is_state_tested || {
+                # time flag_wait rootless_managedseed_seed_ready &&
+                k apply -f <(yq '.metadata.name="local-ms"               |
+                                 .spec.seedName="managedseed"            |
+                                 .spec.networking.nodes=   "10.7.0.0/16" |
+                                 .spec.networking.pods=    "10.8.0.0/16" |
+                                 .spec.networking.services="10.9.0.0/16"
+                                ' example/provider-local/shoot.yaml) &&
+                time (k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Processing shoot local-ms --timeout=-1s
+                      k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot local-ms --timeout=-1s
+                      k wait -n garden-local --for=condition=SystemComponentsHealthy                   shoot local-ms --timeout=-1s) &&
+                flag_notify managedseed_nested_shoot_ready
+              }
+            EOF
+            new_pane "delete regular shoot on managed seed" Enter <<"EOF"
+              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              is_state_tested || {
+                time flag_wait managedseed_nested_shoot_ready &&
+                k annotate    shoot local-ms -n garden-local 'confirmation.gardener.cloud/deletion=true' &&
+                time k delete shoot local-ms -n garden-local &&
+                flag_notify managedseed_nested_shoot_deleted
+              }
+            EOF
 
             new_window "runtime&seed pods" "pods" Enter <<"EOF"
               # the while loop is used instead of watch to allow for scrolling a longer list in the tmux pane
