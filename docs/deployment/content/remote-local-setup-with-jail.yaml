@@ -1849,85 +1849,6 @@ spec:
               iptables  -D INPUT   -i docker_veth0 -j REJECT -p udp --reject-with icmp-port-unreachable
             EOF
 
-            new_window "shoot API" "IP socat" Enter <<"EOF"
-              cat <<DOC >/dev/null
-                The KinD cluster acts as the "local" seed.
-                The shoot control planes are exposed via one of 4 IPs from the docker kind network that are mapped to the loopback device.
-                To mitigate a routing issue and to control the network access from the cell, we map these to another 4 IPs from the docker bridge network,
-                that is routeable from the cell.
-              DOC
-              flag_wait virtual-garden-ha &&
-              while read internalIP exposedIP; do
-                echo "Exposing $internalIP:443 on $exposedIP:443"
-                ip addr add $exposedIP/32 dev lo
-                socat TCP-LISTEN:443,fork,reuseaddr,bind=$exposedIP TCP:$internalIP:443 &
-              done < <(
-                k get svc -A -o json | jq -r '
-                  .items[] |
-                  select(.metadata | (.namespace | test("^istio-ingress")) and .name=="istio-ingressgateway") |
-                  .status.loadBalancer.ingress[0].ip |
-                  [., sub("^172.18"; "172.31")] | join(" ")
-                ') &&
-              sleep 1 &&
-              jobs
-            EOF
-            new_pane "hosts entries watching" Enter <<"EOF"
-              flag_wait virtual-garden-ha &&
-              rm -f /root/gateways.watch.bookmark &&
-              while true; do
-                BOOKMARK="resourceVersion=$(cat /root/gateways.watch.bookmark 2>/dev/null)"
-                k get --raw "/apis/networking.istio.io/v1beta1/gateways?watch=1&allowWatchBookmarks=true&$BOOKMARK" | jq -r --unbuffered --argjson ingress2IP "$(
-                  k get svc -A -o json | jq -r '
-                  .items |
-                  map(select(.metadata | (.namespace | test("^istio-ingress")) and .name=="istio-ingressgateway") |
-                      {(.spec.selector.istio): .status.loadBalancer.ingress[0].ip}) | add'
-                )" '
-                  if .type == "BOOKMARK"
-                  then
-                    "BOOKMARK \(.object.metadata.resourceVersion)"
-                  else
-                    select(.object.metadata.name == "kube-apiserver") |
-                    { type: .type,
-                      resourceVersion: .object.metadata.resourceVersion,
-                      namespace: .object.metadata.namespace,
-                      istio: .object.spec.selector.istio} |
-                    . +
-                    (.namespace | capture("shoot--(?<project>.*)--(?<name>.*)")) +
-                    {ip: $ingress2IP[.istio]} |
-                    select(flatten | all(.!=null)) |
-                    "\(.type) \(.resourceVersion) api.\(.name).\(.project).external.local.gardener.cloud \(.ip | sub("^172.18"; "172.31"))"
-                  end
-                '
-                echo "Restarting the watch" | ts >&2
-                sleep 10s
-              done | awk -v bookmark=/root/gateways.watch.bookmark \
-                         -v entries=/root/hosts.entries '
-                         {
-                           if ($1 != "ADDED") {
-                             pastInitialListing = 1
-                           }
-                           if (pastInitialListing) {
-                             print $2 > bookmark ".wip"
-                             close(bookmark ".wip")
-                             system(sprintf("mv %s.wip %s", bookmark, bookmark))
-                           }
-                           if ($1 == "BOOKMARK") {
-                             next
-                           }
-                           if ($1 == "ADDED" || $1 == "MODIFIED") {
-                             state[$3] = $4
-                           } else if ($1 == "DELETED") {
-                             delete state[$3]
-                           }
-                           print "# local seed" > entries
-                           for (domain in state) {
-                             print state[domain], domain > entries
-                           }
-                           close(entries)
-                           print "regenerated the hosts.entries file"
-                         }' | ts
-            EOF
-
             new_window "WIP managed seed shoot API" "wait for the managed seed" Enter <<"EOF"
               flag_wait virtual-garden-ha &&
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig &&
@@ -2609,6 +2530,74 @@ spec:
                            system(sprintf("echo %s | base64 -d > %s.wip", $3, kubeconfig))
                            system(sprintf("mv %s.wip %s", kubeconfig, kubeconfig))
                          }' | ts
+            EOF
+
+            new_window "shoot API" "hosts entries" Enter <<"EOF"
+              flag_wait rootless_virtual_garden_ha &&
+              rm -f ~/gateways.watch.bookmark &&
+              while true; do
+                BOOKMARK="resourceVersion=$(cat ~/gateways.watch.bookmark 2>/dev/null)"
+                k get --raw "/apis/networking.istio.io/v1beta1/gateways?watch=1&allowWatchBookmarks=true&$BOOKMARK" | \
+                jq -r --unbuffered \
+                      --argjson ingress2IP \
+                                "$(
+                                  k get svc -A -o json | \
+                                  jq -r '
+                                    .items |
+                                    map(select(.metadata | (.namespace | test("^istio-ingress")) and .name=="istio-ingressgateway") |
+                                    {(.spec.selector.istio): .status.loadBalancer.ingress[0].ip}) |
+                                    add'
+                                )" '
+                  if .type == "BOOKMARK"
+                  then
+                    "BOOKMARK \(.object.metadata.resourceVersion)"
+                  else
+                    select(.object.metadata.name == "kube-apiserver") |
+                    { type: .type,
+                      resourceVersion: .object.metadata.resourceVersion,
+                      namespace:       .object.metadata.namespace,
+                      istio:           .object.spec.selector.istio} |
+                    . +
+                    (.namespace | capture("shoot--(?<project>.*)--(?<name>.*)")) +
+                    {ip: $ingress2IP[.istio]} |
+                    select(flatten | all(.!=null)) |
+                    "\(.type) \(.resourceVersion) api.\(.name).\(.project).external.local.gardener.cloud \(.ip)"
+                  end
+                '
+                echo "Restarting the watch" | ts >&2
+                sleep 10s
+              done | \
+              awk -v bookmark=~/gateways.watch.bookmark \
+                  -v entries=~/hosts.entries '
+                  {
+                    print "Incoming event: " $0
+                    if ($1 != "ADDED") {
+                      pastInitialListing = 1
+                    }
+                    if (pastInitialListing) {
+                      print $2 > bookmark ".wip"
+                      close(bookmark ".wip")
+                      system(sprintf("mv %s.wip %s", bookmark, bookmark))
+                    }
+                    if ($1 == "BOOKMARK") {
+                      next
+                    }
+                    if ($1 == "ADDED" || $1 == "MODIFIED") {
+                      state[$3] = $4
+                    } else if ($1 == "DELETED") {
+                      delete state[$3]
+                    }
+                    print "hosts.entries:"
+                    print "# soil"
+                    print "# soil" > entries
+                    for (domain in state) {
+                      print state[domain], domain
+                      print state[domain], domain > entries
+                    }
+                    close(entries)
+                    print "-"
+                    fflush()
+                  }' | ts
             EOF
 
             tmux select-window -t 0
