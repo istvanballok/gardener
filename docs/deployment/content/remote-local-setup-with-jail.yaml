@@ -2484,7 +2484,7 @@ spec:
               # Note: the managed seed has 1 node and no zones, so it is not HA
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               is_state_tested || {
-                # time flag_wait rootless_managedseed_seed_ready &&
+                time flag_wait rootless_managedseed_seed_ready &&
                 k apply -f <(yq '.metadata.name="local-ms"               |
                                  .spec.seedName="managedseed"            |
                                  .spec.networking.nodes=   "10.7.0.0/16" |
