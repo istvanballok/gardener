@@ -1512,15 +1512,7 @@ spec:
                 DEMO_EOF
               NETWORK_EOF
             EOF
-            new_pane "debug" Enter <<"EOF"
-              # export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              # unset KUBECONFIG
-              flag_wait rootless_kind_operator_up &&
-              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n \
-              su -l demo
-            EOF
-
-            new_window "support shoot nodes" "remount /sys rw" Enter <<"EOF"
+            new_pane "fix Gardener shoot nodes: remount /sys rw as root from the outside" Enter <<"EOF"
               # When docker or containerd create a privileged container, they mount /sys
               # read-write. However, when K8s creates a privileged pod, it mounts /sys
               # read-only.
@@ -1590,6 +1582,13 @@ spec:
                 echo
                 sleep 1m
               done | ts
+            EOF
+            new_pane "debug" Enter <<"EOF"
+              # export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              # unset KUBECONFIG
+              flag_wait rootless_kind_operator_up &&
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n \
+              su -l demo
             EOF
 
             new_window "demo" "demo" Enter <<"EOF"
