@@ -1707,20 +1707,6 @@ spec:
                 scriptreplay -m 1 --log-timing {}/timing.log --log-out {}/out.log
             EOF
 
-            new_window "image preload" "image preload" Enter <<"EOF"
-              is_state_tested || {
-                flag_wait operator-up &&
-                for i in alpine:latest nginx:latest; do
-                  docker pull $i
-                  docker tag $i localhost:5001/$i
-                  docker push localhost:5001/$i
-                done &&
-                for i in $(curl -s localhost:5001/v2/_catalog | jq '.repositories[]' -r | grep -v local); do
-                  curl -s localhost:5001/v2/$i/tags/list | jq .
-                done
-              }
-            EOF
-
             new_window "offline" "registry mitigation" Enter <<"EOF"
               # The pull through container registry cache 'registry:2.8.3'
               # that is used to mirror the needed images from gcr.io, quay.io, ...
@@ -2585,6 +2571,20 @@ spec:
             new_pane "etcd-druid" Enter <<"EOF"
               cd ../etcd-druid
               git log $(git describe --tags --abbrev=0)..HEAD --oneline --boundary
+            EOF
+
+            new_window "image preload" "image preload" Enter <<"EOF"
+              is_state_tested || {
+                flag_wait rootless_kind_operator_up_ready &&
+                for i in alpine:latest nginx:latest; do
+                  docker pull $i
+                  docker tag $i localhost:5001/$i
+                  docker push localhost:5001/$i
+                done &&
+                for i in $(curl -s localhost:5001/v2/_catalog | jq '.repositories[]' -r | grep -v local); do
+                  curl -s localhost:5001/v2/$i/tags/list | jq .
+                done
+              }
             EOF
 
             tmux select-window -t 0
