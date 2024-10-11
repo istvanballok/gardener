@@ -1520,28 +1520,69 @@ spec:
               su -l demo
             EOF
 
-            new_window "debug" "debug" Enter <<"EOF"
+            new_window "support shoot nodes" "remount /sys rw" Enter <<"EOF"
+              # When docker or containerd create a privileged container, they mount /sys
+              # read-write. However, when K8s creates a privileged pod, it mounts /sys
+              # read-only.
+              #
+              # K8s uses containerd under the hood, so it seems that K8s somehow later remounts
+              # /sys ro for the container of the privileged pod, both in a KinD and in a real
+              # cluster.
+              #
+              # In a real privileged pod, the root user can remount /sys rw for itself, so this
+              # K8s behavior does not cause any issues.
+              #
+              # However, in a rootless environment, the root user of a privileged pod is
+              # actually not root on the host, so the attempt to remount /sys rw fails.
+              #
+              # In a rootless environment, in the systemd container (K8s node) where containerd
+              # is running, /sys is mounted ro (because it is a privileged K8s pod) and
+              # containerd can't remount /sys rw when creating a privileged container because it
+              # is actually not root on the host.
+              #
+              # In a rootless setup, if /sys is mounted ro for containerd, containerd can start
+              # a regular container, because it bind mounts /sys ro for the container. However,
+              # containerd can't start a privileged container, because it tries to mount /sys rw
+              # for the container, and it can't bind mount /sys:ro as rw for the container, if
+              # it is not root.
+              #
+              # The symptom is that the Gardener shoot nodes that are privileged K8s pods with a
+              # ro /sys can not start all the Gardener system pods because some of them are
+              # privileged pods and containerd fails to create privileged containers because it
+              # fails to bind mount /sys:ro as rw.
+              #
+              # The mitigation is to remount /sys rw for the shoot nodes from the outside. The
+              # shoot nodes run /sbin/init (systemd) as the demo user. As root on the host, we
+              # can enter the mount namespace of the /sbin/init (systemd) processes, i.e. enter
+              # the node pods, and remount /sys rw for them, what they can't do.
+              #
+              # After this mitigation, containerd on the shoot nodes can start privileged
+              # containers and hence the shoot node can start privileged pods.
+              #
               # nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n
               # su -l demo
               # export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket/docker.sock
               # k exec -it $(k get pods | grep machine-shoot | awk '{print $1}') -- bash
               # ctr image pull docker.io/library/alpine:latest
-              # ctr run --privileged -t docker.io/library/alpine:latest mycontainer
+              # ctr run -t docker.io/library/alpine:latest mycontainer
+              # ctr run --privileged -t docker.io/library/alpine:latest mycontainer # fails
               # mount | grep ' /sys '
-
+              #
               # ps aux | grep ' /sbin/init' | grep -v 'grep' | grep demo | awk '{print $2}'
-              # nsenter -t 2054800 -m -p -e -C /bin/sh
+              # nsenter -t $PID -m -p -e -C /bin/sh
               # mount -o remount,rw /sys
-              # nsenter -t 2145590 -m -p -e -C /bin/sh -c 'mount | grep " /sys " | grep rw || mount -o remount,rw /sys'
+              # nsenter -t $PID -m -p -e -C /bin/sh -c 'mount | grep " /sys " | grep rw || mount -o remount,rw /sys'
               while true; do
-                for i in $(ps aux | grep ' /sbin/init' | grep -v 'grep' | grep demo | awk '{print $2}'); do
-                  echo $i
+                for i in $(pgrep -u demo -f '^/sbin/init'); do
+                  echo "/sbin/init (systemd) PID: $i"
                   nsenter -t $i -m -p -e -C /bin/sh -c '
                     if ! mount | grep " /sys " | grep rw; then
-                      echo "Remounting /sys as read-write as root for the K8s machine pods in the rootless Docker environment"
+                      mount | grep " /sys "
+                      echo "Remounting /sys read-write"
                       mount -o remount,rw /sys
+                      mount | grep " /sys "
                     else
-                      echo "/sys is already mounted as read-write"
+                      echo "/sys is already mounted read-write"
                     fi
                   '
                   echo
