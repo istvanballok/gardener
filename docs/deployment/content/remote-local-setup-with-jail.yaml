@@ -304,7 +304,7 @@ spec:
             source /usr/share/git-core/git-prompt.sh
             export PS1='[\w $(printf "$(kube_ps1)")] $(__git_ps1 "(%s)") [$(date +%H:%M)]\$ '
             [ -t 0 ] && stty -ixon
-            [ -n "$GCTL_SESSION_ID" ] || [ -n "$TERM_SESSION_ID" ] || export GCTL_SESSION_ID=$(uuidgen)
+            export GCTL_SESSION_ID=$(uuidgen)
             if [ "$(whoami)" == "demo" ]; then
               cd ~/go/src/github.com/gardener/gardener || true
               if [ -f $PWD/example/operator/virtual-garden/kubeconfig ]; then
