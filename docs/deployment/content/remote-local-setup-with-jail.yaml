@@ -1537,8 +1537,10 @@ spec:
                             | awk '/inet /{print $2}' | cut -d '/' -f 1)
                 ip address add $DOCKER_IP dev lo || true
                 KUBECONFIG=/home/demo/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator/kubeconfig
+                mkdir -p /home/demo/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator2
+                KUBECONFIG2=/home/demo/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator2/kubeconfig
                 PORT=$(yq '.clusters[0].cluster.server' $KUBECONFIG | sed -E 's/.*:([^:]+)$/\1/')
-                yq -i ".clusters[0].cluster.server=\"https://$DOCKER_IP:6443\"" $KUBECONFIG
+                yq ".clusters[0].cluster.server=\"https://$DOCKER_IP:6443\"" $KUBECONFIG > $KUBECONFIG2
                 sed 's/^  //' <<DEMO_EOF | xargs -d '\0' \
                 su -l demo -c -l
                   set -e
@@ -1575,7 +1577,7 @@ spec:
             EOF
             new_pane "sync kubeconfig" Enter <<"EOF"
               su -l demo
-              sync_kubeconfig example/gardener-local/kind/operator | ts
+              sync_kubeconfig example/gardener-local/kind/operator2 | ts
             EOF
             new_pane "build and push patched etcd-druid" Enter <<"EOF"
               flag_wait rootless_kind_operator_up_ready &&
