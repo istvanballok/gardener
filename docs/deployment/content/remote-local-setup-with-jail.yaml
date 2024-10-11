@@ -1606,11 +1606,6 @@ spec:
               su -l demo
             EOF
 
-            new_window "git" "git" Enter <<"EOF"
-              # Use 'pr' or 'pr_base' to checkout the head or base commit of a PR
-              git log --oneline -1
-            EOF
-
             new_window "ad-hoc" "ad-hoc" Enter <<"EOF"
               # Use this pane for ad-hoc commands
             EOF
@@ -2416,6 +2411,15 @@ spec:
             new_window "gardenctl" "gardenctl" <<"EOF"
               eval $(gardenctl kubectl-env bash)
               g target --shoot local
+            EOF
+
+            new_window "git" "gardener" Enter <<"EOF"
+              # Use 'pr' or 'pr_base' to checkout the head or base commit of a PR
+              git log $(git describe --tags --abbrev=0)..HEAD --oneline --boundary
+            EOF
+            new_pane "etcd-druid" Enter <<"EOF"
+              cd ../etcd-druid
+              git log $(git describe --tags --abbrev=0)..HEAD --oneline --boundary
             EOF
 
             tmux select-window -t 0
