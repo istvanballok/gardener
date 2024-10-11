@@ -1745,6 +1745,7 @@ spec:
                         ' | while read name suffix port; do
                           echo "Processing the registry mirror $suffix"
                           k -n registry port-forward deployment/$name 5000:$port &
+                          PORT_FORWARD_PID=$!
                           until curl localhost:5000 >/dev/null 2>&1; do sleep 1; done
                           find dev/local-registry/$suffix -type d | sed -n -E '
                             s|.*/docker/registry/v2/repositories/(.*)/_manifests/tags/([^/]*)$|\1:\2|p
@@ -1754,7 +1755,7 @@ spec:
                                 docker pull localhost:5000/$image
                                 docker rmi localhost:5000/$image >/dev/null
                               done
-                          kill %1
+                          kill $PORT_FORWARD_PID
                           wait
                         done
 
