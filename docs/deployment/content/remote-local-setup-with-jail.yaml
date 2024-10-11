@@ -2390,8 +2390,8 @@ spec:
               is_state_tested || {
                 time flag_wait rootless_managedseed_seed_ready &&
                 k apply -f <(yq '.metadata.name="local-wl-ms" |
-                                .spec.seedName="managedseed" |
-                                .spec.networking.services="10.6.0.0/16"' example/provider-local/shoot-workerless.yaml) &&
+                                 .spec.seedName="managedseed" |
+                                 .spec.networking.services="10.6.0.0/16"' example/provider-local/shoot-workerless.yaml) &&
                 time (k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Processing shoot local-wl-ms --timeout=-1s
                       k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot local-wl-ms --timeout=-1s
                       k wait -n garden-local --for=condition=SystemComponentsHealthy                   shoot local-wl-ms --timeout=-1s) &&
@@ -2402,7 +2402,7 @@ spec:
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               is_state_tested || {
                 time flag_wait managedseed_nested_workerless_shoot_ready &&
-                k annotate shoot local-wl-ms -n garden-local 'confirmation.gardener.cloud/deletion=true' &&
+                k annotate    shoot local-wl-ms -n garden-local 'confirmation.gardener.cloud/deletion=true' &&
                 time k delete shoot local-wl-ms -n garden-local &&
                 flag_notify managedseed_nested_workerless_shoot_deleted
               }
