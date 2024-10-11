@@ -1593,6 +1593,12 @@ spec:
 
             new_window "demo" "demo" Enter <<"EOF"
               # tmux a
+              {
+                while ! tmux capture-pane -p -t $TMUX_PANE | grep -v -E '^$' | tail -n 1 | grep -E '\$$' >/dev/null; do
+                  sleep 10
+                done
+                tmux send -t $TMUX_PANE "tmux a" Enter
+              } &
               flag_wait sysd_rootless_docker_service &&
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n \
               su -l demo -c -l '~/prepare_tmux.sh' &&
