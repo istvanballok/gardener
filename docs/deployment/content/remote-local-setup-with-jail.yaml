@@ -1732,7 +1732,7 @@ spec:
 
 
                     sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
-                    nsenter -t $(pgrep -f '/proc/self/exe --state-dir=/run/user/2000/dockerd-rootless') -n bash -c
+                    nsenter -t $(pgrep -f '^/proc/self/exe --state-dir=/run/user/2000/dockerd-rootless') -n bash -c
                       sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
                       su -l demo -c -l
                         set -e
