@@ -1712,8 +1712,10 @@ spec:
               # and pull them sequentially to ensure that the cache is complete and consistent.
               # The test also asserts that all the images can be pulled
               # even when the Internet access is blocked.
+              cd /home/demo/go/src/github.com/gardener/gardener
               is_state_tested || {
-                flag_wait shoot-ha-ready-deleted &&
+                flag_wait rootless_shoot_ha_ready_deleted &&
+                flag_wait rootless_managedseed_seed_ready &&
                 time (
                   set -e -o pipefail
                   BEFORE=$(
@@ -1727,26 +1729,37 @@ spec:
                       nsenter -t 1 -n iptables -I FORWARD -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
                       nsenter -t 1 -n iptables -I INPUT   -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
                     fi
-                    k -n registry get deployments -o json | jq -r '
-                      .items[] |
-                      select(.metadata.name | startswith("registry-")) |
-                      [.metadata.name, (.metadata.name | sub("^registry-"; "")), .spec.template.spec.containers[0].ports[0].containerPort] |
-                      join(" ")
-                    ' | while read name suffix port; do
-                      echo "Processing the registry mirror $suffix"
-                      k -n registry port-forward deployment/$name 5000:$port &
-                      until curl localhost:5000 >/dev/null 2>&1; do sleep 1; done
-                      find dev/local-registry/$suffix -type d | sed -n -E '
-                        s|.*/docker/registry/v2/repositories/(.*)/_manifests/tags/([^/]*)$|\1:\2|p
-                      ' | while read image; do
-                            echo
-                            echo "Pulling the image $suffix/$image"
-                            docker pull localhost:5000/$image
-                            docker rmi localhost:5000/$image >/dev/null
-                          done
-                      kill %1
-                      wait
-                    done
+
+
+                    sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
+                    nsenter -t $(pgrep -f '/proc/self/exe --state-dir=/run/user/2000/dockerd-rootless') -n bash -c
+                      sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
+                      su -l demo -c -l
+                        set -e
+
+                        k -n registry get deployments -o json | jq -r '
+                          .items[] |
+                          select(.metadata.name | startswith("registry-")) |
+                          [.metadata.name, (.metadata.name | sub("^registry-"; "")), .spec.template.spec.containers[0].ports[0].containerPort] |
+                          join(" ")
+                        ' | while read name suffix port; do
+                          echo "Processing the registry mirror $suffix"
+                          k -n registry port-forward deployment/$name 5000:$port &
+                          until curl localhost:5000 >/dev/null 2>&1; do sleep 1; done
+                          find dev/local-registry/$suffix -type d | sed -n -E '
+                            s|.*/docker/registry/v2/repositories/(.*)/_manifests/tags/([^/]*)$|\1:\2|p
+                          ' | while read image; do
+                                echo
+                                echo "Pulling the image $suffix/$image"
+                                docker pull localhost:5000/$image
+                                docker rmi localhost:5000/$image >/dev/null
+                              done
+                          kill %1
+                          wait
+                        done
+
+                DEMO_EOF
+              NETWORK_EOF
                     if [ "$phase" = "offline" ]; then
                       echo "Restoring network traffic to the Internet"
                       nsenter -t 1 -n iptables -D FORWARD -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
