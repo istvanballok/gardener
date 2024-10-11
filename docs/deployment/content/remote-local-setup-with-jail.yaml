@@ -1314,7 +1314,7 @@ spec:
                 USER root
                 RUN apt-get install -y net-tools
 
-                CMD ["/sbin/init"]
+                CMD ["nice", "/sbin/init"]
 
                 RUN apt-get update && apt-get upgrade -y
               DOCKERFILE
