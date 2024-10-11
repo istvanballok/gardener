@@ -2184,9 +2184,6 @@ spec:
                 sleep 10s
               done
             EOF
-            new_pane "Reconcile" <<"EOF"
-              k annotate garden local 'gardener.cloud/operation=reconcile'
-            EOF
             new_pane "garden conditions" Enter <<"EOF"
               flag_wait rootless_kind_operator_up &&
               while true; do
@@ -2199,6 +2196,9 @@ spec:
                 ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl
                 sleep 10s
               done
+            EOF
+            new_pane "Reconcile" <<"EOF"
+              k annotate garden local 'gardener.cloud/operation=reconcile'
             EOF
 
             new_window "shoot lifecycle" "Create" Enter <<"EOF"
