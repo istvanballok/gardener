@@ -453,25 +453,22 @@ spec:
             rm -rf ~/gardener-patches
             mkdir -p ~/gardener-patches
             sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0001-Avoid-using-the-same-port-with-rootless-docker.patch
-              From 85de7c52c9e2adac24cb630b699b0f6ea59e030b Mon Sep 17 00:00:00 2001
+              From f74bcb8325105ff82d856378c31e554de8af3c32 Mon Sep 17 00:00:00 2001
               From: dev <dev>
               Date: Fri, 4 Oct 2024 16:03:51 +0200
               Subject: [PATCH] Avoid using the same port with rootless docker
 
               To mitigate
               https://github.com/moby/moby/issues/47812
-
-              In the network namespace of the docker daemon,
-              we can not bind to other IP addresses, but only to localhost.
               ---
-               .../kind/cluster/templates/_extra_port_mappings.tpl         | 6 +++---
-               1 file changed, 3 insertions(+), 3 deletions(-)
+               .../kind/cluster/templates/_extra_port_mappings.tpl             | 2 +-
+               1 file changed, 1 insertion(+), 1 deletion(-)
 
               diff --git a/example/gardener-local/kind/cluster/templates/_extra_port_mappings.tpl b/example/gardener-local/kind/cluster/templates/_extra_port_mappings.tpl
-              index 8e9e07ae9..98da213bf 100644
+              index 8e9e07ae9..ed5e4692a 100644
               --- a/example/gardener-local/kind/cluster/templates/_extra_port_mappings.tpl
               +++ b/example/gardener-local/kind/cluster/templates/_extra_port_mappings.tpl
-              @@ -10,14 +10,14 @@
+              @@ -10,7 +10,7 @@
                {{- range $i, $listenAddress := (required ".Values.gardener.seed.istio.listenAddresses is required" .Values.gardener.seed.istio.listenAddresses) }}
                - containerPort: {{ add 30443 $i }}
                {{- if $.Values.gardener.controlPlane.deployed }}
@@ -480,23 +477,6 @@ spec:
                {{- else }}
                  # TODO (plkokanov): when using skaffold to deploy, 172.18.255.2 is not used as listenAddress (unlike the local
                  #  deployment) because secondary IPs cannot be easily added to inside the `prow` containers. Additionally, there is no
-                 #  way currently to swap the dns record of the shoot's `kube-apiserver` once it is migrated to this seed.
-                 hostPort: 9443
-               {{- end }}
-              -  listenAddress: {{ $listenAddress }}
-              +  listenAddress: 127.0.0.1
-               {{- end }}
-               {{- end }}
-               {{- end }}
-              @@ -26,7 +26,7 @@
-               {{- if .Values.gardener.garden.deployed -}}
-               - containerPort: 31443
-                 hostPort: 443
-              -  listenAddress: 172.18.255.3
-              +  listenAddress: 127.0.0.1
-               {{- end -}}
-               {{- end -}}
-
               --
               2.45.2
             PATCH_EOF
@@ -1546,12 +1526,11 @@ spec:
                   set -e
                   # trap 'jobs -p | xargs kill' EXIT
                   BEFORE=\$(netstat -ntlp)
-                  socat TCP-LISTEN:6443,fork,reuseaddr,bind=$DOCKER_IP   TCP:127.0.0.1:$PORT & # KinD
-                  socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.3  TCP:127.0.0.1:443 &   # virtual garden
-                  socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.1  TCP:127.0.0.1:444 &   # seed istio, HA
-                  socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.10 TCP:127.0.0.1:445 &   # seed istio, zone 1
-                  socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.11 TCP:127.0.0.1:446 &   # seed istio, zone 2
-                  socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.12 TCP:127.0.0.1:447 &   # seed istio, zone 3
+                  socat TCP-LISTEN:6443,fork,reuseaddr,bind=$DOCKER_IP   TCP:127.0.0.1:$PORT   &
+                  socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.1  TCP:172.18.255.1:444  &
+                  socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.10 TCP:172.18.255.10:445 &
+                  socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.11 TCP:172.18.255.11:446 &
+                  socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.12 TCP:172.18.255.12:447 &
                   sleep 1
                   AFTER=\$(netstat -ntlp)
                   echo "netstat -ntlp diff:"
