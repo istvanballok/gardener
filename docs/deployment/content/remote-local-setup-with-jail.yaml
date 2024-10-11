@@ -2224,7 +2224,7 @@ spec:
                 k apply -f example/provider-local/shoot.yaml &&
                 time (k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Processing shoot local --timeout=-1s
                       k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot local --timeout=-1s
-                      k -n garden-local wait shoot local --for=condition=SystemComponentsHealthy --timeout=-1s) &&
+                      k wait -n garden-local --for=condition=SystemComponentsHealthy                   shoot local --timeout=-1s) &&
                 flag_notify rootless_shoot_ready
               }
             EOF
@@ -2235,7 +2235,7 @@ spec:
                 k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type="zone"' example/provider-local/shoot.yaml) &&
                 time (k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Processing shoot local --timeout=-1s
                       k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot local --timeout=-1s
-                      k -n garden-local wait shoot local --for=condition=SystemComponentsHealthy --timeout=-1s) &&
+                      k wait -n garden-local --for=condition=SystemComponentsHealthy                   shoot local --timeout=-1s) &&
                 flag_notify rootless_shoot_ha_ready
               }
             EOF
@@ -2356,7 +2356,7 @@ spec:
               k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type="zone"' example/provider-local/managedseeds/shoot-managedseed.yaml) &&
               time (k wait -n garden --for=jsonpath='{.status.lastOperation.state}'=Processing shoot managedseed --timeout=-1s
                     k wait -n garden --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot managedseed --timeout=-1s
-                    k -n garden wait shoot managedseed --for=condition=SystemComponentsHealthy --timeout=-1s) &&
+                    k wait -n garden --for=condition=SystemComponentsHealthy                   shoot managedseed --timeout=-1s) &&
               flag_notify rootless_managedseed_shoot_ready
             EOF
             new_pane "create managed seed" Enter <<"EOF"
@@ -2394,7 +2394,7 @@ spec:
                                 .spec.networking.services="10.6.0.0/16"' example/provider-local/shoot-workerless.yaml) &&
                 time (k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Processing shoot local-wl-ms --timeout=-1s
                       k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot local-wl-ms --timeout=-1s
-                      k -n garden-local wait shoot local-wl-ms --for=condition=SystemComponentsHealthy --timeout=-1s) &&
+                      k wait -n garden-local --for=condition=SystemComponentsHealthy                   shoot local-wl-ms --timeout=-1s) &&
                 flag_notify managedseed_nested_workerless_shoot_ready
               }
             EOF
