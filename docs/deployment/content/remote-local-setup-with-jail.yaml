@@ -1302,34 +1302,25 @@ spec:
 
             cd -
 
-            mkdir -p ~/.kube/readonly
-            sed 's/^  //' <<"EOF" > ~/.kube/readonly/resources.yaml
+            mkdir -p ~/.kube
+            sed 's/^  //' <<"EOF" > ~/.kube/resources.yaml
               apiVersion: v1
               kind: ServiceAccount
               metadata:
-                name: readonly
+                name: demo
                 namespace: default
-              ---
-              apiVersion: rbac.authorization.k8s.io/v1
-              kind: ClusterRole
-              metadata:
-                name: readonly
-              rules:
-              - apiGroups: ["*"]
-                resources: ["*"]
-                verbs: ["get", "list", "watch"]
               ---
               apiVersion: rbac.authorization.k8s.io/v1
               kind: ClusterRoleBinding
               metadata:
-                name: readonly
+                name: demo
               roleRef:
                 apiGroup: rbac.authorization.k8s.io
                 kind: ClusterRole
-                name: readonly
+                name: cluster-admin
               subjects:
               - kind: ServiceAccount
-                name: readonly
+                name: demo
                 namespace: default
             EOF
           DEMO_EOF
@@ -1857,10 +1848,9 @@ spec:
               # and it is copied to '~/.kube/config' by the sync_kubeconfig function for easier access.
               # We extract the SAN: Subject Alternative Name from the KinD cluster certificate and the random TCP server port it uses.
               # We map that to the hard coded :44444 TCP port, and create an adjusted the kubeconfig (server, token) and prepare a host mapping
-              # that can be used to access the KinD cluster from the cell in a read only mode.
+              # that can be used to access the KinD cluster from the cell.
               # The certificate is issued for the SAN and for some other IPs that we can't use in the cell, so we need to use the SAN from within the cell.
-              # TODO: note: with gardenctl target --control-plane, the untrusted user might have full access to the seed. If the offline setup works, that is just fine.
-              flag_wait virtual-garden-ha &&
+              flag_wait rootless_virtual_garden_ha &&
               echo &&
               endpoint=$(yq ~/.kube/config -o json | jq -r '.clusters[0].cluster.server' | sed 's#^https://##') &&
               echo "KinD cluster endpoint: $endpoint" &&
@@ -1872,17 +1862,17 @@ spec:
               echo "KinD cluster certificate SAN: $SAN" &&
               DOCKER_IP=$(ip addr show eth0 | awk '/inet /{print $2}' | cut -d '/' -f 1) &&
               echo "Docker IP: $DOCKER_IP" &&
-              kubectl apply -f ~/.kube/readonly/resources.yaml &&
-              mkdir -p ~/.kube/readonly/export &&
+              kubectl apply -f ~/.kube/resources.yaml &&
+              mkdir -p ~/.kube/export &&
               yq ~/.kube/config -o json \
-              | jq --arg token "$(kubectl -n default create token readonly --duration 672h)" --arg SAN "$SAN" '
+              | jq --arg token "$(kubectl -n default create token demo --duration 672h)" --arg SAN "$SAN" '
                 .clusters[0].cluster.server = "https://\($SAN):44444" |
                 .users[0].user={token: $token} |
                 .contexts[0].context.namespace = "garden"
-                ' > ~/.kube/readonly/export/config &&
-              echo "The readonly token expires at: $(jq '.users[0].user.token' ~/.kube/readonly/export/config | token | jq -r .exp)" &&
-              echo "$DOCKER_IP $SAN" > ~/.kube/readonly/export/hosts.entry &&
-              echo "$DOCKER_IP api.virtual-garden.local.gardener.cloud" >> ~/.kube/readonly/export/hosts.entry &&
+                ' > ~/.kube/export/config &&
+              echo "The token expires at: $(jq '.users[0].user.token' ~/.kube/export/config | token | jq -r .exp)" &&
+              echo "$DOCKER_IP $SAN" > ~/.kube/export/hosts.entry &&
+              echo "$DOCKER_IP api.virtual-garden.local.gardener.cloud" >> ~/.kube/export/hosts.entry &&
               echo "starting socat for the KinD cluster" &&
               flag_notify socat &&
               socat TCP-LISTEN:44444,fork,reuseaddr TCP:"$endpoint"
