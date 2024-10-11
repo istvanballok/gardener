@@ -2440,8 +2440,24 @@ spec:
               flag_wait rootless_kind_operator_up_ready &&
               while true; do
                 clear
-                is_tmux_window_shown.sh &&
-                k get pods -A -o wide | nl
+                if is_tmux_window_shown.sh; then
+                  while true; do
+                    k get pods -A -w | while read line; do
+                                         flag_notify watch_shoot
+                                       done
+                    sleep 10
+                  done &
+                  while flag_wait watch_shoot; do
+                    flag_delete watch_shoot
+                    clear
+                    k get pods -A -o wide | nl
+                    sleep 10
+                    if ! is_tmux_window_shown.sh; then
+                      kill %1
+                      break
+                    fi
+                  done
+                fi
                 sleep 10s
               done
             EOF
