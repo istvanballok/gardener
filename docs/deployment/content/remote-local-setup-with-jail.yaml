@@ -1849,66 +1849,6 @@ spec:
               iptables  -D INPUT   -i docker_veth0 -j REJECT -p udp --reject-with icmp-port-unreachable
             EOF
 
-            new_window "virtual garden" "virtual garden" Enter <<"EOF"
-              cat <<DOC >/dev/null
-                The virtual garden cluster's kubeconfig: 'example/operator/virtual-garden/kubeconfig'
-                uses the endpoint: 'api.virtual-garden.local.gardener.cloud'
-                that is mapped to '172.18.255.3', an arbitrary IP of the docker network 'kind'.
-                  See PR g/g#10019 and 'docker network inspect 'kind'.
-                "docker ps | sed 's/,/\n/g'" shows that '172.18.255.3:443' is mapped to the KinD node port 31443,
-                which is the node port of the 'virtual-garden-istio-ingress/istio-ingressgateway' service.
-                With 'socat', 172.18.255.3:443 is remapped to 172.31.0.2:443, where
-                172.31.0.2 is an IP in the docker bridge network,
-                that is going to be reachable from the cell.
-              DOC
-              flag_wait virtual-garden-ha &&
-              echo "starting socat for the virtual Garden cluster" &&
-              flag_notify socat_virtual_garden &&
-              socat TCP-LISTEN:443,fork,reuseaddr,bind=172.31.0.2 TCP:172.18.255.3:443
-            EOF
-            new_pane "test via socat" Enter <<"EOF"
-              # api.virtual-garden.local.gardener.cloud is reachable via 172.31.0.2
-              flag_wait socat_virtual_garden &&
-              while ! nc -z 172.31.0.2 443; do sleep 1; done &&
-              CACERT=$(yq -o json example/operator/virtual-garden/kubeconfig | jq -r '.clusters[0].cluster."certificate-authority-data" | @base64d') &&
-              TOKEN=$( yq -o json example/operator/virtual-garden/kubeconfig | jq -r '.users[0].user.token') &&
-              curl -s \
-                -H        "Authorization: Bearer $TOKEN" \
-                --cacert  <(echo "$CACERT")              \
-                --resolve api.virtual-garden.local.gardener.cloud:443:172.31.0.2 \
-                 https://api.virtual-garden.local.gardener.cloud/ | head
-            EOF
-            new_pane "token refresh" Enter <<"EOF"
-              flag_wait virtual-garden-ha &&
-              rm -f /root/secrets.watch.bookmark &&
-              while true; do
-                BOOKMARK="resourceVersion=$(cat /root/secrets.watch.bookmark 2>/dev/null)"
-                k get --raw "/api/v1/namespaces/garden/secrets?fieldSelector=metadata.name=gardener&watch=1&allowWatchBookmarks=true&$BOOKMARK" | jq -r --unbuffered '
-                  select(flatten | all(.!=null)) |
-                  "\(.type) \(.object.metadata.resourceVersion) \(.object.data.kubeconfig)"
-                '
-                echo "Restarting the watch" | ts >&2
-                sleep 10s
-              done | awk -v bookmark=/root/secrets.watch.bookmark \
-                         -v kubeconfig=$PWD/example/operator/virtual-garden/kubeconfig '
-                         {
-                           if ($1 != "ADDED") {
-                             pastInitialListing = 1
-                           }
-                           if (pastInitialListing) {
-                             print $2 > bookmark ".wip"
-                             close(bookmark ".wip")
-                             system(sprintf("mv %s.wip %s", bookmark, bookmark))
-                           }
-                           if ($1 == "BOOKMARK") {
-                             next
-                           }
-                           print "Updating the kubeconfig"
-                           system(sprintf("echo %s | base64 -d > %s.wip", $3, kubeconfig))
-                           system(sprintf("mv %s.wip %s", kubeconfig, kubeconfig))
-                         }' | ts
-            EOF
-
             new_window "shoot API" "IP socat" Enter <<"EOF"
               cat <<DOC >/dev/null
                 The KinD cluster acts as the "local" seed.
@@ -2638,6 +2578,37 @@ spec:
                   curl -s localhost:5001/v2/$i/tags/list | jq .
                 done
               }
+            EOF
+
+            new_window "virtual garden" "token refresh" Enter <<"EOF"
+              flag_wait rootless_virtual_garden_ha &&
+              rm -f ~/secrets.watch.bookmark &&
+              while true; do
+                BOOKMARK="resourceVersion=$(cat ~/secrets.watch.bookmark 2>/dev/null)"
+                k get --raw "/api/v1/namespaces/garden/secrets?fieldSelector=metadata.name=gardener&watch=1&allowWatchBookmarks=true&$BOOKMARK" | jq -r --unbuffered '
+                  select(flatten | all(.!=null)) |
+                  "\(.type) \(.object.metadata.resourceVersion) \(.object.data.kubeconfig)"
+                '
+                echo "Restarting the watch" | ts >&2
+                sleep 10s
+              done | awk -v bookmark=~/secrets.watch.bookmark \
+                         -v kubeconfig=$PWD/example/operator/virtual-garden/kubeconfig '
+                         {
+                           if ($1 != "ADDED") {
+                             pastInitialListing = 1
+                           }
+                           if (pastInitialListing) {
+                             print $2 > bookmark ".wip"
+                             close(bookmark ".wip")
+                             system(sprintf("mv %s.wip %s", bookmark, bookmark))
+                           }
+                           if ($1 == "BOOKMARK") {
+                             next
+                           }
+                           print "Updated the kubeconfig of the virtual Garden cluster in " kubeconfig
+                           system(sprintf("echo %s | base64 -d > %s.wip", $3, kubeconfig))
+                           system(sprintf("mv %s.wip %s", kubeconfig, kubeconfig))
+                         }' | ts
             EOF
 
             tmux select-window -t 0
