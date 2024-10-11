@@ -1702,7 +1702,7 @@ spec:
               ls -d * | fzf --preview '
                 ls -lht {}/*
                 echo
-                tail -n +2 {}/input.log | strings | grep -v -F "[<0;"
+                tail -n +2 {}/input.log | strings | sed -E 's/\[[^Mm]+(M|m)//g' | grep -v -E '^$|;rgb:'
               ' | xargs -o -I {} \
                 scriptreplay -m 1 --log-timing {}/timing.log --log-out {}/out.log
             EOF
