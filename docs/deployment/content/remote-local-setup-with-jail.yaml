@@ -1849,53 +1849,6 @@ spec:
               iptables  -D INPUT   -i docker_veth0 -j REJECT -p udp --reject-with icmp-port-unreachable
             EOF
 
-            new_window "WIP managed seed shoot API" "wait for the managed seed" Enter <<"EOF"
-              flag_wait virtual-garden-ha &&
-              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig &&
-              rm -f /root/seed.watch.bookmark &&
-              export -f flag_notify flag_delete &&
-              while true; do
-                BOOKMARK="resourceVersion=$(cat /root/seed.watch.bookmark 2>/dev/null)"
-                k get --raw "/apis/core.gardener.cloud/v1beta1/seeds?watch=1&allowWatchBookmarks=true&$BOOKMARK" | jq -r --unbuffered '
-                  if .type == "BOOKMARK"
-                  then
-                    "BOOKMARK \(.object.metadata.resourceVersion)"
-                  else
-                    select(.object.metadata.name != "local") |
-                    { type: .type,
-                      resourceVersion: .object.metadata.resourceVersion,
-                      name: .object.metadata.name} |
-                    select(flatten | all(.!=null)) |
-                    "\(.type) \(.resourceVersion) \(.name)"
-                  end
-                '
-                echo "Restarting the watch" | ts >&2
-                sleep 10s
-              done | awk -v bookmark=/root/seed.watch.bookmark '
-                         {
-                           if ($1 != "ADDED") {
-                             pastInitialListing = 1
-                           }
-                           if (pastInitialListing) {
-                             print $2 > bookmark ".wip"
-                             close(bookmark ".wip")
-                             system(sprintf("mv %s.wip %s", bookmark, bookmark))
-                           }
-                           if ($1 == "BOOKMARK") {
-                             next
-                           }
-                           if ($1 == "ADDED" || $1 == "MODIFIED") {
-                             printf("flag_notify shoot_api_managedseed")
-                           } else if ($1 == "DELETED") {
-                             printf("flag_delete shoot_api_managedseed")
-                           }
-                         }' | bash
-            EOF
-            new_pane "WIP - IP socat" Enter <<"EOF"
-              # TODO add some port forwards to allow to talk to the API server in the managed seed...
-              inotifywait -m sync -e close_write --include shoot_api_managedseed | ts
-            EOF
-
             new_window "kind-readonly" "readonly kubeconfig" Enter <<"EOF"
               # The KinD cluster acts as the runtime garden cluster
               #   that contains the Garden resource and where the gardener operator deploys the virtual garden cluster
@@ -2598,6 +2551,53 @@ spec:
                     print "-"
                     fflush()
                   }' | ts
+            EOF
+
+            new_window "WIP managed seed shoot API" "wait for the managed seed" Enter <<"EOF"
+              flag_wait TODO_rootless_virtual_garden_ha &&
+              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig &&
+              rm -f ~/seed.watch.bookmark &&
+              export -f flag_notify flag_delete &&
+              while true; do
+                BOOKMARK="resourceVersion=$(cat ~/seed.watch.bookmark 2>/dev/null)"
+                k get --raw "/apis/core.gardener.cloud/v1beta1/seeds?watch=1&allowWatchBookmarks=true&$BOOKMARK" | jq -r --unbuffered '
+                  if .type == "BOOKMARK"
+                  then
+                    "BOOKMARK \(.object.metadata.resourceVersion)"
+                  else
+                    select(.object.metadata.name != "local") |
+                    { type: .type,
+                      resourceVersion: .object.metadata.resourceVersion,
+                      name: .object.metadata.name} |
+                    select(flatten | all(.!=null)) |
+                    "\(.type) \(.resourceVersion) \(.name)"
+                  end
+                '
+                echo "Restarting the watch" | ts >&2
+                sleep 10s
+              done | awk -v bookmark=/root/seed.watch.bookmark '
+                         {
+                           if ($1 != "ADDED") {
+                             pastInitialListing = 1
+                           }
+                           if (pastInitialListing) {
+                             print $2 > bookmark ".wip"
+                             close(bookmark ".wip")
+                             system(sprintf("mv %s.wip %s", bookmark, bookmark))
+                           }
+                           if ($1 == "BOOKMARK") {
+                             next
+                           }
+                           if ($1 == "ADDED" || $1 == "MODIFIED") {
+                             printf("flag_notify shoot_api_managedseed")
+                           } else if ($1 == "DELETED") {
+                             printf("flag_delete shoot_api_managedseed")
+                           }
+                         }' | bash
+            EOF
+            new_pane "WIP - IP socat" Enter <<"EOF"
+              # TODO add some port forwards to allow to talk to the API server in the managed seed...
+              inotifywait -m sync -e close_write --include shoot_api_managedseed | ts
             EOF
 
             tmux select-window -t 0
