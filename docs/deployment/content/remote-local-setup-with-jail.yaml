@@ -1913,50 +1913,66 @@ spec:
               echo "Elapsed time until the cell was ready: $elapsed"
             EOF
 
-            new_window "jail" "jail" Enter <<"EOF"
-              SIZE=8192 # 8GB
-              if [ -f ~/inner.disk ] && [ $(stat -c%s ~/inner.disk) -lt $(( $SIZE * 1024 * 1024 )) ]; then
-                rm ~/inner.disk
-              fi
-              if [ ! -f ~/inner.disk ]; then
-                dd if=/dev/zero of=~/inner.disk bs=1M count=$SIZE
-                mkfs.ext4 ~/inner.disk
-              fi
-              mkdir /mnt/inner.disk
-              mount ~/inner.disk /mnt/inner.disk
-              echo > /root/hosts.entries
-              mkdir -p /root/.cache/jail
-              docker rm jail
-              docker run -d --rm --privileged --name jail \
-                    -v /root/.cache/jail:/root/cache \
-                    -v /root/hosts.entries:/root/hosts.entries:ro \
-                    -v /root/.kube/readonly/export:/root/.kube_readonly:ro \
-                    -v /root/go/src/github.com/gardener/gardener/example/operator/virtual-garden:/root/.kube_virtual:ro \
-                    -v /mnt/inner.disk:/var/lib/docker \
-                    -v /root/go/src/github.com/gardener/gardener/cell:/root/go/src/github.com/gardener/gardener/cell:ro \
-                    --entrypoint nice \
-                    docker:26-dind \
-                    -n -9 dockerd-entrypoint.sh &&
-              flag_notify jail
+            new_window "jail setup" "start jail" Enter <<"EOF"
+              # SIZE=8192 # 8GB
+              # if [ -f ~/inner.disk ] && [ $(stat -c%s ~/inner.disk) -lt $(( $SIZE * 1024 * 1024 )) ]; then
+              #   rm ~/inner.disk
+              # fi
+              # if [ ! -f ~/inner.disk ]; then
+              #   dd if=/dev/zero of=~/inner.disk bs=1M count=$SIZE
+              #   mkfs.ext4 ~/inner.disk
+              # fi
+              # mkdir /mnt/inner.disk
+              # mount ~/inner.disk /mnt/inner.disk
+              flag_wait sysd_rootless_docker_service &&
+              sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
+                mkdir -p ~/.cache/jail
+                docker rm jail
+                docker run -d --rm --privileged --network kind --name jail \
+                      -v ~/.cache/jail:/root/cache \
+                      -v ~/hosts.entries:/root/hosts.entries:ro \
+                      -v ~/.kube/export:/root/.kube_readonly:ro \
+                      -v ~/go/src/github.com/gardener/gardener/example/operator/virtual-garden:/root/.kube_virtual:ro \
+                      -v ~/go/src/github.com/gardener/gardener/cell:/root/go/src/github.com/gardener/gardener/cell:ro \
+                      docker:26-dind
+                flag_notify jail
+              DEMO_EOF
             EOF
-            new_pane "create cell image" Enter <<"EOF"
-              flag_wait virtual-garden-ha &&
+            new_pane "istio redirection" Enter << "EOF"
               flag_wait jail &&
-              until docker exec jail docker ps >/dev/null 2>&1; do sleep 1; done &&
-              time sed 's/^  //' <<"JAIL" | xargs -d '\0' docker exec jail sh -c && flag_notify cell-image
-                mkdir -p ~/cache/apk
-                [ -e /etc/apk/cache ] || ln -s ~/cache/apk /etc/apk/cache
-                apk add findutils
-                until docker ps >/dev/null 2>&1; do sleep 1; done
-                cd /root/go/src/github.com/gardener/gardener/cell
-                echo "Build the cell image"
-                until docker build . -t cell-image; do echo "Retrying..."; sleep 1; done
-                echo "Clean up the older images"
-                docker system prune -f
-                echo "Image list and disk usage"
-                docker images
-                docker system df
-              JAIL
+              sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
+                sed 's/^  //' <<"JAIL" | xargs -d '\0' docker exec jail sh -c
+                  apk update && apk add iptables
+                  iptables -t nat -A OUTPUT -o eth0 -p tcp -d 172.18.255.3  --dport 443 -j DNAT --to-destination 172.18.0.4:31443
+                  iptables -t nat -A OUTPUT -o eth0 -p tcp -d 172.18.255.1  --dport 443 -j DNAT --to-destination 172.18.0.4:30443
+                  iptables -t nat -A OUTPUT -o eth0 -p tcp -d 172.18.255.10 --dport 443 -j DNAT --to-destination 172.18.0.4:30444
+                  iptables -t nat -A OUTPUT -o eth0 -p tcp -d 172.18.255.11 --dport 443 -j DNAT --to-destination 172.18.0.4:30445
+                  iptables -t nat -A OUTPUT -o eth0 -p tcp -d 172.18.255.12 --dport 443 -j DNAT --to-destination 172.18.0.4:30446
+                JAIL
+                flag_notify jail_ready
+              DEMO_EOF
+            EOF
+
+            new_window "cell setup" "create cell image" Enter <<"EOF"
+              flag_wait rootless_virtual_garden_ha &&
+              flag_wait jail_ready &&
+              sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
+                until docker exec jail docker ps >/dev/null 2>&1; do sleep 1; done &&
+                time sed 's/^  //' <<"JAIL" | xargs -d '\0' docker exec jail sh -c && flag_notify cell-image
+                  mkdir -p ~/cache/apk
+                  [ -e /etc/apk/cache ] || ln -s ~/cache/apk /etc/apk/cache
+                  apk add findutils
+                  until docker ps >/dev/null 2>&1; do sleep 1; done
+                  cd /root/go/src/github.com/gardener/gardener/cell
+                  echo "Build the cell image"
+                  until docker build . -t cell-image; do echo "Retrying..."; sleep 1; done
+                  echo "Clean up the older images"
+                  docker system prune -f
+                  echo "Image list and disk usage"
+                  docker images
+                  docker system df
+                JAIL
+              DEMO_EOF
             EOF
             new_pane "start the cell image" Enter <<"EOF"
               flag_wait offline &&
