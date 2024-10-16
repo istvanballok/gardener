@@ -1949,15 +1949,16 @@ spec:
             new_pane "istio redirection" Enter << "EOF"
               flag_wait jail &&
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
-                sed 's/^  //' <<"JAIL" | xargs -d '\0' docker exec jail sh -c
+                export CONTROL_PLANE_IP=$(docker exec gardener-operator-local-control-plane ip addr show eth0 \
+                                          | awk '/inet /{print $2}' | cut -d '/' -f 1)
+                sed 's/^  //' <<"JAIL" | xargs -d '\0' docker exec -e CONTROL_PLANE_IP jail sh -c && flag_notify jail_ready
                   apk update && apk add iptables
-                  iptables -t nat -A OUTPUT -o eth0 -p tcp -d 172.18.255.3  --dport 443 -j DNAT --to-destination 172.18.0.4:31443
-                  iptables -t nat -A OUTPUT -o eth0 -p tcp -d 172.18.255.1  --dport 443 -j DNAT --to-destination 172.18.0.4:30443
-                  iptables -t nat -A OUTPUT -o eth0 -p tcp -d 172.18.255.10 --dport 443 -j DNAT --to-destination 172.18.0.4:30444
-                  iptables -t nat -A OUTPUT -o eth0 -p tcp -d 172.18.255.11 --dport 443 -j DNAT --to-destination 172.18.0.4:30445
-                  iptables -t nat -A OUTPUT -o eth0 -p tcp -d 172.18.255.12 --dport 443 -j DNAT --to-destination 172.18.0.4:30446
+                  iptables -t nat -A OUTPUT -o eth0 -p tcp -d 172.18.255.3  --dport 443 -j DNAT --to-destination $CONTROL_PLANE_IP:31443
+                  iptables -t nat -A OUTPUT -o eth0 -p tcp -d 172.18.255.1  --dport 443 -j DNAT --to-destination $CONTROL_PLANE_IP:30443
+                  iptables -t nat -A OUTPUT -o eth0 -p tcp -d 172.18.255.10 --dport 443 -j DNAT --to-destination $CONTROL_PLANE_IP:30444
+                  iptables -t nat -A OUTPUT -o eth0 -p tcp -d 172.18.255.11 --dport 443 -j DNAT --to-destination $CONTROL_PLANE_IP:30445
+                  iptables -t nat -A OUTPUT -o eth0 -p tcp -d 172.18.255.12 --dport 443 -j DNAT --to-destination $CONTROL_PLANE_IP:30446
                 JAIL
-                flag_notify jail_ready
               DEMO_EOF
             EOF
 
