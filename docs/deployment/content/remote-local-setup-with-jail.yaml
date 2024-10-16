@@ -1987,12 +1987,14 @@ spec:
               flag_wait offline &&
               flag_wait cell-image &&
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
-                time sed 's/^  //' <<"JAIL" | xargs -d '\0' docker exec jail sh -c && flag_notify cell
+                export CONTROL_PLANE_IP=$(docker exec gardener-operator-local-control-plane ip addr show eth0 \
+                                          | awk '/inet /{print $2}' | cut -d '/' -f 1)
+                time sed 's/^  //' <<"JAIL" | xargs -d '\0' docker exec -e CONTROL_PLANE_IP jail sh -c && flag_notify cell
                   echo "Start the cell container"
                   # https://docs.docker.com/engine/reference/run/#runtime-constraints-on-resources
                   docker run -d --rm --network host --name cell \
                             --cpus=1 --memory=2g --pids-limit 1000 \
-                            $(sed -E 's/(.*) (.*)/--add-host \2:\1/' /root/.kube_readonly/hosts.entry) \
+                            --add-host api.virtual-garden.local.gardener.cloud:$CONTROL_PLANE_IP \
                             -v /root/hosts.entries:/etc/hosts.entries:ro \
                             -v /root/.kube_readonly:/home/demo/.kube_readonly:ro \
                             -v /root/.kube_virtual:/home/demo/go/src/github.com/gardener/gardener/example/operator/virtual-garden:ro \
