@@ -1436,12 +1436,20 @@ spec:
               flag_notify sysd_docker_build
             EOF
             new_pane "docker run sysd" Enter <<"EOF"
-              rm -rf   /home/demo/.docker-rootless-socket
-              mkdir -p        /home/demo/.docker-rootless /home/demo/.docker-rootless-socket
-              chown demo:demo /home/demo/.docker-rootless /home/demo/.docker-rootless-socket
+              echo          > /home/demo/hosts.entries
+              rm -rf          /home/demo/.docker-rootless-socket
+              mkdir -p        /home/demo/.docker-rootless \
+                              /home/demo/.docker-rootless-socket \
+                              /home/demo/.kube
+              chown demo:demo /home/demo/.docker-rootless \
+                              /home/demo/.docker-rootless-socket \
+                              /home/demo/hosts.entries \
+                              /home/demo/.kube
               flag_wait sysd_docker_build &&
               docker run -it --privileged --rm \
-                     -v /home/demo/go/src/github.com/gardener/gardener/dev:/home/demo/go/src/github.com/gardener/gardener/dev \
+                     -v /home/demo/hosts.entries:/home/demo/hosts.entries \
+                     -v /home/demo/go:/home/demo/go \
+                     -v /home/demo/.kube:/home/demo/.kube \
                      -v /home/demo/.docker-rootless-socket:/run/user/2000 \
                      -v /home/demo/.docker-rootless:/home/demo/.local \
                      --tmpfs /tmp --tmpfs /run --tmpfs /run/lock \
