@@ -2122,6 +2122,7 @@ spec:
               { is_state_tested ||
                 flag_wait cell-tested
               } &&
+              export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket/docker.sock &&
               until docker exec jail sh -c "docker exec cell ls /tmp/ready" >/dev/null 2>&1; do sleep 1; done &&
               flag_notify cell-ready &&
               docker exec -it jail sh -c "docker exec -it cell tmux -u a -t gardener-demo"
