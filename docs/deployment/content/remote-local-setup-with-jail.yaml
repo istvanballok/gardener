@@ -2081,7 +2081,9 @@ spec:
                     while [ ! -f ~/.kube/config ]; do sleep 1; done
                     cd /home/demo/go/src/github.com/gardener/gardener
                     # create a shoot
+                    k config set-context garden
                     k apply -f example/provider-local/shoot.yaml
+                    k config set-context --current --namespace garden-local
                     time (k wait shoot local --timeout=-1s --for=jsonpath='{.status.lastOperation.state}'=Processing
                           k wait shoot local --timeout=-1s --for=jsonpath='{.status.lastOperation.state}'=Succeeded
                           k wait shoot local --timeout=-1s --for=condition=SystemComponentsHealthy )
