@@ -1831,6 +1831,7 @@ spec:
             EOF
             new_pane "offline" Enter <<"EOF"
               nsenter -t 1 -n
+              flag_wait cell-image &&
               flag_wait rootless_managedseed_seed_ready &&
               if ! is_state_tested; then
                 flag_wait rootless_shoot_ha_ready_deleted &&
@@ -1945,12 +1946,14 @@ spec:
                       -v ~/.kube/export:/root/.kube_readonly:ro \
                       -v ~/go/src/github.com/gardener/gardener/example/operator/virtual-garden:/root/.kube_virtual:ro \
                       -v ~/go/src/github.com/gardener/gardener/cell:/root/go/src/github.com/gardener/gardener/cell:ro \
+                      -v ~/mnt/inner.disk:/var/lib/docker \
                       docker:26-dind
                 flag_notify jail
               DEMO_EOF
             EOF
             new_pane "istio redirection" Enter << "EOF"
               flag_wait jail &&
+              flag_notify rootless_kind_operator_up &&
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
                 export CONTROL_PLANE_IP=$(docker exec gardener-operator-local-control-plane ip addr show eth0 \
                                           | awk '/inet /{print $2}' | cut -d '/' -f 1)
