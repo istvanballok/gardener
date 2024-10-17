@@ -1925,18 +1925,23 @@ spec:
               echo "Elapsed time until the cell was ready: $elapsed"
             EOF
 
-            new_window "jail setup" "start jail" Enter <<"EOF"
-              # SIZE=8192 # 8GB
-              # if [ -f ~/inner.disk ] && [ $(stat -c%s ~/inner.disk) -lt $(( $SIZE * 1024 * 1024 )) ]; then
-              #   rm ~/inner.disk
-              # fi
-              # if [ ! -f ~/inner.disk ]; then
-              #   dd if=/dev/zero of=~/inner.disk bs=1M count=$SIZE
-              #   mkfs.ext4 ~/inner.disk
-              # fi
-              # mkdir /mnt/inner.disk
-              # mount ~/inner.disk /mnt/inner.disk
+            new_window "jail setup" "create inner.disk" Enter <<"EOF"
+              sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l && flag_notify jail_inner_disk
+                SIZE=8192 # 8GB
+                if [ -f ~/inner.disk ] && [ $(stat -c%s ~/inner.disk) -lt $(( $SIZE * 1024 * 1024 )) ]; then
+                  rm ~/inner.disk
+                fi
+                if [ ! -f ~/inner.disk ]; then
+                  dd if=/dev/zero of=~/inner.disk bs=1M count=$SIZE
+                  mkfs.ext4 ~/inner.disk
+                fi
+                mkdir -p /home/demo/mnt/inner.disk
+              DEMO_EOF
+            EOF
+            new_pane "start jail" Enter <<"EOF"
               flag_wait sysd_rootless_docker_service &&
+              flag_wait jail_inner_disk &&
+              mount /home/demo/inner.disk /home/demo/mnt/inner.disk &&
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
                 mkdir -p ~/cache/jail
                 docker rm jail
