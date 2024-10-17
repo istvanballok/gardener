@@ -1440,13 +1440,16 @@ spec:
               rm -rf          /home/demo/.docker-rootless-socket
               mkdir -p        /home/demo/.docker-rootless \
                               /home/demo/.docker-rootless-socket \
-                              /home/demo/.kube
+                              /home/demo/.kube \
+                              /home/demo/cache
               chown demo:demo /home/demo/.docker-rootless \
                               /home/demo/.docker-rootless-socket \
                               /home/demo/hosts.entries \
-                              /home/demo/.kube
+                              /home/demo/.kube \
+                              /home/demo/cache
               flag_wait sysd_docker_build &&
               docker run -it --privileged --rm \
+                     -v /home/demo/cache:/home/demo/cache \
                      -v /home/demo/hosts.entries:/home/demo/hosts.entries \
                      -v /home/demo/go:/home/demo/go \
                      -v /home/demo/.kube:/home/demo/.kube \
@@ -1934,10 +1937,10 @@ spec:
               # mount ~/inner.disk /mnt/inner.disk
               flag_wait sysd_rootless_docker_service &&
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
-                mkdir -p ~/.cache/jail
+                mkdir -p ~/cache/jail
                 docker rm jail
                 docker run -d --rm --privileged --network kind --name jail \
-                      -v ~/.cache/jail:/root/cache \
+                      -v ~/cache/jail:/root/cache \
                       -v ~/hosts.entries:/root/hosts.entries:ro \
                       -v ~/.kube/export:/root/.kube_readonly:ro \
                       -v ~/go/src/github.com/gardener/gardener/example/operator/virtual-garden:/root/.kube_virtual:ro \
