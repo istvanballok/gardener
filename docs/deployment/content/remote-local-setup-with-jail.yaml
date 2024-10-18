@@ -2782,6 +2782,8 @@ spec:
           sed 's/^  //' <<"EOF_EXEC" | xargs -0 \
           kubectl exec remote-local-setup-with-jail-0 -- sh -c | ts && break
             echo "Exec-ed into the remote local setup pod"
+            # TODO: Discuss if there would be a security benefit from exec-ing as the demo user.
+            export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket/docker.sock
             while ! docker ps -f name=jail | grep jail; do
               echo "  Wait for the jail docker container..."
               sleep 10
@@ -2835,6 +2837,8 @@ spec:
           script --flush --log-timing timing.log --log-out out.log --log-in input.log --output-limit 100MB -c
             sed 's/^  //' <<"EOF_EXEC" | xargs -o0 \
             kubectl exec -it remote-local-setup-with-jail-0 -- sh -c
+              # TODO: Discuss if there would be a security benefit from exec-ing as the demo user.
+              export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket/docker.sock
               DATE=$(date +%Y-%m-%d_%H-%M-%S)
               mkdir -p ~/script_recordings/$DATE
               cd ~/script_recordings/$DATE
