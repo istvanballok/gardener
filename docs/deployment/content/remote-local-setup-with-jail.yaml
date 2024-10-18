@@ -1490,6 +1490,7 @@ spec:
               docker exec -it sysd bash
             EOF
             new_pane "use rootless docker" <<"EOF"
+              flag_wait sysd_rootless_docker_service &&
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n \
               su -l demo
               docker ps
