@@ -386,9 +386,15 @@ spec:
               done
             }
             function rls_state {
-              echo $(cd ~/go/src/github.com/gardener/gardener && git rev-parse HEAD)-$(sha1sum /proc/1/cmdline | awk '{print $1}')
+              echo -n $(cd ~/go/src/github.com/gardener/gardener &&
+                        git log --perl-regexp --author='^(?!dev <dev>).*$' --pretty=format:"%H" -1)
+              echo -n -
+              echo    $(sha1sum /proc/1/cmdline | awk '{print $1}')
             }
             function mark_state_tested {
+              if [ "$(whoami)" == "root" ]; then
+                su -l demo -c -l "mark_state_tested"
+              fi
               echo $(rls_state) > ~/state_tested
             }
             function is_state_tested {
@@ -400,6 +406,10 @@ spec:
               # Turning on the 'storage.delete.enabled' could help to remove the old, obsolete entries,
               # if the entries do not need to be refreshed to ensure correctness of the cache.
               # TODO to be investigated
+              if [ "$(whoami)" == "root" ]; then
+                su -l demo -c -l "is_state_tested"
+                return $?
+              fi
               if [ -f ~/state_tested ] &&
                  [ "$(cat ~/state_tested)" == "$(rls_state)" ] &&
                  [ "$(stat -c %Y ~/state_tested)" -ge "$(date -d '5 days ago' +%s)" ]; then
