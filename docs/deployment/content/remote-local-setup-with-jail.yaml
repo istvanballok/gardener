@@ -1541,13 +1541,7 @@ spec:
                 KUBECONFIG=/home/demo/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator/kubeconfig
                 mkdir -p /home/demo/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator2
                 KUBECONFIG2=/home/demo/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator2/kubeconfig
-                # TODO: Investigate why PORT is sometimes null until this pane is retriggered
-                # PORT=$(yq '.clusters[0].cluster.server' $KUBECONFIG | sed -E 's/.*:([^:]+)$/\1/')
-                PORT="null"
-                while [[ "$PORT" == "null" ]]; do
-                  sleep 1
-                  PORT=$(yq '.clusters[0].cluster.server' $KUBECONFIG | sed -E 's/.*:([^:]+)$/\1/')
-                done
+                PORT=$(yq '.clusters[0].cluster.server' $KUBECONFIG | sed -E 's/.*:([^:]+)$/\1/')
                 yq ".clusters[0].cluster.server=\"https://$DOCKER_IP:6443\"" $KUBECONFIG > $KUBECONFIG2
                 sed 's/^  //' <<DEMO_EOF | xargs -d '\0' \
                 su -l demo -c -l
@@ -1954,7 +1948,7 @@ spec:
             EOF
             new_pane "istio redirection" Enter << "EOF"
               flag_wait jail &&
-              flag_notify rootless_kind_operator_up &&
+              flag_wait rootless_kind_operator_up &&
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
                 export CONTROL_PLANE_IP=$(docker exec gardener-operator-local-control-plane ip addr show eth0 \
                                           | awk '/inet /{print $2}' | cut -d '/' -f 1)
