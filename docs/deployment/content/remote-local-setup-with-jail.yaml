@@ -2472,7 +2472,7 @@ spec:
                   docker tag $i localhost:5001/$i
                   docker push localhost:5001/$i
                 done &&
-                for i in $(curl -s localhost:5001/v2/_catalog | jq '.repositories[]' -r | grep -v local); do
+                for i in $(curl -s localhost:5001/v2/_catalog | jq '.repositories[]' -r | grep -v -E 'gardener|skaffold'); do
                   curl -s localhost:5001/v2/$i/tags/list | jq .
                 done
               }
