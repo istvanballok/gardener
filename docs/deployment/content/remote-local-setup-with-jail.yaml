@@ -1507,7 +1507,7 @@ spec:
               flag_wait rootless_kind_operator_down &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
-                for i in 172.18.255.{1,3,10,11,12}; do ip address add $i dev lo; done
+                for i in 172.18.255.{1,3,10,11,12,20}; do ip address add $i dev lo; done
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
                 su -l demo -c -l
                   set -e
@@ -1696,13 +1696,13 @@ spec:
             EOF
 
             new_window "/etc/hosts" "hosts.entries" Enter <<"EOF"
-              inotifywait -m -e close_write /home/demo/hosts.entries 2>&1 \
+              inotifywait -m -e close_write /home/demo --include '/hosts.*\.entries$' 2>&1 \
               | grep --line-buffered -E 'Watches established.|CLOSE_WRITE' \
               | while read line; do
                   sed -n '/# Gardener/q;p' /etc/hosts >  /etc/hosts.base
                   cat /etc/hosts.base                 >  /etc/hosts
                   echo "# Gardener"                   >> /etc/hosts
-                  cat /home/demo/hosts.entries        >> /etc/hosts
+                  cat /home/demo/hosts*.entries       >> /etc/hosts
                   sed -n '/# Gardener/,$p' /etc/hosts | ts
                 done
             EOF
@@ -2522,7 +2522,7 @@ spec:
                          }' | ts
             EOF
 
-            new_window "shoot API" "hosts entries" Enter <<"EOF"
+            new_window "shoot API" "shoots hosted on the soil cluster" Enter <<"EOF"
               flag_wait rootless_virtual_garden_ha &&
               rm -f ~/gateways.watch.bookmark &&
               while true; do
@@ -2588,6 +2588,75 @@ spec:
                     print "-"
                     fflush()
                   }' | ts
+            EOF
+            new_pane "shoots hosted on the managed seed cluster" Enter <<"EOF"
+              flag_wait rootless_managedseed_seed_ready &&
+              g target --shoot managedseed &&
+              eval $(gardenctl kubectl-env bash) &&
+              rm -f ~/gateways_ms.watch.bookmark &&
+              while true; do
+                BOOKMARK="resourceVersion=$(cat ~/gateways_ms.watch.bookmark 2>/dev/null)"
+                k get --raw "/apis/networking.istio.io/v1beta1/gateways?watch=1&allowWatchBookmarks=true&$BOOKMARK" | \
+                jq -r --unbuffered \
+                  if .type == "BOOKMARK"
+                  then
+                    "BOOKMARK \(.object.metadata.resourceVersion)"
+                  else
+                    select(.object.metadata.name == "kube-apiserver") |
+                    { type: .type,
+                      resourceVersion: .object.metadata.resourceVersion,
+                      namespace:       .object.metadata.namespace,
+                      istio:           .object.spec.selector.istio} |
+                    . +
+                    (.namespace | capture("shoot--(?<project>.*)--(?<name>.*)")) +
+                    {ip: "172.18.255.20"} |
+                    select(flatten | all(.!=null)) |
+                    "\(.type) \(.resourceVersion) api.\(.name).\(.project).external.local.gardener.cloud \(.ip)"
+                  end
+                '
+                echo "Restarting the watch" | ts >&2
+                sleep 10s
+              done | \
+              awk -v bookmark=~/gateways_ms.watch.bookmark \
+                  -v entries=~/hosts_ms.entries '
+                  {
+                    print "Incoming event:", $0
+                    if ($1 != "ADDED") {
+                      pastInitialListing = 1
+                    }
+                    if (pastInitialListing) {
+                      print $2 > bookmark ".wip"
+                      close(bookmark ".wip")
+                      system(sprintf("mv %s.wip %s", bookmark, bookmark))
+                    }
+                    if ($1 == "BOOKMARK") {
+                      next
+                    }
+                    if ($1 == "ADDED" || $1 == "MODIFIED") {
+                      state[$3] = $4
+                    } else if ($1 == "DELETED") {
+                      delete state[$3]
+                    }
+                    print "hosts.entries:"
+                    print "# shoots hosted on the soil cluster"
+                    print "# shoots hosted on the soil cluster" > entries
+                    for (domain in state) {
+                      print state[domain], domain
+                      print state[domain], domain > entries
+                    }
+                    close(entries)
+                    print "-"
+                    fflush()
+                  }' | ts
+            EOF
+            new_pane "shoots hosted on the managed seed cluster" Enter <<"EOF"
+              flag_wait rootless_managedseed_seed_ready &&
+              g target --shoot managedseed &&
+              eval $(gardenctl kubectl-env bash) &&
+              while ! k port-forward --address 172.18.255.20 -n istio-ingress svc/istio-ingressgateway 443; do
+                sleep 1m
+                echo "Restarting the port-forward" | ts >&2
+              done
             EOF
 
             new_window "WIP managed seed shoot API" "wait for the managed seed" Enter <<"EOF"
