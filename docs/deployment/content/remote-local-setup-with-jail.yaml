@@ -172,12 +172,13 @@ spec:
 
           su -l demo -c -l ~/.install.sh
 
-          bash -c "
-            echo {{p,g}-seed,{gu,p,v}-local--local}.ingress.local.seed.local.gardener.cloud \
-                 api.{e2e-managedseed.garden,local.local}.{internal,external}.local.gardener.cloud \
-                 api.e2e-{hib,upg-hib,wake-up,migrate,rotate,default,upd-node,upgrade}{,-wl}.local.{internal,external}.local.gardener.cloud \
-                 api.e2e-{unpriv,mgr-hib,force-delete,fd-hib}.local.{internal,external}.local.gardener.cloud
-            " | sed 's/ /\n/g' | sed 's/^/172.18.255.1 /' | sort >> /etc/hosts
+          # The hard coded domain patterns in the local setup documentation are superseded by the script that adds entries for each shoot
+          # bash -c "
+          #   echo {{p,g}-seed,{gu,p,v}-local--local}.ingress.local.seed.local.gardener.cloud \
+          #        api.{e2e-managedseed.garden,local.local}.{internal,external}.local.gardener.cloud \
+          #        api.e2e-{hib,upg-hib,wake-up,migrate,rotate,default,upd-node,upgrade}{,-wl}.local.{internal,external}.local.gardener.cloud \
+          #        api.e2e-{unpriv,mgr-hib,force-delete,fd-hib}.local.{internal,external}.local.gardener.cloud
+          #   " | sed 's/ /\n/g' | sed 's/^/172.18.255.1 /' | sort >> /etc/hosts
           echo "172.18.255.3 api.virtual-garden.local.gardener.cloud" >> /etc/hosts
 
           # Resolve e.g. gu-local--e2e-rotate{-wl}.ingress.$seed_name. ... for the e2e tests:
@@ -1694,6 +1695,18 @@ spec:
               su -l demo
             EOF
 
+            new_window "/etc/hosts" "hosts.entries" Enter <<"EOF"
+              inotifywait -m -e close_write /home/demo/hosts.entries 2>&1 \
+              | grep --line-buffered -E 'Watches established.|CLOSE_WRITE' \
+              | while read line; do
+                  sed -n '/# Gardener/q;p' /etc/hosts >  /etc/hosts.base
+                  cat /etc/hosts.base                 >  /etc/hosts
+                  echo "# Gardener"                   >> /etc/hosts
+                  cat /home/demo/hosts.entries        >> /etc/hosts
+                  sed -n '/# Gardener/,$p' /etc/hosts | ts
+                done
+            EOF
+
             new_window "demo" "demo" Enter <<"EOF"
               # tmux a
               {
@@ -2565,8 +2578,8 @@ spec:
                       delete state[$3]
                     }
                     print "hosts.entries:"
-                    print "# soil"
-                    print "# soil" > entries
+                    print "# shoots hosted on the soil cluster"
+                    print "# shoots hosted on the soil cluster" > entries
                     for (domain in state) {
                       print state[domain], domain
                       print state[domain], domain > entries
