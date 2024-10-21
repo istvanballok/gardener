@@ -2452,7 +2452,7 @@ spec:
 
             new_window "gardenctl" "gardenctl" <<"EOF"
               eval $(gardenctl kubectl-env bash)
-              g target --shoot local
+              g target --shoot managedseed
             EOF
 
             new_window "git" "gardener" Enter <<"EOF"
