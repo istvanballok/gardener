@@ -2423,25 +2423,25 @@ spec:
                      print}}'"
             EOF
 
-            new_window "shoot pods" "pods" Enter <<"EOF"
+            new_window "managed seed pods" "pods" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               while true; do
-                flag_wait rootless_shoot_ready &&
+                flag_wait rootless_managedseed_shoot_ready &&
                 is_tmux_window_shown.sh &&
-                bash -o pipefail generate-admin-kubeconf.sh > /tmp/shoot.kubeconfig &&
-                yes | watch -e -n 10 is_tmux_window_shown.sh "&&" k --kubeconfig /tmp/shoot.kubeconfig get pods -A
+                bash -o pipefail generate-admin-kubeconf.sh --namespace garden --shoot-name managedseed > /tmp/managed_seed.kubeconfig &&
+                yes | watch -e -n 10 is_tmux_window_shown.sh "&&" k --kubeconfig /tmp/managed_seed.kubeconfig get pods -A
                 sleep 10s
               done
             EOF
             new_pane "not ready pods" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               while true; do
-                flag_wait rootless_shoot_ready &&
+                flag_wait rootless_managedseed_shoot_ready &&
                 is_tmux_window_shown.sh &&
-                bash -o pipefail generate-admin-kubeconf.sh > /tmp/shoot.kubeconfig2 &&
+                bash -o pipefail generate-admin-kubeconf.sh --namespace garden --shoot-name managedseed > /tmp/managed_seed.kubeconfig2 &&
                 yes | watch -e -n 10 "
                         is_tmux_window_shown.sh &&
-                        k --kubeconfig /tmp/shoot.kubeconfig2 get pods -A -o wide \
+                        k --kubeconfig /tmp/managed_seed.kubeconfig2 get pods -A -o wide \
                         | awk '
                             {split(\$3, a, \"/\")
                              if (a[1]!=a[2] || \$4 != \"Running\") {
