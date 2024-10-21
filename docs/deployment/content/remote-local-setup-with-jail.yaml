@@ -337,7 +337,7 @@ spec:
               mkdir -p /tmp/sync
               rm /tmp/sync/$1
             }
-            function token {
+            function jwtd {
               jq -R '
                 split(".")[1] |
                 @base64d |
@@ -982,7 +982,7 @@ spec:
                   # compare interactively: uniq | cat; uniq_unbuffered | cat
                   awk '{if (prev!=$0) print; fflush(); prev=$0}'
                 }
-                function token {
+                function jwtd {
                   jq -R '
                     split(".")[1] |
                     @base64d |
@@ -1877,7 +1877,7 @@ spec:
                   .clusters[0].cluster.server = "https://\($SAN):44444"
                 ' > /root/.kube/config_demo &&
                 chown demo:demo /home/demo/.kube/export/config &&
-                echo "The token expires at: $(jq '.users[0].user.token' /home/demo/.kube/export/config | token | jq -r .exp)" &&
+                echo "The token expires at: $(jq '.users[0].user.token' /home/demo/.kube/export/config | jwtd | jq -r .exp)" &&
                 echo "$DOCKER_IP $SAN" >> /etc/hosts &&
                 echo "$DOCKER_IP api.virtual-garden.local.gardener.cloud" >> /etc/hosts &&
                 echo "starting socat for the KinD cluster" &&
