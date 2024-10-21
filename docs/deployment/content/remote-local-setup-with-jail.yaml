@@ -1750,12 +1750,7 @@ spec:
               nsenter -t 1 -n
             EOF
 
-            new_window "recordings" "recordings" Enter <<"EOF"
-              mkdir -p ~/script_recordings
-              cd ~/script_recordings/
-              watch -n 10 'is_tmux_window_shown.sh && ls -lht *'
-            EOF
-            new_pane "fzf" <<"EOF"
+            new_window "recordings" "fzf" <<"EOF"
               mkdir -p ~/script_recordings
               cd ~/script_recordings
               ls -d * | fzf --preview '
