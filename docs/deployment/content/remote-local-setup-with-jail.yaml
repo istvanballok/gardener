@@ -1879,7 +1879,6 @@ spec:
                 chown demo:demo /home/demo/.kube/export/config &&
                 echo "The token expires at: $(jq '.users[0].user.token' /home/demo/.kube/export/config | jwtd | jq -r .exp)" &&
                 echo "$DOCKER_IP $SAN" >> /etc/hosts &&
-                echo "$DOCKER_IP api.virtual-garden.local.gardener.cloud" >> /etc/hosts &&
                 echo "starting socat for the KinD cluster" &&
                 flag_notify socat &&
                 socat TCP-LISTEN:44444,fork,reuseaddr TCP:"$endpoint"
