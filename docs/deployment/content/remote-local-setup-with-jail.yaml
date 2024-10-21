@@ -869,9 +869,9 @@ spec:
               FROM alpine:3.20
               RUN apk add bash bash-completion bat bind-tools brotli conntrack-tools coreutils curl       \\
                           diffutils docker-bash-completion findutils fzf gawk gcompat git git-prompt grep \\
-                          helm inotify-tools jq k9s less lsof make mandoc mc moreutils mount ncurses      \\
-                          neovim openssl parallel procps sed sysstat tar tcpdump tmux tmux-doc tzdata     \\
-                          util-linux vim wget yq
+                          helm inotify-tools iptables jq k9s less lsof make mandoc mc moreutils mount     \\
+                          ncurses neovim openssl parallel procps sed sysstat tar tcpdump tmux tmux-doc    \\
+                          tzdata util-linux vim wget yq
               RUN echo golang                                                                                                  && \\
                        VERSION=$(curl -sL https://golang.org/VERSION?m=text | awk 'NR==1{print}')                              && \\
                        wget "https://go.dev/dl/\$VERSION.linux-amd64.tar.gz"                                                   && \\
@@ -1918,144 +1918,106 @@ spec:
               echo "Elapsed time until the cell was ready: $elapsed"
             EOF
 
-            new_window "jail setup" "start jail" Enter <<"EOF"
-              flag_wait sysd_rootless_docker_service &&
+            new_window "cell setup" "create cell image" Enter <<"EOF"
+              flag_wait rootless_virtual_garden_ha &&
+              sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l && flag_notify cell-image
+                  cd ~/go/src/github.com/gardener/gardener/cell
+                  until docker build . -t cell-image; do echo "Retrying..."; sleep 1; done
+              DEMO_EOF
+            EOF
+            new_pane "start the cell image" Enter <<"EOF"
+              flag_wait offline &&
+              flag_wait cell-image &&
+              sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l && flag_notify cell
+                CONTROL_PLANE_IP=$(docker exec gardener-operator-local-control-plane ip addr show eth0 \
+                                          | awk '/inet /{print $2}' | cut -d '/' -f 1)
+                echo "Start the cell container"
+                # https://docs.docker.com/engine/reference/run/#runtime-constraints-on-resources
+                docker run -d --rm --network kind --name cell --privileged \
+                          --cpus=1 --memory=2g --pids-limit 1000 \
+                          --add-host api.virtual-garden.local.gardener.cloud:$CONTROL_PLANE_IP \
+                          -v ~/hosts.entries:/etc/hosts.entries:ro \
+                          -v ~/.kube/export:/home/demo/.kube_readonly:ro \
+                          -v ~/go/src/github.com/gardener/gardener/example/operator/virtual-garden:/home/demo/go/src/github.com/gardener/gardener/example/operator/virtual-garden:ro \
+                          cell-image \
+                          sh -c "/home/demo/prepare-cell.sh > /home/demo/prepare-cell.log 2>&1"
+                echo "Cell container:"
+                docker ps
+              DEMO_EOF
+            EOF
+            new_pane "Add /etc/hosts entries in the cell" Enter <<"EOF"
+              flag_wait cell &&
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
-                mkdir -p ~/cache/jail
-                docker rm jail
-                docker run -d --rm --privileged --network kind --name jail \
-                      -v ~/cache/jail:/root/cache \
-                      -v ~/hosts.entries:/root/hosts.entries:ro \
-                      -v ~/.kube/export:/root/.kube_readonly:ro \
-                      -v ~/go/src/github.com/gardener/gardener/example/operator/virtual-garden:/root/.kube_virtual:ro \
-                      -v ~/go/src/github.com/gardener/gardener/cell:/root/go/src/github.com/gardener/gardener/cell:ro \
-                      docker:26-dind
-                flag_notify jail
+                echo "Starting to add the entries from /root/hosts.entries to /etc/hosts in the cell"
+                sed 's/^  //' <<"CELL" | xargs -d '\0' docker exec -u root cell sh -c
+                  inotifywait -m -e close_write /etc/hosts.entries 2>&1 \
+                  | grep --line-buffered -E 'Watches established.|CLOSE_WRITE' \
+                  | while read line; do
+                      sed -n '/# Gardener/q;p' /etc/hosts > /etc/hosts.base
+                      cat /etc/hosts.base > /etc/hosts
+                      echo "# Gardener" >> /etc/hosts
+                      cat /etc/hosts.entries >> /etc/hosts
+                      sed -n '/# Gardener/,$p' /etc/hosts | ts
+                    done
+                CELL
+              DEMO_EOF
+            EOF
+            new_pane "Merge the garden and the KinD kube configs" Enter <<"EOF"
+              flag_wait cell &&
+              sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
+                echo "Starting to merge the garden and the KinD kube configs"
+                sed 's/^  //' <<"CELL" | xargs -d '\0' docker exec -u root cell sh -c
+                  mkdir -p /home/demo/.kube
+                  chown demo /home/demo/.kube
+                  inotifywait -m -e moved_to /home/demo/go/src/github.com/gardener/gardener/example/operator/virtual-garden --include '/kubeconfig$' \
+                  | while read line; do
+                      echo "Detected a change in the virtual garden kubeconfig"
+                      touch ~/.kubeconfig_changed
+                    done & \
+                  inotifywait -m -e close_write /home/demo/.kube_readonly --include '/config$' \
+                  | while read line; do
+                      echo "Detected a change in the runtime+seed (KinD) kubeconfig"
+                      touch ~/.kubeconfig_changed
+                    done & \
+                  inotifywait -m -e close_write ~ --include '/.kubeconfig_changed$' 2>&1 \
+                  | grep --line-buffered -E 'Watches established.|CLOSE_WRITE' \
+                  | while read line; do
+                      echo "Merging the kubeconfigs"
+                      jq -s '
+                        (.[-1] | pick(.apiVersion, .kind)) +
+                        {users:    .[1:] | map(.users)     | add,
+                         clusters: .[1:] | map(.clusters)  | add,
+                         contexts: map(.contexts | arrays) | add | .[0:2],
+                         "current-context": ((.[0]."current-context") ? // "garden")}
+                      ' <({ cat /home/demo/.kube/config 2>/dev/null || echo '{}'; } | yq -o json) \
+                        <(yq -o json /home/demo/go/src/github.com/gardener/gardener/example/operator/virtual-garden/kubeconfig | jq '
+                          .contexts[0].context.namespace = "garden-local"
+                        ') \
+                        <(yq -o json /home/demo/.kube_readonly/config | jq '
+                          .contexts[0].context.namespace = "garden"
+                        ') | yq -P \
+                      > /home/demo/.kube/config.tmp
+                      chown demo /home/demo/.kube/config.tmp
+                      mv /home/demo/.kube/config.tmp /home/demo/.kube/config
+                    done
+                CELL
               DEMO_EOF
             EOF
             new_pane "istio redirection" Enter << "EOF"
-              flag_wait jail &&
-              flag_wait rootless_kind_operator_up &&
+              flag_wait cell &&
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
-                KUBECONFIG=/demo/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator/kubeconfig
-                PORT=$(yq '.clusters[0].cluster.server' $KUBECONFIG | sed -E 's/.*:([^:]+)$/\1/')
+                KUBECONFIG=~/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator/kubeconfig
+                export PORT=$(yq '.clusters[0].cluster.server' $KUBECONFIG | sed -E 's/.*:([^:]+)$/\1/')
                 export CONTROL_PLANE_IP=$(docker exec gardener-operator-local-control-plane ip addr show eth0 \
                                           | awk '/inet /{print $2}' | cut -d '/' -f 1)
-                sed 's/^  //' <<"JAIL" | xargs -d '\0' docker exec -e CONTROL_PLANE_IP jail sh -c && flag_notify jail_ready
-                  apk update && apk add iptables
+                sed 's/^  //' <<"CELL" | xargs -d '\0' docker exec -e CONTROL_PLANE_IP -e PORT -u root cell sh -c
                   iptables -t nat -A OUTPUT -o eth0 -p tcp -d 127.0.0.1     --dport $PORT -j DNAT --to-destination $CONTROL_PLANE_IP:6443
                   iptables -t nat -A OUTPUT -o eth0 -p tcp -d 172.18.255.3  --dport 443   -j DNAT --to-destination $CONTROL_PLANE_IP:31443
                   iptables -t nat -A OUTPUT -o eth0 -p tcp -d 172.18.255.1  --dport 443   -j DNAT --to-destination $CONTROL_PLANE_IP:30443
                   iptables -t nat -A OUTPUT -o eth0 -p tcp -d 172.18.255.10 --dport 443   -j DNAT --to-destination $CONTROL_PLANE_IP:30444
                   iptables -t nat -A OUTPUT -o eth0 -p tcp -d 172.18.255.11 --dport 443   -j DNAT --to-destination $CONTROL_PLANE_IP:30445
                   iptables -t nat -A OUTPUT -o eth0 -p tcp -d 172.18.255.12 --dport 443   -j DNAT --to-destination $CONTROL_PLANE_IP:30446
-                JAIL
-              DEMO_EOF
-            EOF
-
-            new_window "cell setup" "create cell image" Enter <<"EOF"
-              flag_wait rootless_virtual_garden_ha &&
-              flag_wait jail_ready &&
-              sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
-                until docker exec jail docker ps >/dev/null 2>&1; do sleep 1; done &&
-                time sed 's/^  //' <<"JAIL" | xargs -d '\0' docker exec jail sh -c && flag_notify cell-image
-                  mkdir -p ~/cache/apk
-                  [ -e /etc/apk/cache ] || ln -s ~/cache/apk /etc/apk/cache
-                  apk add findutils
-                  until docker ps >/dev/null 2>&1; do sleep 1; done
-                  cd /root/go/src/github.com/gardener/gardener/cell
-                  echo "Build the cell image"
-                  until docker build . -t cell-image; do echo "Retrying..."; sleep 1; done
-                  echo "Clean up the older images"
-                  docker system prune -f
-                  echo "Image list and disk usage"
-                  docker images
-                  docker system df
-                JAIL
-              DEMO_EOF
-            EOF
-            new_pane "start the cell image" Enter <<"EOF"
-              flag_wait offline &&
-              flag_wait cell-image &&
-              sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
-                export CONTROL_PLANE_IP=$(docker exec gardener-operator-local-control-plane ip addr show eth0 \
-                                          | awk '/inet /{print $2}' | cut -d '/' -f 1)
-                time sed 's/^  //' <<"JAIL" | xargs -d '\0' docker exec -e CONTROL_PLANE_IP jail sh -c && flag_notify cell
-                  echo "Start the cell container"
-                  # https://docs.docker.com/engine/reference/run/#runtime-constraints-on-resources
-                  docker run -d --rm --network host --name cell \
-                            --cpus=1 --memory=2g --pids-limit 1000 \
-                            --add-host api.virtual-garden.local.gardener.cloud:$CONTROL_PLANE_IP \
-                            -v /root/hosts.entries:/etc/hosts.entries:ro \
-                            -v /root/.kube_readonly:/home/demo/.kube_readonly:ro \
-                            -v /root/.kube_virtual:/home/demo/go/src/github.com/gardener/gardener/example/operator/virtual-garden:ro \
-                            cell-image \
-                            sh -c "/home/demo/prepare-cell.sh > /home/demo/prepare-cell.log 2>&1"
-                  echo "Cell container:"
-                  docker ps
-                JAIL
-              DEMO_EOF
-            EOF
-            new_pane "Add /etc/hosts entries in the cell" Enter <<"EOF"
-              flag_wait cell &&
-              sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
-                sed 's/^  //' <<"JAIL" | xargs -d '\0' docker exec jail sh -c
-                  echo "Starting to add the entries from /root/hosts.entries to /etc/hosts in the cell"
-                  sed 's/^  //' <<"CELL" | xargs -d '\0' docker exec -u root cell sh -c
-                    inotifywait -m -e close_write /etc/hosts.entries 2>&1 \
-                    | grep --line-buffered -E 'Watches established.|CLOSE_WRITE' \
-                    | while read line; do
-                        sed -n '/# Gardener/q;p' /etc/hosts > /etc/hosts.base
-                        cat /etc/hosts.base > /etc/hosts
-                        echo "# Gardener" >> /etc/hosts
-                        cat /etc/hosts.entries >> /etc/hosts
-                        sed -n '/# Gardener/,$p' /etc/hosts | ts
-                      done
-                  CELL
-                JAIL
-              DEMO_EOF
-            EOF
-            new_pane "Merge the garden and the KinD kube configs" Enter <<"EOF"
-              flag_wait cell &&
-              sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
-                sed 's/^  //' <<"JAIL" | xargs -d '\0' docker exec jail sh -c |& ts
-                  echo "Starting to merge the garden and the KinD kube configs"
-                  sed 's/^  //' <<"CELL" | xargs -d '\0' docker exec -u root cell sh -c
-                    mkdir -p /home/demo/.kube
-                    chown demo /home/demo/.kube
-                    inotifywait -m -e moved_to /home/demo/go/src/github.com/gardener/gardener/example/operator/virtual-garden --include '/kubeconfig$' \
-                    | while read line; do
-                        echo "Detected a change in the virtual garden kubeconfig"
-                        touch ~/.kubeconfig_changed
-                      done & \
-                    inotifywait -m -e close_write /home/demo/.kube_readonly --include '/config$' \
-                    | while read line; do
-                        echo "Detected a change in the runtime+seed (KinD) kubeconfig"
-                        touch ~/.kubeconfig_changed
-                      done & \
-                    inotifywait -m -e close_write ~ --include '/.kubeconfig_changed$' 2>&1 \
-                    | grep --line-buffered -E 'Watches established.|CLOSE_WRITE' \
-                    | while read line; do
-                        echo "Merging the kubeconfigs"
-                        jq -s '
-                          (.[-1] | pick(.apiVersion, .kind)) +
-                          {users:    .[1:] | map(.users)     | add,
-                           clusters: .[1:] | map(.clusters)  | add,
-                           contexts: map(.contexts | arrays) | add | .[0:2],
-                           "current-context": ((.[0]."current-context") ? // "garden")}
-                        ' <({ cat /home/demo/.kube/config 2>/dev/null || echo '{}'; } | yq -o json) \
-                          <(yq -o json /home/demo/go/src/github.com/gardener/gardener/example/operator/virtual-garden/kubeconfig | jq '
-                            .contexts[0].context.namespace = "garden-local"
-                          ') \
-                          <(yq -o json /home/demo/.kube_readonly/config | jq '
-                            .contexts[0].context.namespace = "garden"
-                          ') | yq -P \
-                        > /home/demo/.kube/config.tmp
-                        chown demo /home/demo/.kube/config.tmp
-                        mv /home/demo/.kube/config.tmp /home/demo/.kube/config
-                      done
-                  CELL
-                JAIL
+                CELL
               DEMO_EOF
             EOF
 
@@ -2064,45 +2026,43 @@ spec:
               echo $(nsenter -t 1 -n dig +short google.com) > /tmp/google_ip &&
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l && rm /tmp/google_ip
                 if is_state_tested; then
-                  docker exec jail docker exec cell touch /tmp/cell-tested
+                  docker exec cell touch /tmp/cell-tested
                 else
                   export GOOGLE_IP=$(cat /tmp/google_ip)
                   time (
-                    sed 's/^  //' <<"JAIL" | xargs -0 docker exec -e GOOGLE_IP jail sh -c |& ts && flag_notify cell-tested && mark_state_tested
-                      sed 's/^  //' <<"CELL" | xargs -0 docker exec -e GOOGLE_IP cell bash -l -c
-                        set -ex -o pipefail
-                        while [ ! -f ~/.kube/config ]; do sleep 1; done
-                        cd /home/demo/go/src/github.com/gardener/gardener
-                        # create a shoot
-                        k config set-context garden
-                        k apply -f example/provider-local/shoot.yaml
-                        k config set-context --current --namespace garden-local
-                        time (k wait shoot local --timeout=-1s --for=jsonpath='{.status.lastOperation.state}'=Processing
-                              k wait shoot local --timeout=-1s --for=jsonpath='{.status.lastOperation.state}'=Succeeded
-                              k wait shoot local --timeout=-1s --for=condition=SystemComponentsHealthy )
-                        # # upgrade to HA
-                        k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type="zone"' example/provider-local/shoot.yaml)
-                        time (k wait shoot local --timeout=-1s --for=jsonpath='{.status.lastOperation.state}'=Processing
-                              k wait shoot local --timeout=-1s --for=jsonpath='{.status.lastOperation.state}'=Succeeded
-                              k wait shoot local --timeout=-1s --for=condition=SystemComponentsHealthy )
-                        # access the shoot
-                        eval $(gardenctl kubectl-env bash || echo false)
-                        gardenctl target --garden local --shoot local
-                        k get pods -A
-                        echo "ctr -n k8s.io image list" | k node-shell $(k get nodes --no-headers | awk '{print $1}') \
-                          | grep --line-buffered -v -E '^sha256:' | awk '{print $1; fflush();}' | nl
-                        # offline tests
-                        time ! curl -v google.com
-                        echo "time ! curl -v google.com" | k node-shell $(k get nodes --no-headers | awk '{print $1}')
-                        time ! curl -v $GOOGLE_IP
-                        echo "time ! curl -v $GOOGLE_IP" | k node-shell $(k get nodes --no-headers | awk '{print $1}')
-                        # delete the shoot
-                        unset KUBECONFIG
-                        k annotate shoot local -n garden-local 'confirmation.gardener.cloud/deletion=true'
-                        time k delete shoot local -n garden-local
-                        touch /tmp/cell-tested
-                  CELL
-                JAIL
+                    sed 's/^  //' <<"CELL" | xargs -0 docker exec -e GOOGLE_IP cell bash -l -c |& ts && flag_notify cell-tested && mark_state_tested
+                      set -ex -o pipefail
+                      while [ ! -f ~/.kube/config ]; do sleep 1; done
+                      cd /home/demo/go/src/github.com/gardener/gardener
+                      # create a shoot
+                      k config set-context garden
+                      k apply -f example/provider-local/shoot.yaml
+                      k config set-context --current --namespace garden-local
+                      time (k wait shoot local --timeout=-1s --for=jsonpath='{.status.lastOperation.state}'=Processing
+                            k wait shoot local --timeout=-1s --for=jsonpath='{.status.lastOperation.state}'=Succeeded
+                            k wait shoot local --timeout=-1s --for=condition=SystemComponentsHealthy )
+                      # # upgrade to HA
+                      k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type="zone"' example/provider-local/shoot.yaml)
+                      time (k wait shoot local --timeout=-1s --for=jsonpath='{.status.lastOperation.state}'=Processing
+                            k wait shoot local --timeout=-1s --for=jsonpath='{.status.lastOperation.state}'=Succeeded
+                            k wait shoot local --timeout=-1s --for=condition=SystemComponentsHealthy )
+                      # access the shoot
+                      eval $(gardenctl kubectl-env bash || echo false)
+                      gardenctl target --garden local --shoot local
+                      k get pods -A
+                      echo "ctr -n k8s.io image list" | k node-shell $(k get nodes --no-headers | awk '{print $1}') \
+                        | grep --line-buffered -v -E '^sha256:' | awk '{print $1; fflush();}' | nl
+                      # offline tests
+                      time ! curl -v google.com
+                      echo "time ! curl -v google.com" | k node-shell $(k get nodes --no-headers | awk '{print $1}')
+                      time ! curl -v $GOOGLE_IP
+                      echo "time ! curl -v $GOOGLE_IP" | k node-shell $(k get nodes --no-headers | awk '{print $1}')
+                      # delete the shoot
+                      unset KUBECONFIG
+                      k annotate shoot local -n garden-local 'confirmation.gardener.cloud/deletion=true'
+                      time k delete shoot local -n garden-local
+                      touch /tmp/cell-tested
+                CELL
                 )
                 fi
               DEMO_EOF
@@ -2114,9 +2074,9 @@ spec:
                 flag_wait cell-tested
               } &&
               export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket/docker.sock &&
-              until docker exec jail sh -c "docker exec cell ls /tmp/ready" >/dev/null 2>&1; do sleep 1; done &&
+              until docker exec cell ls /tmp/ready >/dev/null 2>&1; do sleep 1; done &&
               flag_notify cell-ready &&
-              docker exec -it jail sh -c "docker exec -it cell tmux -u a -t gardener-demo"
+              docker exec -it cell tmux -u a -t gardener-demo
             EOF
             tmux select-window -t 1
             tmux select-pane -t 0
