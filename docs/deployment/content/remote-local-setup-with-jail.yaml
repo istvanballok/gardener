@@ -2139,9 +2139,10 @@ spec:
                 clear
                 if is_tmux_window_shown.sh; then
                   while true; do
-                    k get garden -w | while read line; do
-                                        flag_notify watch_garden
-                                      done
+                    k get garden -w -o json | jq -c '.status.conditions' | uniq_unbuffered \
+                    | while read line; do
+                       flag_notify watch_garden
+                      done
                     sleep 10
                   done &
                   while flag_wait watch_garden; do
@@ -2245,9 +2246,10 @@ spec:
                 clear
                 if is_tmux_window_shown.sh; then
                   while true; do
-                    k get seeds -w | while read line; do
-                                       flag_notify watch_seed
-                                     done
+                    k get seeds -w -o json | jq -c '.status.conditions' | uniq_unbuffered \
+                    | while read line; do
+                        flag_notify watch_seed
+                      done
                     sleep 10
                   done &
                   while flag_wait watch_seed; do
@@ -2275,9 +2277,10 @@ spec:
                 clear
                 if is_tmux_window_shown.sh; then
                   while true; do
-                    k get shoots -A -w | while read line; do
-                                           flag_notify watch_shoot
-                                         done
+                    k get shoots -A -w -o json | jq -c '.status.conditions' | uniq_unbuffered \
+                    | while read line; do
+                        flag_notify watch_shoot
+                      done
                     sleep 10
                   done &
                   while flag_wait watch_shoot; do
