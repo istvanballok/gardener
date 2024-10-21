@@ -2492,6 +2492,7 @@ spec:
               done | awk -v bookmark=~/secrets.watch.bookmark \
                          -v kubeconfig=$PWD/example/operator/virtual-garden/kubeconfig '
                          {
+                           print "Incoming event:", $1, $2
                            if ($1 != "ADDED") {
                              pastInitialListing = 1
                            }
@@ -2547,7 +2548,7 @@ spec:
               awk -v bookmark=~/gateways.watch.bookmark \
                   -v entries=~/hosts.entries '
                   {
-                    print "Incoming event: " $0
+                    print "Incoming event:", $0
                     if ($1 != "ADDED") {
                       pastInitialListing = 1
                     }
