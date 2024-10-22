@@ -2391,7 +2391,7 @@ spec:
                          }' | ts
             EOF
 
-            new_window "shoot API" "soil hosts" Enter <<"EOF"
+            new_window "hosts" "soil shoot APIs" Enter <<"EOF"
               flag_wait rootless_virtual_garden_ha &&
               rm -f ~/gateways.watch.bookmark &&
               while true; do
@@ -2458,7 +2458,7 @@ spec:
                     fflush()
                   }' | ts
             EOF
-            new_pane "managed seed hosts" Enter <<"EOF"
+            new_pane "managed seed shoot APIs" Enter <<"EOF"
               flag_wait rootless_managedseed_seed_ready &&
               g target --shoot managedseed &&
               eval $(gardenctl kubectl-env bash) &&
