@@ -2604,8 +2604,8 @@ spec:
         - {name: ENV, value: /root/greeting.sh} # ash sources the ENV file
         - {name: NAMESPACE, valueFrom: {fieldRef: {fieldPath: metadata.namespace}}}
         resources:
-          requests: {cpu: 14, memory: 28G}
-          limits:   {cpu: 14, memory: 28G}
+          requests: {cpu: 14, memory: 56G}
+          limits:   {cpu: 14, memory: 56G}
         securityContext:
           privileged: true
         volumeMounts:
