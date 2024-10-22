@@ -1710,7 +1710,7 @@ spec:
               } &
               flag_wait sysd_rootless_docker_service &&
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n \
-              su -l demo -c -l '~/prepare_tmux.sh' &&
+              time su -l demo -c -l '~/prepare_tmux.sh' &&
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n \
               su -l demo
             EOF
@@ -2618,7 +2618,7 @@ spec:
 
           chmod +x ~/prepare_tmux.sh /home/demo/prepare_tmux.sh
           chown demo:demo /home/demo/prepare_tmux.sh
-          ~/prepare_tmux.sh
+          time ~/prepare_tmux.sh
 
           end=$(date +%s)
           diff=$(( end - start ))
