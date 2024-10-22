@@ -1834,23 +1834,6 @@ spec:
               echo "Elapsed time until the cell was ready: $elapsed"
             EOF
 
-            new_pane "Add /etc/hosts entries in the cell" Enter <<"EOF"
-              flag_wait cell &&
-              sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
-                echo "Starting to add the entries from /root/hosts.entries to /etc/hosts in the cell"
-                sed 's/^  //' <<"CELL" | xargs -d '\0' docker exec -u root cell sh -c
-                  inotifywait -m -e close_write /etc/hosts.entries 2>&1 \
-                  | grep --line-buffered -E 'Watches established.|CLOSE_WRITE' \
-                  | while read line; do
-                      sed -n '/# Gardener/q;p' /etc/hosts > /etc/hosts.base
-                      cat /etc/hosts.base > /etc/hosts
-                      echo "# Gardener" >> /etc/hosts
-                      cat /etc/hosts.entries >> /etc/hosts
-                      sed -n '/# Gardener/,$p' /etc/hosts | ts
-                    done
-                CELL
-              DEMO_EOF
-            EOF
             new_pane "Merge the garden and the KinD kube configs" Enter <<"EOF"
               flag_wait cell &&
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
@@ -2540,6 +2523,20 @@ spec:
               echo "Demo container:"                                                           &&
               docker ps --filter name=demo                                                     &&
               flag_notify rootless_demo_run
+            EOF
+            new_pane "Manage /etc/hosts" Enter <<"EOF"
+              flag_wait rootless_demo_run &&
+              sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' docker exec -u root demo sh -c
+                inotifywait -m -e moved_to /home/demo/etc --include '.*\.hosts$' 2>&1 \
+                | grep --line-buffered -E 'Watches established.|MOVED_TO' \
+                | while read line; do
+                    sed -n '/# Gardener/q;p' /etc/hosts >  /etc/hosts.base
+                    cat /etc/hosts.base                 >  /etc/hosts
+                    echo "# Gardener"                   >> /etc/hosts
+                    cat /home/demo/etc/*.hosts          >> /etc/hosts
+                    sed -n '/# Gardener/,$p' /etc/hosts | ts
+                  done
+              DEMO_EOF
             EOF
 
             tmux select-window -t 0
