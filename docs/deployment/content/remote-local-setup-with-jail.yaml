@@ -2305,6 +2305,7 @@ spec:
             EOF
             new_pane "token" Enter <<"EOF"
               flag_wait rootless_virtual_garden_ha &&
+              sleep 10 &&
               inotifywait -m -e moved_to $PWD/example/operator/virtual-garden --include '/kubeconfig$' 2>&1 \
               | grep --line-buffered -E 'Watches established.|MOVED_TO' \
               | while read line; do
