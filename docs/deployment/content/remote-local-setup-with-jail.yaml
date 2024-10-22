@@ -2609,22 +2609,11 @@ spec:
         securityContext:
           privileged: true
         volumeMounts:
-        # Without bind mounting `/sys/fs/cgroup` the nested shoot worker node failed in this DinD pod.
-        # Due to bind mounting `/sys/fs/cgroup` from the host, the docker containers in this DinD pod (i.e. the KinD cluster)
-        # use a top level cgroup and hence are not constrained by the resource limits of this pod.
-        # The host cgroups might leak until the nodes are recreated e.g. when the hosting Gardener dev shoot cluster is hibernated.
-        # To avoid conflicts on the top level docker cgroup, only one remote-local-setup-with-jail pod per node is recommended which is enforced by the high resource requests.
-        # See
-        # https://github.com/kubernetes-sigs/kind/issues/303
-        # https://github.com/kubernetes/test-infra/blob/dcf27e157932c3e8680be4ae6cb8a4e2c7acf8cf/config/prow/config.yaml#L978-L988
-        # https://github.com/gardener/ci-infra/blob/dff565bced0f386dd1acb0743beb3831dae6c10d/config/prow/config.yaml#L288-L298
-        - {name: cgroup,  mountPath: /sys/fs/cgroup}
         - {name: home,    mountPath: /root}
         - {name: home,    mountPath: /home,           subPath: .home}
         - {name: home,    mountPath: /var/lib/docker, subPath: .docker}
         - {name: modules, mountPath: /lib/modules, readOnly: true}
       volumes:
-      - {name: cgroup,  hostPath: {type: Directory, path: /sys/fs/cgroup}}
       - {name: modules, hostPath: {type: Directory, path: /lib/modules}}
   volumeClaimTemplates:
   - apiVersion: v1
