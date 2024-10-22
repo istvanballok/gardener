@@ -1672,6 +1672,7 @@ spec:
             new_window "/etc/hosts" "hosts" Enter <<"EOF"
               rm -rf /home/demo/etc
               mkdir -p /home/demo/etc
+              chown demo:demo /home/demo/etc
               inotifywait -m -e moved_to /home/demo/etc --include '/.*\.hosts$' 2>&1 \
               | grep --line-buffered -E 'Watches established.|MOVED_TO' \
               | while read line; do
@@ -2496,7 +2497,7 @@ spec:
               flag_wait rootless_demo_run &&
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' docker exec -u root demo sh -c
                 mkdir -p /home/demo/.kube
-                chown demo /home/demo/.kube
+                chown demo:demo /home/demo/.kube
                 inotifywait -m -e moved_to /home/demo/go/src/github.com/gardener/gardener/example/operator/virtual-garden --include '/kubeconfig$' \
                 | while read line; do
                     echo "Detected a change in the virtual garden kubeconfig"
