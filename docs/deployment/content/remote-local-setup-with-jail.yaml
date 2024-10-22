@@ -1798,7 +1798,7 @@ spec:
             EOF
             new_pane "offline" Enter <<"EOF"
               nsenter -t 1 -n
-              flag_wait cell_image &&
+              flag_wait rootless_cell_image &&
               flag_wait rootless_managedseed_seed_ready &&
               if ! is_state_tested; then
                 flag_wait rootless_shoot_ha_ready_deleted &&
@@ -1834,17 +1834,9 @@ spec:
               echo "Elapsed time until the cell was ready: $elapsed"
             EOF
 
-            new_window "cell setup" "build cell_image" Enter <<"EOF"
-              flag_wait rootless_virtual_garden_ha &&
-              sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l && flag_notify cell_image
-                  cd ~/go/src/github.com/gardener/gardener/cell
-                  until docker build -t cell_image --progress plain .; do echo "Retrying..."; sleep 1; done
-                  docker system prune -f
-              DEMO_EOF
-            EOF
             new_pane "start the cell image" Enter <<"EOF"
               flag_wait offline &&
-              flag_wait cell_image &&
+              flag_wait rootless_cell_image &&
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l && flag_notify cell
                 CONTROL_PLANE_IP=$(docker exec gardener-operator-local-control-plane ip addr show eth0 \
                                           | awk '/inet /{print $2}' | cut -d '/' -f 1)
@@ -2534,6 +2526,17 @@ spec:
                 sleep 1m
                 echo "Restarting the port-forward" | ts >&2
               done
+            EOF
+
+            new_window "cell setup" "build cell_image" Enter <<"EOF"
+              flag_wait rootless_virtual_garden_ha &&
+              cd cell &&
+              until docker build -t cell_image --progress plain .; do
+                echo "Retrying docker build..."
+                sleep 10
+              done &&
+              docker system prune -f &&
+              flag_notify rootless_cell_image
             EOF
 
             tmux select-window -t 0
