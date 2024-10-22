@@ -1834,26 +1834,6 @@ spec:
               echo "Elapsed time until the cell was ready: $elapsed"
             EOF
 
-            new_pane "start the cell image" Enter <<"EOF"
-              flag_wait offline &&
-              flag_wait rootless_demo_image &&
-              sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l && flag_notify cell
-                CONTROL_PLANE_IP=$(docker exec gardener-operator-local-control-plane ip addr show eth0 \
-                                          | awk '/inet /{print $2}' | cut -d '/' -f 1)
-                echo "Start the cell container"
-                # https://docs.docker.com/engine/reference/run/#runtime-constraints-on-resources
-                docker run -d --rm --network kind --name cell --privileged \
-                          --cpus=1 --memory=2g --pids-limit 1000 \
-                          --add-host api.virtual-garden.local.gardener.cloud:$CONTROL_PLANE_IP \
-                          -v ~/hosts.entries:/etc/hosts.entries:ro \
-                          -v ~/.kube/export:/home/demo/.kube_readonly:ro \
-                          -v ~/go/src/github.com/gardener/gardener/example/operator/virtual-garden:/home/demo/go/src/github.com/gardener/gardener/example/operator/virtual-garden:ro \
-                          demo_image \
-                          sh -c "/home/demo/prepare-cell.sh > /home/demo/prepare-cell.log 2>&1"
-                echo "Cell container:"
-                docker ps
-              DEMO_EOF
-            EOF
             new_pane "Add /etc/hosts entries in the cell" Enter <<"EOF"
               flag_wait cell &&
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
@@ -2539,6 +2519,27 @@ spec:
               done &&
               docker system prune -f &&
               flag_notify rootless_demo_image
+            EOF
+            new_pane "run the demo container" Enter <<"EOF"
+              flag_wait rootless_demo_image &&
+              flag_wait offline &&
+              # https://docs.docker.com/engine/reference/run/#runtime-constraints-on-resources
+              RUNTIME_GARDEN=/home/demo/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator/kubeconfig &&
+              VIRTUAL_GARDEN=/home/demo/go/src/github.com/gardener/gardener/example/operator/virtual-garden/kubeconfig      &&
+              docker run -d --rm                                                         \
+                         --network kind                                                  \
+                         --name demo                                                     \
+                         --privileged                                                    \
+                         --cpus=1 --memory=2g --pids-limit 1000                          \
+                         --add-host api.virtual-garden.local.gardener.cloud:172.18.255.3 \
+                         -v /home/demo/etc:/home/demo/etc:ro                             \
+                         -v $RUNTIME_GARDEN:$RUNTIME_GARDEN:ro                           \
+                         -v $VIRTUAL_GARDEN:$VIRTUAL_GARDEN:ro                           \
+                         demo_image                                                      \
+                         sh -c "/home/demo/prepare-cell.sh > /home/demo/prepare-cell.log 2>&1" &&
+              echo "Demo container:"                                                           &&
+              docker ps --filter name=demo                                                     &&
+              flag_notify rootless_demo_run
             EOF
 
             tmux select-window -t 0
