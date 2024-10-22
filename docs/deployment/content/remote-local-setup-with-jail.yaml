@@ -1697,7 +1697,7 @@ spec:
                   sed -n '/# Gardener/q;p' /etc/hosts >  /etc/hosts.base
                   cat /etc/hosts.base                 >  /etc/hosts
                   echo "# Gardener"                   >> /etc/hosts
-                  cat /home/demo/hosts*.entries       >> /etc/hosts
+                  cat /home/demo/*.hosts              >> /etc/hosts
                   sed -n '/# Gardener/,$p' /etc/hosts | ts
                 done
             EOF
