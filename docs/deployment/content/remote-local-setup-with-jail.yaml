@@ -2902,6 +2902,3 @@ subjects:
 
 # k --as system:serviceaccount:<ns>:cell-attach attach -it cell-exec-0
 # get ready time for the cell-exec
-
-
-# TODO caching for etcd druid
