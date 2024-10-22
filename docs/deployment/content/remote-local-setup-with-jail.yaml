@@ -2392,6 +2392,7 @@ spec:
             EOF
 
             new_window "hosts" "soil shoot APIs" Enter <<"EOF"
+              mkdir -p ~/etc
               flag_wait rootless_virtual_garden_ha &&
               rm -f ~/gateways.watch.bookmark &&
               while true; do
@@ -2427,7 +2428,7 @@ spec:
                 sleep 10s
               done | \
               awk -v bookmark=~/gateways.watch.bookmark \
-                  -v hosts=~/soil.hosts '
+                  -v hosts=~/etc/soil.hosts '
                   {
                     print "Incoming event:", $0
                     if ($1 != "ADDED") {
@@ -2459,6 +2460,7 @@ spec:
                   }' | ts
             EOF
             new_pane "managed seed shoot APIs" Enter <<"EOF"
+              mkdir -p ~/etc
               flag_wait rootless_managedseed_seed_ready &&
               g target --shoot managedseed &&
               eval $(gardenctl kubectl-env bash) &&
@@ -2487,7 +2489,7 @@ spec:
                 sleep 10s
               done | \
               awk -v bookmark=~/gateways_ms.watch.bookmark \
-                  -v hosts=~/ms.hosts '
+                  -v hosts=~/etc/ms.hosts '
                   {
                     print "Incoming event:", $0
                     if ($1 != "ADDED") {
