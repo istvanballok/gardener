@@ -969,8 +969,15 @@ spec:
                 source /usr/share/git-core/git-prompt.sh
                 export PS1='[\w $(printf "$(kube_ps1)")] $(__git_ps1 "(%s)")\n\$ '
                 [ -t 0 ] && stty -ixon
-                [ -n "$GCTL_SESSION_ID" ] || [ -n "$TERM_SESSION_ID" ] || export GCTL_SESSION_ID=$(uuidgen)
+                export GCTL_SESSION_ID=$(uuidgen)
                 cd ~/go/src/github.com/gardener/gardener
+                if [ -f $PWD/example/operator/virtual-garden/kubeconfig ]; then
+                  if [ ! -f ~/.garden/gardenctl-v2.yaml ]; then
+                    gardenctl config set-garden local --kubeconfig $PWD/example/operator/virtual-garden/kubeconfig >/dev/null
+                  fi
+                  gardenctl target --garden local >/dev/null
+                fi
+
                 function uniq_unbuffered {
                   # like uniq --unbuffered, if uniq had an --unbuffered option
                   # compare interactively: uniq | cat; uniq_unbuffered | cat
@@ -2567,7 +2574,7 @@ spec:
             EOF
             new_pane "Managed seed port forward" Enter << "EOF"
               flag_wait rootless_demo_managedseed_ip &&
-              sed 's/^  //' <<DEMO_EOF | xargs -d '\0' docker exec demo bash -l -c && flag_notify rootless_demo_port_forward
+              sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' docker exec demo bash -l -c && flag_notify rootless_demo_port_forward
                 g target --shoot managedseed &&
                 eval $(gardenctl kubectl-env bash) &&
                 while ! k port-forward --address 172.18.255.20 -n istio-ingress svc/istio-ingressgateway 443; do
