@@ -2442,10 +2442,12 @@ spec:
               flag_wait rootless_managedseed_seed_ready &&
               g target --shoot managedseed &&
               eval $(gardenctl kubectl-env bash) &&
-              while ! k port-forward --address 172.18.255.20 -n istio-ingress svc/istio-ingressgateway 443; do
-                sleep 1m
-                echo "Restarting the port-forward" | ts >&2
-              done
+              while true; do
+                echo "port-forwarding the istio-ingressgateway service of the managed seed"
+                k port-forward --address 172.18.255.20 -n istio-ingress svc/istio-ingressgateway 443
+                sleep 10
+                echo "Restarting the port-forward"
+              done |& ts
             EOF
 
             new_window "demo setup" "build demo_image" Enter <<"EOF"
