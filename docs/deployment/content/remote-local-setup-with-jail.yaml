@@ -2503,20 +2503,23 @@ spec:
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' docker exec -u root demo sh -c
                 mkdir -p /home/demo/.kube
                 chown demo:demo /home/demo/.kube
-                inotifywait -m -e moved_to /home/demo/go/src/github.com/gardener/gardener/example/operator/virtual-garden --include '/kubeconfig$' \
+
+                inotifywait -m -e moved_to /home/demo/go/src/github.com/gardener/gardener/example/operator/virtual-garden --include '/kubeconfig$' 2>/dev/null \
                 | while read line; do
-                    echo "Detected a change in the virtual garden kubeconfig"
+                    echo "Detected a change in the virtual garden kubeconfig" | ts
                     touch ~/.kubeconfig_changed
-                  done & \
-                inotifywait -m -e close_write /home/demo/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator --include '/kubeconfig$' \
+                  done &
+
+                inotifywait -m -e close_write /home/demo/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator --include '/kubeconfig$' 2>/dev/null \
                 | while read line; do
-                    echo "Detected a change in the runtime garden (KinD) kubeconfig"
+                    echo "Detected a change in the runtime garden (KinD) kubeconfig" | ts
                     touch ~/.kubeconfig_changed
-                  done & \
+                  done &
+
                 inotifywait -m -e close_write ~ --include '/.kubeconfig_changed$' 2>&1 \
                 | grep --line-buffered -E 'Watches established.|CLOSE_WRITE' \
                 | while read line; do
-                    echo "Merging the kubeconfigs"
+                    echo "Merging the kubeconfigs" | ts
                     jq -s '
                       (.[-1] | pick(.apiVersion, .kind)) +
                       {users:    .[1:] | map(.users)     | add,
@@ -2536,6 +2539,8 @@ spec:
                     > ~/kube_config.tmp
                     chown demo ~/kube_config.tmp
                     mv ~/kube_config.tmp /home/demo/.kube/config
+                    yq -P -C /home/demo/.kube/config | cut -c 1-100
+                    echo
                   done
               DEMO_EOF
             EOF
