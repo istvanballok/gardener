@@ -172,7 +172,8 @@ spec:
 
           su -l demo -c -l ~/.install.sh
 
-          # The hard coded domain patterns in the local setup documentation are superseded by the script that adds entries for each shoot
+          # The hard coded domain patterns in the local setup documentation are superseded
+          # by a script that adds entries to /etc/hosts for each shoot when it is created.
           # bash -c "
           #   echo {{p,g}-seed,{gu,p,v}-local--local}.ingress.local.seed.local.gardener.cloud \
           #        api.{e2e-managedseed.garden,local.local}.{internal,external}.local.gardener.cloud \
