@@ -1315,6 +1315,8 @@ spec:
           DEMO_EOF
 
           sed 's/^  //' <<"SCRIPT_EOF" > ~/prepare_tmux.sh
+            #!/bin/bash
+
             tmux kill-server 2>/dev/null || true
             mkdir -p ~/.kube
             echo '{"current-context": "kind-gardener-operator-local"}' > ~/.kube/config
