@@ -1839,14 +1839,15 @@ spec:
 
             new_window "timing" "timing" Enter <<"EOF"
               while [ ! -f /root/elapsed_until_tmux ]; do sleep 1; done &&
+              echo &&
               echo "Elapsed time until the tmux session was setup: $(cat /root/elapsed_until_tmux)" &&
-              flag_wait cell-ready &&
+              flag_wait rootless_demo_ready &&
               end=$(date +%s) &&
-              echo $end > /tmp/end-cell &&
+              echo $end > /tmp/rootless_demo_ready &&
               diff=$(( end - $(cat /root/start) )) &&
               elapsed=$(date -u -d @${diff} +"%T") &&
-              echo $elapsed > /root/elapsed_until_cell &&
-              echo "Elapsed time until the cell was ready: $elapsed"
+              echo $elapsed > /root/elapsed_until_rootless_demo_ready &&
+              echo "Elapsed time until the rootless demo was ready: $elapsed"
             EOF
 
             new_window "demo test" "test" Enter <<"EOF"
