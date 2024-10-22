@@ -2375,7 +2375,7 @@ spec:
               while true; do
                 BOOKMARK="resourceVersion=$(cat ~/gateways_ms.watch.bookmark 2>/dev/null)"
                 k get --raw "/apis/networking.istio.io/v1beta1/gateways?watch=1&allowWatchBookmarks=true&$BOOKMARK" | \
-                jq -r --unbuffered \
+                jq -r --unbuffered '
                   if .type == "BOOKMARK"
                   then
                     "BOOKMARK \(.object.metadata.resourceVersion)"
