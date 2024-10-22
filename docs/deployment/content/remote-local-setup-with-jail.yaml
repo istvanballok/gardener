@@ -993,7 +993,7 @@ spec:
                 set -g mode-keys vi
                 set -g default-shell /bin/bash
                 set -g pane-border-status top
-                set -g pane-border-format " #{pane_index} #{pane_title} - #{pane_current_command} "
+                set -g pane-border-format " #{pane_index} #[bold]#{pane_title}#[default] - #{pane_current_command} "
                 set -g history-limit 100000
                 set -g status-left-length 30
                 set -g status-right ""
