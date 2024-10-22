@@ -1834,11 +1834,12 @@ spec:
               echo "Elapsed time until the cell was ready: $elapsed"
             EOF
 
-            new_window "cell setup" "create cell image" Enter <<"EOF"
+            new_window "cell setup" "build cell_image" Enter <<"EOF"
               flag_wait rootless_virtual_garden_ha &&
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l && flag_notify cell-image
                   cd ~/go/src/github.com/gardener/gardener/cell
-                  until docker build . -t cell-image; do echo "Retrying..."; sleep 1; done
+                  until docker build -t cell-image --progress plain .; do echo "Retrying..."; sleep 1; done
+                  docker system prune -f
               DEMO_EOF
             EOF
             new_pane "start the cell image" Enter <<"EOF"
