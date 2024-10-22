@@ -1510,6 +1510,10 @@ spec:
                   AFTER=\$(netstat -ntlp)
                   echo "netstat -ntlp diff:"
                   diff -U 100 -u --color=always <(echo "\$BEFORE") <(echo "\$AFTER") | grep -v /dev/fd || true
+                  echo "the expected IP:port combinations are mapped via socat"
+                  echo "to mitigate the rootless Docker daemon's limitation:"
+                  echo "> Rootless docker cannot start containers bound to different IPs but the same port"
+                  echo "> https://github.com/moby/moby/issues/47812"
                   flag_notify rootless_kind_operator_up_fix
                   wait
                 DEMO_EOF
