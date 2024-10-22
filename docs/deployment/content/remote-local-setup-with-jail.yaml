@@ -1278,7 +1278,7 @@ spec:
                 tmux select-pane -t 1
 
                 echo "The tmux session is prepared. To attach to it, run 'tmux a'."
-                while [ ! -f /tmp/cell-tested ]; do sleep 1; done
+                while [ ! -f /tmp/demo_tested ]; do sleep 1; done
                 touch /tmp/ready
                 sleep inf & # do not self destroy
                 wait
@@ -1834,57 +1834,68 @@ spec:
               echo "Elapsed time until the cell was ready: $elapsed"
             EOF
 
-            new_window "cell-test" "cell-test" Enter <<"EOF"
-              flag_wait cell &&
+            new_window "demo test" "test" Enter <<"EOF"
+              flag_wait rootless_demo_managedseed_ip &&
               echo $(nsenter -t 1 -n dig +short google.com) > /tmp/google_ip &&
-              sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l && rm /tmp/google_ip
+              sed 's/^  //' <<"DEMO_USER" | xargs -d '\0' su -l demo -c -l && rm /tmp/google_ip
                 if is_state_tested; then
-                  docker exec cell touch /tmp/cell-tested
+                  docker exec cell touch /tmp/demo_tested
                 else
                   export GOOGLE_IP=$(cat /tmp/google_ip)
                   time (
-                    sed 's/^  //' <<"CELL" | xargs -0 docker exec -e GOOGLE_IP cell bash -l -c |& ts && flag_notify cell-tested && mark_state_tested
+                    sed 's/^  //' <<"DEMO_CONTAINER" | xargs -0 docker exec -e GOOGLE_IP -u demo demo bash -l -c |& ts && flag_notify rootless_demo_tested && mark_state_tested
                       set -ex -o pipefail
                       while [ ! -f ~/.kube/config ]; do sleep 1; done
-                      cd /home/demo/go/src/github.com/gardener/gardener
-                      # create a shoot
-                      k config set-context garden
+
+                      echo "create a shoot"
                       k apply -f example/provider-local/shoot.yaml
-                      k config set-context --current --namespace garden-local
-                      time (k wait shoot local --timeout=-1s --for=jsonpath='{.status.lastOperation.state}'=Processing
-                            k wait shoot local --timeout=-1s --for=jsonpath='{.status.lastOperation.state}'=Succeeded
-                            k wait shoot local --timeout=-1s --for=condition=SystemComponentsHealthy )
-                      # # upgrade to HA
+                      time (
+                        k wait shoot local --timeout=-1s --for=jsonpath='{.status.lastOperation.state}'=Processing
+                        k wait shoot local --timeout=-1s --for=jsonpath='{.status.lastOperation.state}'=Succeeded
+                        k wait shoot local --timeout=-1s --for=condition=SystemComponentsHealthy
+                      )
+
+                      echo "upgrade the shoot to HA"
                       k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type="zone"' example/provider-local/shoot.yaml)
-                      time (k wait shoot local --timeout=-1s --for=jsonpath='{.status.lastOperation.state}'=Processing
-                            k wait shoot local --timeout=-1s --for=jsonpath='{.status.lastOperation.state}'=Succeeded
-                            k wait shoot local --timeout=-1s --for=condition=SystemComponentsHealthy )
-                      # access the shoot
+                      time (
+                        k wait shoot local --timeout=-1s --for=jsonpath='{.status.lastOperation.state}'=Processing
+                        k wait shoot local --timeout=-1s --for=jsonpath='{.status.lastOperation.state}'=Succeeded
+                        k wait shoot local --timeout=-1s --for=condition=SystemComponentsHealthy
+                      )
+
+                      echo "list the shoot pods"
                       eval $(gardenctl kubectl-env bash || echo false)
                       gardenctl target --garden local --shoot local
                       k get pods -A
+
+                      echo "list the containerd containers on a shoot node"
                       echo "ctr -n k8s.io image list" | k node-shell $(k get nodes --no-headers | awk '{print $1}') \
                         | grep --line-buffered -v -E '^sha256:' | awk '{print $1; fflush();}' | nl
-                      # offline tests
+
+                      echo "assert offline (DNS)"
                       time ! curl -v google.com
                       echo "time ! curl -v google.com" | k node-shell $(k get nodes --no-headers | awk '{print $1}')
+
+                      echo "assert offline (IP)"
                       time ! curl -v $GOOGLE_IP
                       echo "time ! curl -v $GOOGLE_IP" | k node-shell $(k get nodes --no-headers | awk '{print $1}')
-                      # delete the shoot
+
+                      echo "delete the shoot"
                       unset KUBECONFIG
                       k annotate shoot local -n garden-local 'confirmation.gardener.cloud/deletion=true'
                       time k delete shoot local -n garden-local
-                      touch /tmp/cell-tested
-                CELL
-                )
+
+                      touch /tmp/demo_tested
+                DEMO_CONTAINER
+                  )
                 fi
-              DEMO_EOF
+              DEMO_USER
             EOF
 
             new_window "cell" "cell" Enter <<"EOF"
               flag_wait cell &&
               { is_state_tested ||
-                flag_wait cell-tested
+                flag_wait demo_tested
               } &&
               export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket/docker.sock &&
               until docker exec cell ls /tmp/ready >/dev/null 2>&1; do sleep 1; done &&
