@@ -1684,6 +1684,7 @@ spec:
                   echo "# Gardener"                   >> /etc/hosts
                   cat /home/demo/etc/*.hosts          >> /etc/hosts 2>/dev/null
                   sed -n '/# Gardener/,$p' /etc/hosts | ts
+                  echo
                 done
             EOF
 
@@ -2492,6 +2493,7 @@ spec:
                     echo "# Gardener"                   >> /etc/hosts
                     cat /home/demo/etc/*.hosts          >> /etc/hosts 2>/dev/null
                     sed -n '/# Gardener/,$p' /etc/hosts | ts
+                    echo
                   done
               DEMO_EOF
             EOF
