@@ -1520,7 +1520,7 @@ spec:
                 sed 's/^  //' <<DEMO_EOF | xargs -d '\0' \
                 su -l demo -c -l
                   set -e
-                  # trap 'jobs -p | xargs kill' EXIT
+                  trap 'jobs -p | xargs kill' INT
                   BEFORE=\$(netstat -ntlp)
                   socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.1  TCP:172.18.255.1:444  &
                   socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.10 TCP:172.18.255.10:445 &
