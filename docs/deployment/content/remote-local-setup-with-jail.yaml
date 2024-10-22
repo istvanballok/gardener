@@ -1669,13 +1669,15 @@ spec:
             EOF
 
             new_window "/etc/hosts" "hosts" Enter <<"EOF"
-              inotifywait -m -e moved_to /home/demo --include '/.*\.hosts$' 2>&1 \
+              rm -rf /home/demo/etc
+              mkdir -p /home/demo/etc
+              inotifywait -m -e moved_to /home/demo/etc --include '/.*\.hosts$' 2>&1 \
               | grep --line-buffered -E 'Watches established.|MOVED_TO' \
               | while read line; do
                   sed -n '/# Gardener/q;p' /etc/hosts >  /etc/hosts.base
                   cat /etc/hosts.base                 >  /etc/hosts
                   echo "# Gardener"                   >> /etc/hosts
-                  cat /home/demo/*.hosts              >> /etc/hosts
+                  cat /home/demo/etc/*.hosts          >> /etc/hosts
                   sed -n '/# Gardener/,$p' /etc/hosts | ts
                 done
             EOF
@@ -2469,7 +2471,7 @@ spec:
             new_pane "Manage /etc/hosts" Enter <<"EOF"
               flag_wait rootless_demo_run &&
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' docker exec -u root demo sh -c
-                inotifywait -m -e moved_to /home/demo/etc --include '.*\.hosts$' 2>&1 \
+                inotifywait -m -e moved_to /home/demo/etc --include '/.*\.hosts$' 2>&1 \
                 | grep --line-buffered -E 'Watches established.|MOVED_TO' \
                 | while read line; do
                     sed -n '/# Gardener/q;p' /etc/hosts >  /etc/hosts.base
@@ -2868,3 +2870,6 @@ subjects:
 
 # k --as system:serviceaccount:<ns>:cell-attach attach -it cell-exec-0
 # get ready time for the cell-exec
+
+
+# TODO caching for etcd druid
