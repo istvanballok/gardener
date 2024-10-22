@@ -1499,7 +1499,7 @@ spec:
               su -l demo -c -l
                 set -e
                 time make kind-operator-down
-                # rm -rf ~/.kube
+                rm -rf ~/.kube/config
                 flag_notify rootless_kind_operator_down
               DEMO_EOF
             EOF
