@@ -1695,9 +1695,9 @@ spec:
               su -l demo
             EOF
 
-            new_window "/etc/hosts" "hosts.entries" Enter <<"EOF"
-              inotifywait -m -e close_write /home/demo --include '/hosts.*\.entries$' 2>&1 \
-              | grep --line-buffered -E 'Watches established.|CLOSE_WRITE' \
+            new_window "/etc/hosts" "hosts" Enter <<"EOF"
+              inotifywait -m -e moved_to /home/demo --include '/.*\.hosts$' 2>&1 \
+              | grep --line-buffered -E 'Watches established.|MOVED_TO' \
               | while read line; do
                   sed -n '/# Gardener/q;p' /etc/hosts >  /etc/hosts.base
                   cat /etc/hosts.base                 >  /etc/hosts
@@ -2482,7 +2482,7 @@ spec:
                          }' | ts
             EOF
 
-            new_window "shoot API" "shoots hosted on the soil cluster" Enter <<"EOF"
+            new_window "shoot API" "soil hosts" Enter <<"EOF"
               flag_wait rootless_virtual_garden_ha &&
               rm -f ~/gateways.watch.bookmark &&
               while true; do
@@ -2518,7 +2518,7 @@ spec:
                 sleep 10s
               done | \
               awk -v bookmark=~/gateways.watch.bookmark \
-                  -v entries=~/hosts.entries '
+                  -v hosts=~/soil.hosts '
                   {
                     print "Incoming event:", $0
                     if ($1 != "ADDED") {
@@ -2537,19 +2537,19 @@ spec:
                     } else if ($1 == "DELETED") {
                       delete state[$3]
                     }
-                    print "hosts.entries:"
-                    print "# shoots hosted on the soil cluster"
-                    print "# shoots hosted on the soil cluster" > entries
+                    print "# soil hosts"
+                    print "# soil hosts" > hosts ".wip"
                     for (domain in state) {
                       print state[domain], domain
-                      print state[domain], domain > entries
+                      print state[domain], domain > hosts ".wip"
                     }
-                    close(entries)
+                    close(hosts ".wip")
+                    system(sprintf("mv %s.wip %s", hosts, hosts))
                     print "-"
                     fflush()
                   }' | ts
             EOF
-            new_pane "shoots hosted on the managed seed cluster" Enter <<"EOF"
+            new_pane "managed seed hosts" Enter <<"EOF"
               flag_wait rootless_managedseed_seed_ready &&
               g target --shoot managedseed &&
               eval $(gardenctl kubectl-env bash) &&
@@ -2578,7 +2578,7 @@ spec:
                 sleep 10s
               done | \
               awk -v bookmark=~/gateways_ms.watch.bookmark \
-                  -v entries=~/hosts_ms.entries '
+                  -v hosts=~/ms.hosts '
                   {
                     print "Incoming event:", $0
                     if ($1 != "ADDED") {
@@ -2597,15 +2597,15 @@ spec:
                     } else if ($1 == "DELETED") {
                       delete state[$3]
                     }
-                    print "hosts.entries:"
-                    print "# shoots hosted on the soil cluster"
-                    print "# shoots hosted on the soil cluster" > entries
+                    print "# managed seed hosts"
+                    print "# managed seed hosts" > hosts ".wip"
                     for (domain in state) {
                       print state[domain], domain
-                      print state[domain], domain > entries
+                      print state[domain], domain > hosts ".wip"
                     }
-                    close(entries)
+                    close(hosts ".wip")
                     print "-"
+                    system(sprintf("mv %s.wip %s", hosts, hosts))
                     fflush()
                   }' | ts
             EOF
