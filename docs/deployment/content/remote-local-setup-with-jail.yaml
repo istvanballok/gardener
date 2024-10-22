@@ -1712,13 +1712,12 @@ spec:
               su -l demo
             EOF
 
-            new_window "ad-hoc" "ad-hoc" Enter <<"EOF"
-              # Use this pane for ad-hoc commands
+            new_window "ad-hoc" "root" Enter <<"EOF"
+              # Use this pane for ad-hoc commands as root
             EOF
-            new_pane "online" Enter <<"EOF"
-              # The demo environment is sealed off from the Internet after the preparation phase.
-              # The default network namespace can be used to access the Internet in that case.
-              # Note that the default network namespace can't access the demo environment when it is sealed off.
+            new_pane "always online" Enter <<"EOF"
+              # Use this pane for ad-hoc commands as root,
+              # with Internet access even when the demo environment is offline
               nsenter -t 1 -n
             EOF
 
@@ -2209,6 +2208,19 @@ spec:
               cd ../etcd-druid
               git log $(git describe --tags --abbrev=0)..HEAD --oneline --boundary
             EOF
+
+            new_window "ad-hoc" "demo" Enter <<"EOF"
+              # Use this pane for ad-hoc commands as the demo user
+            EOF
+            new_pane "demo container as root" <<"EOF"
+              # Use this pane for ad-hoc commands in the demo container as root
+              docker exec -it -u root demo bash
+            EOF
+            new_pane "demo container" <<"EOF"
+              # Use this pane for ad-hoc commands in the demo container
+              docker exec -it demo bash
+            EOF
+
 
             new_window "image preload" "image preload" Enter <<"EOF"
               is_state_tested || {
