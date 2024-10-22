@@ -1330,7 +1330,7 @@ spec:
               git log --color -p origin/master.. --author dev | less -RN
             EOF
 
-            new_window "rootless" "Dockerfile sysd" Enter <<"EOF"
+            new_window "rootless docker" "Dockerfile sysd" Enter <<"EOF"
               mkdir -p docker
               cd docker
               sed 's/^  //' <<"DOCKERFILE" > Dockerfile
@@ -1461,13 +1461,15 @@ spec:
               docker stop sysd
             EOF
 
-            new_window "rootless debug" "exec sysd" <<"EOF"
+            new_window "inspect rootless docker" "exec into the sysd container running the rootless docker daemon" Enter <<"EOF"
+              # Try these commands:
               # machinectl shell demo@
-              # systemctl --user status docker.service
-              # journalctl --user -xeu docker.service
+              # systemctl  --user status docker.service
+              # journalctl --user -xeu   docker.service
+              flag_wait sysd_rootless_docker_service &&
               docker exec -it sysd bash
             EOF
-            new_pane "use rootless docker" <<"EOF"
+            new_pane "interact with the rootless docker as the demo user from the default environment, outside of the sysd container" <<"EOF"
               flag_wait sysd_rootless_docker_service &&
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n \
               su -l demo
