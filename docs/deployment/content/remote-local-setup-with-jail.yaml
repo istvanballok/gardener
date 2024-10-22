@@ -1843,7 +1843,7 @@ spec:
                 else
                   export GOOGLE_IP=$(cat /tmp/google_ip)
                   time (
-                    sed 's/^  //' <<"DEMO_CONTAINER" | xargs -0 docker exec -e GOOGLE_IP -u demo demo bash -l -c |& ts && flag_notify rootless_demo_tested && mark_state_tested
+                    sed 's/^  //' <<"DEMO_CONTAINER" | xargs -0 docker exec -e GOOGLE_IP demo bash -l -c |& ts && flag_notify rootless_demo_tested && mark_state_tested
                       set -ex -o pipefail
                       while [ ! -f ~/.kube/config ]; do sleep 1; done
 
@@ -1892,16 +1892,6 @@ spec:
               DEMO_USER
             EOF
 
-            new_window "cell" "cell" Enter <<"EOF"
-              flag_wait cell &&
-              { is_state_tested ||
-                flag_wait demo_tested
-              } &&
-              export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket/docker.sock &&
-              until docker exec cell ls /tmp/ready >/dev/null 2>&1; do sleep 1; done &&
-              flag_notify cell-ready &&
-              docker exec -it cell tmux -u a -t gardener-demo
-            EOF
             tmux select-window -t 1
             tmux select-pane -t 0
           SCRIPT_EOF
@@ -2562,6 +2552,16 @@ spec:
                   echo "Restarting the port-forward" | ts >&2
                 done
               DEMO_EOF
+            EOF
+
+            new_window "demo" "demo" Enter <<"EOF"
+              flag_wait rootless_demo_managedseed_ip &&
+              if !is_state_tested; then
+                flag_wait rootless_demo_tested
+              fi &&
+              until docker exec cell ls /tmp/demo_tested >/dev/null 2>&1; do sleep 1; done &&
+              flag_notify rootless_demo_ready &&
+              docker exec -it cell tmux -u a -t gardener-demo
             EOF
 
             tmux select-window -t 0
