@@ -1308,10 +1308,10 @@ spec:
             mkdir -p ~/.kube
             echo '{"current-context": "kind-gardener-operator-local"}' > ~/.kube/config
             source /usr/local/bin/tmux_functions.sh
-            nsenter -t $(cat /root/dockerd_netns_pid) -n tmux new -d -s operator-complete -n stats -x 2000 -y 2000
+            nsenter -t $(cat /root/dockerd_netns_pid) -n tmux new -d -s gardener -n top -x 2000 -y 2000
             tmux select-pane -T top; mkdir -p ~/.config/procps; rm -f ~/.config/procps/toprc
             for k in top Enter z C c i t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
-            new_pane "sar" Enter <<"EOF"
+            new_window "sar" "sar" Enter <<"EOF"
               while true; do sar -B -q LOAD -r -u -w -h 60 60; sleep 1m; done
             EOF
             new_horizontal_pane "man" Enter <<"EOF"
