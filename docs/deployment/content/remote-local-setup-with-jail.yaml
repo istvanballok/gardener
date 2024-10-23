@@ -84,6 +84,8 @@ spec:
                   shadow-login socat strace sysstat sysstat-doc tar tcpdump tmux tmux-doc tzdata \
                   util-linux vim wget yq
 
+          apk add -u tmux --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main
+
           useradd -m -s /bin/bash -u 2000 demo
 
           mkdir -p ~/.cache/wget
@@ -1312,13 +1314,43 @@ spec:
             tmux select-pane -T top; mkdir -p ~/.config/procps; rm -f ~/.config/procps/toprc
             for k in top Enter z C c i t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
             new_window "sar" "sar" Enter <<"EOF"
-              while true; do sar -B -q LOAD -r -u -w -h 60 60; sleep 1m; done
-            EOF
-            new_horizontal_pane "man" Enter <<"EOF"
               man sar | sed -n '
                 1,5p; 98,141p; 1294,1298p; 1360,1386p; 1437,1512p; 1552,1602p; 1629,1636p;
-              ' | grep --color=Always -P '^              (?!following|that|values|are)[a-z%][^ ]*|$' | less -RN
+              ' | grep --color=Always -P '^              (?!following|that|values|are)[a-z%][^ ]*|$' | less -RNS
             EOF
+            new_pane "sar -q LOAD -- system load (queue length and load averages)" Enter <<"EOF"
+              while true; do
+                sar -h -q LOAD 60 60
+                sleep 1m
+              done
+            EOF
+            new_pane "sar -r -- memory utilization" Enter <<"EOF"
+              while true; do
+                sar -h -r 60 60
+                sleep 1m
+              done
+            EOF
+            new_pane "sar -B -- paging statistics" Enter <<"EOF"
+              while true; do
+                sar -h -B -h 60 60
+                sleep 1m
+              done
+            EOF
+            new_pane "sar -u -- CPU utilization" Enter <<"EOF"
+              while true; do
+                sar -h -u 60 60
+                sleep 1m
+              done
+            EOF
+            new_pane "sar -w -- task creation and system switching activity" Enter <<"EOF"
+              while true; do
+                sar -h -w 60 60
+                sleep 1m
+              done
+            EOF
+            tmux select-layout main-vertical-mirrored # requires tmux 3.5
+            tmux set main-pane-width 40%
+            tmux select-pane -t 0
 
             new_window "patches" "gardener" Enter <<"EOF"
               su -l demo
