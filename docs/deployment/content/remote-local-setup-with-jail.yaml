@@ -1887,14 +1887,14 @@ spec:
                   mountinfo="/proc/$i/mountinfo"
                   regex_ro="^[0-9]+ [0-9]+ [0-9]+:[0-9]+ / /sys rw,nosuid,nodev,noexec,relatime shared:[0-9]+ - sysfs sysfs ro$"
                   regex_rw="^[0-9]+ [0-9]+ [0-9]+:[0-9]+ / /sys rw,nosuid,nodev,noexec,relatime shared:[0-9]+ - sysfs sysfs rw$"
-                  if grep -q -E "$regex_ro" $mountinfo; then 
+                  if grep -q -E "$regex_ro" $mountinfo; then
                     echo
                     # make sure the world was successfully stopped before remounting
-                    docker pause sysd > /dev/null && 
+                    docker pause sysd > /dev/null &&
                     sleep 1 &&
                     ./remount --pid $i
                     grep " /sys " $mountinfo
-                    if grep -q -E "$regex_rw" $mountinfo; then 
+                    if grep -q -E "$regex_rw" $mountinfo; then
                       echo "Remount did not work"
                       break 2
                     fi
