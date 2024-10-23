@@ -325,6 +325,7 @@ spec:
               fi
               mkdir -p /tmp/sync
               [ -f /tmp/sync/$1 ] || inotifywait -qq /tmp/sync --include /$1$
+              sleep 1
             }
             function flag_delete {
               if [ "$(whoami)" == "root" ]; then
