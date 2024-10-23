@@ -1691,6 +1691,145 @@ spec:
                 DEMO_EOF
               NETWORK_EOF
             EOF
+            new_pane "debug" Enter <<"EOF"
+              # export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+              # unset KUBECONFIG
+              flag_wait rootless_kind_operator_up &&
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n \
+              su -l demo
+            EOF
+
+            new_window "remount /sys" "source code" Enter <<"EOF
+              sed 's/^  //' <<"REMOUNT" > ~/remount.c
+                #define _GNU_SOURCE
+
+                #include <stdio.h>
+                #include <stdlib.h>
+                #include <stdbool.h>
+                #include <getopt.h>
+                #include <regex.h>
+                #include <unistd.h>
+                #include <fcntl.h>
+                #include <sched.h>
+                #include <sys/mount.h>
+
+                bool needs_remount(char* pid) {
+                    char path[256]; sprintf(path, "/proc/%s/mountinfo", pid);
+                    FILE* fp = fopen(path, "r");
+                    if (fp == NULL) {
+                        perror("Error reading mount info");
+                        exit(1);
+                    }
+
+                    char* line = NULL;
+                    size_t len = 0;
+                    regex_t regex;
+                    int reti, nchar;
+
+                    /* Compile regular expression */
+                    reti = regcomp(&regex, "^[0-9]+ [0-9]+ [0-9]+:[0-9]+ / /sys rw,nosuid,nodev,noexec,relatime shared:[0-9]+ - sysfs sysfs ro$", REG_EXTENDED);
+                    if (reti) {
+                        fprintf(stderr, "Could not compile regex\n");
+                        exit(1);
+                    }
+
+                    while ((nchar = getline(&line, &len, fp)) != -1) {
+                        /* Trim line to remove possible trailing newline */
+                        if (line[nchar-1] == '\n') {
+                            # TODO: Check whether this leaves out one byte when line is freed
+                            line[nchar-1] = 0;
+                        }
+
+                        /* Execute regular expression */
+                        reti = regexec(&regex, line, 0, NULL, 0);
+                        if (!reti) {
+                            free(line);
+                            fclose(fp);
+                            regfree(&regex);
+                            return true;
+                        }
+                    }
+
+                    free(line);
+                    fclose(fp);
+                    regfree(&regex);
+
+                    return false;
+                }
+
+                void remount(char* pid) {
+                    // enter the mount namespace
+                    char path[256]; sprintf(path, "/proc/%s/ns/mnt", pid);
+                    int fd = open(path, O_RDONLY);
+                    if (fd == -1) {
+                        perror("Error opening namespace file");
+                        exit(1);
+                    }
+
+                    if (setns(fd, 0) == -1) {
+                        perror("Error changing to mnt namespace");
+                        exit(1);
+                    }
+
+                    close(fd);
+
+                    // remount /sys
+                    if (mount("/sys", "/sys", "", MS_REMOUNT|MS_NOSUID|MS_NODEV|MS_NOEXEC, "") == -1) {
+                        perror("Error remounting /sys");
+                        exit(1);
+                    }
+                }
+
+                int main(int argc, char** argv) {
+                    char* pid_flag = NULL;
+
+                    struct option long_options[] = {
+                        {"pid",  required_argument, 0, 'p'},
+                        {"help", no_argument,       0, 'h'},
+                        {0, 0, 0, 0}
+                    };
+
+                    int c;
+                    while (1) {
+                        int option_index = 0;
+                        c = getopt_long(argc, argv, "p:h", long_options, &option_index);
+
+                        if (c == -1)
+                            break;
+
+                        switch (c) {
+                            case 'p':
+                                pid_flag = optarg;
+                                break;
+                            case 'h':
+                                printf("Usage: %s --pid pid\n", argv[0]);
+                                return 0;
+                            case '?':
+                                return 1;
+                            default:
+                                abort();
+                        }
+                    }
+
+                    if (pid_flag == NULL) {
+                        fprintf(stderr, "Error: --pid flag must be set\n");
+                        return 1;
+                    }
+
+                    if (!needs_remount(pid_flag)) {
+                        printf("pid %s: /sys already mounted as read-write\n", pid_flag);
+                        return 0;
+                    }
+
+                    remount(pid_flag);
+                    printf("pid %s: /sys successfully re-mounted as read-write\n", pid_flag);
+
+                    return 0;
+                }
+              REMOUNT
+              gcc -static -o remount remount.c
+              vim -n ~/remount.c
+            EOF
             new_pane "fix Gardener shoot nodes: remount /sys rw as root from the outside" Enter <<"EOF"
               # When docker or containerd create a privileged container, they mount /sys
               # read-write. However, when K8s creates a privileged pod, it mounts /sys
@@ -1745,29 +1884,25 @@ spec:
               # nsenter -t $PID -m -p -e -C /bin/sh -c 'mount | grep " /sys " | grep rw || mount -o remount,rw /sys'
               while true; do
                 for i in $(pgrep -u demo -f '^/sbin/init'); do
-                  echo "/sbin/init (systemd) PID: $i"
-                  nsenter -t $i -m -p -e -C /bin/sh -c '
-                    if ! mount | grep " /sys " | grep rw; then
-                      mount | grep " /sys "
-                      echo "Remounting /sys read-write"
-                      mount -o remount,rw /sys
-                      mount | grep " /sys "
-                    else
-                      echo "/sys is already mounted read-write"
+                  mountinfo="/proc/$i/mountinfo"
+                  regex_ro="^[0-9]+ [0-9]+ [0-9]+:[0-9]+ / /sys rw,nosuid,nodev,noexec,relatime shared:[0-9]+ - sysfs sysfs ro$"
+                  regex_rw="^[0-9]+ [0-9]+ [0-9]+:[0-9]+ / /sys rw,nosuid,nodev,noexec,relatime shared:[0-9]+ - sysfs sysfs rw$"
+                  if grep -q -E "$regex_ro" $mountinfo; then 
+                    echo
+                    # make sure the world was successfully stopped before remounting
+                    docker pause sysd > /dev/null && 
+                    sleep 1 &&
+                    ./remount --pid $i
+                    grep " /sys " $mountinfo
+                    if grep -q -E "$regex_rw" $mountinfo; then 
+                      echo "Remount did not work"
+                      break 2
                     fi
-                  '
-                  echo
+                    docker unpause sysd > /dev/null
+                  fi
                 done
-                echo
                 sleep 1m
               done | ts
-            EOF
-            new_pane "debug" Enter <<"EOF"
-              # export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              # unset KUBECONFIG
-              flag_wait rootless_kind_operator_up &&
-              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n \
-              su -l demo
             EOF
 
             new_window "/etc/hosts" "hosts" Enter <<"EOF"
