@@ -1737,7 +1737,7 @@ spec:
                     while ((nchar = getline(&line, &len, fp)) != -1) {
                         /* Trim line to remove possible trailing newline */
                         if (line[nchar-1] == '\n') {
-                            # TODO: Check whether this leaves out one byte when line is freed
+                            // TODO: Check whether this leaves out one byte when line is freed
                             line[nchar-1] = 0;
                         }
 
@@ -1828,6 +1828,7 @@ spec:
                     return 0;
                 }
               REMOUNT
+              set -e
               gcc -static -o remount remount.c
               vim -n ~/remount.c
             EOF
@@ -1894,12 +1895,12 @@ spec:
                     docker pause sysd > /dev/null &&
                     sleep 1 &&
                     ./remount --pid $i
+                    docker unpause sysd > /dev/null
                     grep " /sys " $mountinfo
-                    if grep -q -E "$regex_rw" $mountinfo; then
+                    if ! grep -q -E "$regex_rw" $mountinfo; then
                       echo "Remount did not work"
                       break 2
                     fi
-                    docker unpause sysd > /dev/null
                   fi
                 done
                 sleep 1m
