@@ -1839,48 +1839,19 @@ spec:
                 }
 
                 int main(int argc, char** argv) {
-                    char* pid_flag = NULL;
-
-                    struct option long_options[] = {
-                        {"pid",  required_argument, 0, 'p'},
-                        {"help", no_argument,       0, 'h'},
-                        {0, 0, 0, 0}
-                    };
-
-                    int c;
-                    while (1) {
-                        int option_index = 0;
-                        c = getopt_long(argc, argv, "p:h", long_options, &option_index);
-
-                        if (c == -1)
-                            break;
-
-                        switch (c) {
-                            case 'p':
-                                pid_flag = optarg;
-                                break;
-                            case 'h':
-                                printf("Usage: %s --pid pid\n", argv[0]);
-                                return 0;
-                            case '?':
-                                return 1;
-                            default:
-                                abort();
-                        }
-                    }
-
-                    if (pid_flag == NULL) {
-                        fprintf(stderr, "Error: --pid flag must be set\n");
+                    if (argc != 2) {
+                        printf("Usage: %s [pid]\n", argv[0]);
                         return 1;
                     }
 
-                    if (!needs_remount(pid_flag)) {
-                        printf("pid %s: /sys already mounted as read-write\n", pid_flag);
+                    char* pid = argv[1];
+                    if (!needs_remount(pid)) {
+                        printf("pid %s: /sys already mounted as read-write\n", pid);
                         return 0;
                     }
 
-                    remount(pid_flag);
-                    printf("pid %s: /sys successfully re-mounted as read-write\n", pid_flag);
+                    remount(pid);
+                    printf("pid %s: /sys successfully re-mounted as read-write\n", pid);
 
                     return 0;
                 }
@@ -1951,7 +1922,7 @@ spec:
                     # make sure the world was successfully stopped before remounting
                     docker pause sysd > /dev/null &&
                     sleep 1 &&
-                    ./remount --pid $i
+                    ./remount $i
                     grep " /sys " $mountinfo
                     if ! grep -q -E "$regex_rw" $mountinfo; then
                       echo "Remount did not work"
