@@ -1271,7 +1271,7 @@ spec:
                 sleep 1
                 for k in z C c t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
                 new_pane "sar" Enter <<"EOF"
-                  while true; do sar -B -q LOAD -r -u -w -h 60 60; sleep 1m; done
+                  while true; do S_COLORS=always sar -B -q LOAD -r -u -w -h 10 10 | grep -v -E --line-buffered 'Linux|^$'; sleep 1m; done
                 EOF
 
                 new_pane "demo CPU limit" <<"EOF"
@@ -1310,46 +1310,99 @@ spec:
             mkdir -p ~/.kube
             echo '{"current-context": "kind-gardener-operator-local"}' > ~/.kube/config
             source /usr/local/bin/tmux_functions.sh
-            nsenter -t $(cat /root/dockerd_netns_pid) -n tmux new -d -s gardener -n top -x 2000 -y 2000
+            nsenter -t $(cat /root/dockerd_netns_pid) -n tmux new -d -s gardener -n top -x 250 -y 70
             tmux select-pane -T top; mkdir -p ~/.config/procps; rm -f ~/.config/procps/toprc
             for k in top Enter z C c i t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
-            new_window "sar" "sar" Enter <<"EOF"
-              man sar | sed -n '
-                1,5p; 98,141p; 1294,1298p; 1360,1386p; 1437,1512p; 1552,1602p; 1629,1636p;
+            new_window "sar 1" "man" Enter <<"EOF"
+              man S_COLORS=always sar | sed -n '
+                1,5p; 98,141p; 142,172p; 180,227p; 436,478p; 1294,1386p; 1437,1512p; 1552,1602p; 1629,1636p;
               ' | grep --color=Always -P '^              (?!following|that|values|are)[a-z%][^ ]*|$' | less -RNS
             EOF
-            new_pane "sar -q LOAD -- system load (queue length and load averages)" Enter <<"EOF"
+            new_pane "sar -q LOAD -- System load (queue length and load averages)" Enter <<"EOF"
               while true; do
-                sar -h -q LOAD 60 60
+                S_COLORS=always sar -h -q LOAD 10 10             | grep -v -E --line-buffered 'Linux|^$'
                 sleep 1m
               done
             EOF
-            new_pane "sar -r -- memory utilization" Enter <<"EOF"
+            new_pane "sar -q CPU  -- CPU pressure" Enter <<"EOF"
               while true; do
-                sar -h -r 60 60
+                S_COLORS=always sar -h -q CPU 10 10             | grep -v -E --line-buffered 'Linux|^$'
                 sleep 1m
               done
             EOF
-            new_pane "sar -B -- paging statistics" Enter <<"EOF"
+            new_pane "sar -q IO   -- I/O pressure" Enter <<"EOF"
               while true; do
-                sar -h -B -h 60 60
+                S_COLORS=always sar -h -q IO 10 10             | grep -v -E --line-buffered 'Linux|^$'
                 sleep 1m
               done
             EOF
-            new_pane "sar -u -- CPU utilization" Enter <<"EOF"
+            new_pane "sar -q MEM  -- Memory pressure" Enter <<"EOF"
               while true; do
-                sar -h -u 60 60
+                S_COLORS=always sar -h -q MEM 10 10             | grep -v -E --line-buffered 'Linux|^$'
                 sleep 1m
               done
             EOF
-            new_pane "sar -w -- task creation and system switching activity" Enter <<"EOF"
+            new_pane "sar -r      -- Memory utilization" Enter <<"EOF"
               while true; do
-                sar -h -w 60 60
+                S_COLORS=always sar -h -r 10 10                  | grep -v -E --line-buffered 'Linux|^$'
                 sleep 1m
               done
             EOF
+            tmux set -w main-pane-width 40%
             tmux select-layout main-vertical-mirrored # requires tmux 3.5
+            # tmux resize-pane -t 1 -x 50%
+            tmux select-pane -t 0
+
+            new_window "sar 2" "man" Enter <<"EOF"
+              man S_COLORS=always sar | sed -n '
+                1,5p; 98,141p; 142,172p; 180,227p; 436,478p; 1294,1386p; 1437,1512p; 1552,1602p; 1629,1636p;
+              ' | grep --color=Always -P '^              (?!following|that|values|are)[a-z%][^ ]*|$' | less -RNS
+            EOF
+            new_pane "sar -B      -- Paging statistics" Enter <<"EOF"
+              while true; do
+                S_COLORS=always sar -h -B -h 10 10               | grep -v -E --line-buffered 'Linux|^$'
+                sleep 1m
+              done
+            EOF
+            new_pane "sar -u      -- CPU utilization" Enter <<"EOF"
+              while true; do
+                S_COLORS=always sar -h -u 10 10                  | grep -v -E --line-buffered 'Linux|^$'
+                sleep 1m
+              done
+            EOF
+            new_pane "sar -w      -- Task creation and system switching activity" Enter <<"EOF"
+              while true; do
+                S_COLORS=always sar -h -w 10 10                  | grep -v -E --line-buffered 'Linux|^$'
+                sleep 1m
+              done
+            EOF
+            new_pane "sar -b      -- I/O and transfer rate" Enter <<"EOF"
+              while true; do
+                S_COLORS=always sar -h -b 10 10                  | grep -v -E --line-buffered 'Linux|^$'
+                sleep 1m
+              done
+            EOF
+            new_pane "sar -d      -- Activity for each block device" Enter <<"EOF"
+              while true; do
+                S_COLORS=always sar -h -d 10 10                  | grep -v -E --line-buffered 'Linux|^$'
+                sleep 1m
+              done
+            EOF
+            new_pane "sar -F      -- Network devices" Enter <<"EOF"
+              while true; do
+                S_COLORS=always sar -h -n DEV 10 10              | grep -v -E --line-buffered 'Linux|^$'
+                sleep 1m
+              done
+            EOF
+            new_pane "sar -F      -- Rootless docker network devices" Enter <<"EOF"
+              while true; do
+                nsenter -t $(pgrep -f '^/proc/self/exe --state-dir=/run/user/2000/dockerd-rootless') -n bash -c "
+                S_COLORS=always sar -h -n DEV 10 10              | grep -v -E --line-buffered 'Linux|^$'"
+                sleep 1m
+              done
+            EOF
             tmux set main-pane-width 40%
+            tmux select-layout main-vertical-mirrored # requires tmux 3.5
             tmux select-pane -t 0
 
             new_window "patches" "gardener" Enter <<"EOF"
