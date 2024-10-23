@@ -1699,7 +1699,7 @@ spec:
               su -l demo
             EOF
 
-            new_window "remount /sys" "source code" Enter <<"EOF
+            new_window "remount /sys" "source code" Enter <<"EOF"
               sed 's/^  //' <<"REMOUNT" > ~/remount.c
                 #define _GNU_SOURCE
 
