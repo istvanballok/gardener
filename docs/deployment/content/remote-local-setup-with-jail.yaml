@@ -2824,9 +2824,9 @@ spec:
               if !is_state_tested; then
                 flag_wait rootless_demo_tested
               fi &&
-              until docker exec cell ls /tmp/demo_tested >/dev/null 2>&1; do sleep 1; done &&
+              until docker exec demo ls /tmp/demo_tested >/dev/null 2>&1; do sleep 1; done &&
               flag_notify rootless_demo_ready &&
-              docker exec -it cell tmux -u a -t gardener-demo
+              docker exec -it demo tmux -u a -t gardener-demo
             EOF
 
             tmux select-window -t 0
@@ -2957,34 +2957,25 @@ spec:
           kubectl exec remote-local-setup-with-jail-0 -- sh -c | ts && break
             echo "Exec-ed into the remote local setup pod"
             export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket/docker.sock
-            while ! docker ps -f name=jail | grep jail; do
-              echo "  Wait for the jail docker container..."
+            while ! docker ps -f name=demo | grep demo; do
+              echo "  Wait for the demo docker container..."
               sleep 10
             done
             echo "  OK"
-            sed 's/^  //' <<"EOF_JAIL" | xargs -0 \
-            docker exec jail sh -c
-              echo "    Exec-ed into the jail container"
-              while ! docker ps -f name=cell | grep cell; do
-                echo "    Wait for the cell docker container..."
+            sed 's/^  //' <<"EOF_DEMO" | xargs -0 \
+            docker exec demo sh -c
+              echo "      Exec-ed into the demo container"
+              while [ ! -e /tmp/ready ]; do
+                echo "      Wait for the demo to be ready..."
                 sleep 10
               done
-              echo "    OK"
-              sed 's/^  //' <<"EOF_CELL" | xargs -0 \
-              docker exec cell sh -c
-                echo "      Exec-ed into the cell container"
-                while [ ! -e /tmp/ready ]; do
-                  echo "      Wait for the cell to be ready..."
-                  sleep 10
-                done
-                echo "      OK"
-                while ! tmux ls 2>/dev/null | grep gardener-demo; do
-                  echo "      Wait for the tmux session..."
-                  sleep 10
-                done
-                echo "      OK"
-              EOF_CELL
-            EOF_JAIL
+              echo "      OK"
+              while ! tmux ls 2>/dev/null | grep gardener-demo; do
+                echo "      Wait for the tmux session..."
+                sleep 10
+              done
+              echo "      OK"
+            EOF_DEMO
           EOF_EXEC
           echo "The probing failed, retrying in 10s"
           sleep 10s
@@ -3016,20 +3007,16 @@ spec:
               cd ~/script_recordings/$DATE
               sed 's/^  //' <<"EOF_SCRIPT" | xargs -o0 \
               script --flush --log-timing timing.log --log-out out.log --log-in input.log --output-limit 100MB -c
-                sed 's/^  //' <<"EOF_JAIL" | xargs -o0 \
-                docker exec -it --detach-keys="ctrl-p,ctrl-w" jail sh -c
-                  sed 's/^  //' <<"EOF_CELL" | xargs -o0 \
-                  docker exec -it --detach-keys="ctrl-p,ctrl-w" cell sh -c
-                    if [ -e /tmp/ready ]; then
-                      export LANG=C.UTF-8
-                      export TERM=xterm-256color
-                      tmux a -t gardener-demo
-                      echo "*** tmux exited"
-                    fi
-                  EOF_CELL
-                  echo "*** docker exec cell exited"
-                EOF_JAIL
-                echo "*** docker exec jail exited"
+                sed 's/^  //' <<"EOF_DEMO" | xargs -o0 \
+                docker exec -it --detach-keys="ctrl-p,ctrl-w" demo sh -c
+                  if [ -e /tmp/ready ]; then
+                    export LANG=C.UTF-8
+                    export TERM=xterm-256color
+                    tmux a -t gardener-demo
+                    echo "*** tmux exited"
+                  fi
+                EOF_DEMO
+                echo "*** docker exec demo exited"
               EOF_SCRIPT
               echo "*** script exited"
             EOF_EXEC
