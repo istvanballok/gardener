@@ -1662,7 +1662,7 @@ spec:
                 PORT=$(yq '.clusters[0].cluster.server' $KUBECONFIG | sed -E 's/.*:([^:]+)$/\1/')
                 cp $KUBECONFIG $KUBECONFIG.original
                 yq -i ".clusters[0].cluster.server=\"https://$DOCKER_IP:6443\"" $KUBECONFIG
-                cp $KUBECONFIG ~/.kube/config
+                cp $KUBECONFIG /home/demo/.kube/config
                 sed 's/^  //' <<DEMO_EOF | xargs -d '\0' \
                 su -l demo -c -l
                   set -e
