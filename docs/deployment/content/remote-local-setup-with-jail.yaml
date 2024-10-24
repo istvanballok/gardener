@@ -57,6 +57,9 @@ spec:
         - |
           set -exv -o pipefail
           echo "Disk usage"
+
+          rm -rf /home/demo/disk.buffer
+
           df -h
           time du -sh ~/.cache/* /var/lib/docker/* \
                       $(find /home/demo -mindepth 1 -maxdepth 1) \
@@ -100,6 +103,7 @@ spec:
           cat /proc/self/cgroup
           echo "and it sees only its child cgroups"
           find /sys/fs/cgroup/ -type d
+
 
           apk add -u tmux --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main
 
@@ -2797,11 +2801,15 @@ spec:
               echo "Google IP: $(cat /tmp/google_ip)" &&
               flag_wait rootless_demo_managedseed_ip &&
               if is_state_tested; then
+                dd if=/dev/zero of=~/disk.buffer bs=1M count=$((1024 * 5)) &&
                 docker exec demo touch /tmp/demo_tested
               else
                 export GOOGLE_IP=$(cat /tmp/google_ip)
                 time (
-                  sed 's/^  //' <<"DEMO_CONTAINER" | xargs -0 docker exec -e GOOGLE_IP demo bash -l -c |& ts && flag_notify rootless_demo_tested && mark_state_tested
+                  sed 's/^  //' <<"DEMO_CONTAINER" | xargs -0 docker exec -e GOOGLE_IP demo bash -l -c |& ts &&
+                  dd if=/dev/zero of=~/disk.buffer bs=1M count=$((1024 * 5)) &&
+                  flag_notify rootless_demo_tested &&
+                  mark_state_tested
                     set -ex -o pipefail
                     while [ ! -f ~/.kube/config ]; do sleep 1; done
 
