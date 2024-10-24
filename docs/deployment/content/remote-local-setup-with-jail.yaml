@@ -1645,7 +1645,6 @@ spec:
                   nice time make kind-operator-up
                   mkdir -p ~/.kube
                   chmod 644 example/gardener-local/kind/operator/kubeconfig
-                  cp example/gardener-local/kind/operator/kubeconfig ~/.kube/config
                   flag_notify rootless_kind_operator_up
                 DEMO_EOF
               NETWORK_EOF
@@ -1656,11 +1655,20 @@ spec:
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
                 set -ex
                 export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket/docker.sock
+                DOCKER_IP=$(docker exec gardener-operator-local-control-plane ip addr show eth0 \
+                            | awk '/inet /{print $2}' | cut -d '/' -f 1)
+                ip address add $DOCKER_IP dev lo || true
+                KUBECONFIG=/home/demo/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator/kubeconfig
+                PORT=$(yq '.clusters[0].cluster.server' $KUBECONFIG | sed -E 's/.*:([^:]+)$/\1/')
+                cp $KUBECONFIG $KUBECONFIG.original
+                yq -i ".clusters[0].cluster.server=\"https://$DOCKER_IP:6443\"" $KUBECONFIG
+                cp $KUBECONFIG ~/.kube/config
                 sed 's/^  //' <<DEMO_EOF | xargs -d '\0' \
                 su -l demo -c -l
                   set -e
                   trap 'jobs -p | xargs kill' INT
                   BEFORE=\$(netstat -ntlp)
+                  socat TCP-LISTEN:6443,fork,reuseaddr,bind=$DOCKER_IP   TCP:127.0.0.1:$PORT   &
                   socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.1  TCP:172.18.255.1:444  &
                   socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.10 TCP:172.18.255.10:445 &
                   socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.11 TCP:172.18.255.11:446 &
@@ -2774,12 +2782,9 @@ spec:
             EOF
             new_pane "DNAT" Enter << "EOF"
               flag_wait rootless_demo_run &&
-              KUBECONFIG=~/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator/kubeconfig &&
-              PORT=$(yq '.clusters[0].cluster.server' $KUBECONFIG | sed -E 's/.*:([^:]+)$/\1/')                &&
               CONTROL_PLANE_IP=$(docker exec gardener-operator-local-control-plane ip addr show eth0 \
                                  | awk '/inet /{print $2}' | cut -d '/' -f 1)                                  &&
               sed 's/^  //' <<DEMO_EOF | xargs -d '\0' docker exec -u root demo sh -c && flag_notify rootless_demo_dnat
-                iptables -t nat -A OUTPUT -o eth0 -p tcp -d 127.0.0.1     --dport $PORT -j DNAT --to-destination $CONTROL_PLANE_IP:6443  # Runtime Garden (KinD)
                 iptables -t nat -A OUTPUT -o eth0 -p tcp -d 172.18.255.3  --dport 443   -j DNAT --to-destination $CONTROL_PLANE_IP:31443 # Virtual Garden
                 iptables -t nat -A OUTPUT -o eth0 -p tcp -d 172.18.255.1  --dport 443   -j DNAT --to-destination $CONTROL_PLANE_IP:30443 # Soil / HA Istio/Envoy ingress
                 iptables -t nat -A OUTPUT -o eth0 -p tcp -d 172.18.255.10 --dport 443   -j DNAT --to-destination $CONTROL_PLANE_IP:30444 # Soil / zone 1 Istio/Envoy ingress
