@@ -2799,7 +2799,7 @@ spec:
               echo "Google IP: $(cat /tmp/google_ip)" &&
               flag_wait rootless_demo_managedseed_ip &&
               if is_state_tested; then
-                docker exec cell touch /tmp/demo_tested
+                docker exec demo touch /tmp/demo_tested
               else
                 export GOOGLE_IP=$(cat /tmp/google_ip)
                 time (
