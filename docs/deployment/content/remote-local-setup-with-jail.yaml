@@ -75,9 +75,7 @@ spec:
             exit 1
           fi
           cd
-          rm -f /root/start /root/elapsed*
-          start=$(date +%s)
-          echo $start > /root/start
+          rm -f /root/elapsed*
 
           mkdir -p ~/.cache/apk
           ln -s ~/.cache/apk /etc/apk/cache
@@ -283,8 +281,8 @@ spec:
             fi
             if [ -f /root/elapsed_until_tmux ]; then
               echo "Initialization time until the tmux session was prepared for developers to use: $(cat /root/elapsed_until_tmux)"
-              if [ -f /root/elapsed_until_cell ]; then
-                echo "Time elapsed until the cell was prepared for untrusted users to use: $(cat /root/elapsed_until_cell)"
+              if [ -f /root/elapsed_until_demo ]; then
+                echo "Time elapsed until the cell was prepared for untrusted users to use: $(cat /root/elapsed_until_demo)"
               fi
               echo
             fi
@@ -2968,7 +2966,7 @@ spec:
           time ~/prepare_tmux.sh
 
           end=$(date +%s)
-          diff=$(( end - start ))
+          diff=$(( end - $(cat /rls_start) ))
           elapsed=$(date -u -d @${diff} +"%T")
           echo $elapsed > /root/elapsed_until_tmux
           echo "Elapsed time until the tmux session is prepared: ${elapsed}"
