@@ -2807,9 +2807,9 @@ spec:
               else
                 export GOOGLE_IP=$(cat /tmp/google_ip)
                 time (
-                  sed 's/^  //' <<"DEMO_CONTAINER" | xargs -0 docker exec -e GOOGLE_IP demo bash -l -c |& ts &&
-                  dd if=/dev/zero of=~/disk.buffer bs=1M count=$((1024 * 5)) &&
-                  flag_notify rootless_demo_tested &&
+                  sed 's/^  //' <<"DEMO_CONTAINER" | xargs -0 docker exec -e GOOGLE_IP demo bash -l -c |& ts && \
+                  dd if=/dev/zero of=~/disk.buffer bs=1M count=$((1024 * 5)) && \
+                  flag_notify rootless_demo_tested && \
                   mark_state_tested
                     set -ex -o pipefail
                     while [ ! -f ~/.kube/config ]; do sleep 1; done
