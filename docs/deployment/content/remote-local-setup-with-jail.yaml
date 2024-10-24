@@ -1199,11 +1199,11 @@ spec:
                 ##### Prepare the panes for the demo scenario here #####
 
                 new_window "garden" "garden" Enter <<"EOF"
-                  export KUBECONFIG=~/.kube_readonly/config
+                  export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig
                   nice watch is_tmux_window_shown.sh "&&" k get garden
                 EOF
                 new_pane "last operations" Enter <<"EOF"
-                  export KUBECONFIG=~/.kube_readonly/config
+                  export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig
                   while true; do k get garden local -o json -w 2>/dev/null \
                     | jq -r --unbuffered '.status.lastOperation |
                                           [.progress, .description] |
@@ -1215,7 +1215,7 @@ spec:
                   done
                 EOF
                 new_pane "garden conditions" Enter <<"EOF"
-                  export KUBECONFIG=~/.kube_readonly/config
+                  export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig
                   while true; do
                     clear
                     is_tmux_window_shown.sh &&
@@ -1301,7 +1301,7 @@ spec:
                 EOF
 
                 new_window "runtime&seed pods" "pods" Enter <<"EOF"
-                  export KUBECONFIG=~/.kube_readonly/config
+                  export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig
                   # the while loop is used instead of watch to allow for scrolling a longer list in the tmux pane
                   while true; do
                     clear
@@ -2814,7 +2814,12 @@ spec:
                     set -ex -o pipefail
                     while [ ! -f ~/.kube/config ]; do sleep 1; done
 
+                    echo "check the runtime garden (KinD) cluster"
+                    export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig
+                    k get pods -A | nl
+
                     echo "create a shoot"
+                    export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
                     k apply -f example/provider-local/shoot.yaml
                     time (
                       k wait shoot local --timeout=-1s --for=jsonpath='{.status.lastOperation.state}'=Processing
@@ -2830,7 +2835,7 @@ spec:
                       k wait shoot local --timeout=-1s --for=condition=SystemComponentsHealthy
                     )
 
-                    echo "list the shoot pods"
+                    echo "access the shoot with gardenctl and list the shoot pods"
                     eval $(gardenctl kubectl-env bash || echo false)
                     gardenctl target --garden local --shoot local
                     k get pods -A
