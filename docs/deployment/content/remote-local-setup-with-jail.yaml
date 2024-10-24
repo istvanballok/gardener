@@ -56,6 +56,8 @@ spec:
         - -c
         - |
           set -exv -o pipefail
+          date +%s > /rls_start
+
           echo "Disk usage"
 
           rm -rf /home/demo/disk.buffer
@@ -333,6 +335,36 @@ spec:
             else
               cd ~
             fi
+            function stopwatch_start {
+              mkdir -p /tmp/timing
+              chown -R demo:demo /tmp/timing
+              START=$(date +%s)
+              echo "$(
+                      date -u -d @$((START - $(cat /rls_start))) +"%T"
+                    ) / RUNNING / $(
+                      tmux display-message -p -t "$TMUX_PANE" '#S / #W / #T'
+                    )" > /tmp/timing/"$(tmux display-message -p -t "$TMUX_PANE" '#S.#W.#T' | sed -E 's/[^A-Za-z0-9.]+/_/g')"
+            }
+            function stopwatch_stop {
+              mkdir -p /tmp/timing
+              chown -R demo:demo /tmp/timing
+              END=$(date +%s)
+              echo "$(
+                      date -u -d @$((START - $(cat /rls_start))) +"%T"
+                    ) / $(
+                      date -u -d @$((END - START)) +"%T"
+                    ) / $(
+                      tmux display-message -p -t "$TMUX_PANE" '#S / #W / #T'
+                    )" > /tmp/timing/"$(tmux display-message -p -t "$TMUX_PANE" '#S.#W.#T' | sed -E 's/[^A-Za-z0-9.]+/_/g')"
+            }
+            function stopwatch_profile {
+              mkdir -p /tmp/timing
+              chown -R demo:demo /tmp/timing
+              {
+                echo "Started at / Duration / Session / Window / Pane "
+                find /tmp/timing/ -type f -printf '%T@ %p\n' | sort -n | awk '{print $2}' | xargs cat
+              } | column -t -s / | nl
+            }
             function flag_notify {
               if [ "$(whoami)" == "root" ]; then
                 su -l demo -c -l "flag_notify $1"
@@ -1372,7 +1404,7 @@ spec:
             mkdir -p ~/.kube
             echo '{"current-context": "kind-gardener-operator-local"}' > ~/.kube/config
             source /usr/local/bin/tmux_functions.sh
-            nsenter -t $(cat /root/dockerd_netns_pid) -n tmux new -d -s gardener -n top -x 250 -y 70
+            nsenter -t $(cat /root/dockerd_netns_pid) -n tmux new -d -s root -n top -x 250 -y 70
             tmux select-pane -T top; mkdir -p ~/.config/procps; rm -f ~/.config/procps/toprc
             for k in top Enter z C c i t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
             new_window "sar 1" "man" Enter <<"EOF"
@@ -1556,9 +1588,10 @@ spec:
             EOF
             new_pane "docker build sysd" Enter <<"EOF"
               cd docker
+              stopwatch_start &&
               docker build -t sysd --progress plain . &&
               docker system prune -f &&
-              flag_notify sysd_docker_build
+              flag_notify sysd_docker_build; stopwatch_stop
             EOF
             new_pane "docker run sysd" Enter <<"EOF"
               rm -rf          /home/demo/.docker-rootless-socket
@@ -1584,6 +1617,7 @@ spec:
                      --name sysd sysd
             EOF
             new_pane "install rootless docker in sysd" Enter <<"EOF"
+              stopwatch_start &&
               flag_wait sysd_docker_build &&
               while ! docker exec sysd systemctl status | grep -E 'State: running' >/dev/null; do
                 sleep 1;
@@ -1593,7 +1627,7 @@ spec:
                 fi
               done &&
               sed 's/^  //' <<"SYSD" | xargs -d '\0' \
-              docker exec sysd bash -c && flag_notify sysd_rootless_docker_service
+              docker exec sysd bash -c && flag_notify sysd_rootless_docker_service; stopwatch_stop
                 sysctl -w net.ipv4.ping_group_range="0 2147483647"
                 sysctl -w net.ipv4.ip_unprivileged_port_start=0
                 setcap cap_net_bind_service=ep $(which rootlesskit)
@@ -1626,8 +1660,9 @@ spec:
             new_window "make kind-operator" "make kind-operator-down" Enter <<"EOF"
               rm -rf /home/demo/go/src/github.com/gardener/gardener/dev/local-backupbuckets &&
               flag_wait sysd_rootless_docker_service &&
+              stopwatch_start &&
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
-              su -l demo -c -l
+              su -l demo -c -l; stopwatch_stop
                 set -e
                 time make kind-operator-down
                 rm -rf ~/.kube/config
@@ -1636,8 +1671,9 @@ spec:
             EOF
             new_pane "make kind-operator-up" Enter <<"EOF"
               flag_wait rootless_kind_operator_down &&
+              stopwatch_start &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
-              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c; stopwatch_stop
                 for i in 172.18.255.{1,3,10,11,12,20}; do ip address add $i dev lo; done
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
                 su -l demo -c -l
@@ -1649,10 +1685,11 @@ spec:
                 DEMO_EOF
               NETWORK_EOF
             EOF
-            new_pane "make kind-operator-up fix" Enter <<"EOF"
+            new_pane "make kind-operator-up fix (socat - long running)" Enter <<"EOF"
               flag_wait rootless_kind_operator_up &&
+              stopwatch_start &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
-              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c; stopwatch_stop
                 set -ex
                 export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket/docker.sock
                 DOCKER_IP=$(docker exec gardener-operator-local-control-plane ip addr show eth0 \
@@ -1687,8 +1724,9 @@ spec:
             EOF
             new_pane "wait for the KinD cluster" Enter <<"EOF"
               flag_wait rootless_kind_operator_up_fix &&
+              stopwatch_start &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
-              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c; stopwatch_stop
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
                 su -l demo -c -l
                   set -e
@@ -1701,8 +1739,9 @@ spec:
             EOF
             new_pane "build and push patched etcd-druid" Enter <<"EOF"
               flag_wait rootless_kind_operator_up_ready &&
+              stopwatch_start &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
-              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c; stopwatch_stop
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
                 su -l demo -c -l
                   set -e
@@ -1718,8 +1757,9 @@ spec:
 
             new_window "make operator-(seed)-up" "make operator-up" Enter <<"EOF"
               flag_wait rootless_etcd_druid_patched &&
+              stopwatch_start &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
-              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c; stopwatch_stop
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
                 su -l demo -c -l
                   set -e
@@ -1730,10 +1770,11 @@ spec:
             EOF
             new_pane "make operator-seed-up" Enter <<"EOF"
               flag_wait rootless_operator_up &&
+              stopwatch_start &&
               sysctl -w kernel.keys.maxkeys=$((200 * 10)) &&
               sysctl -w kernel.keys.maxbytes=$((20000 * 10)) &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
-              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c; stopwatch_stop
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
                 su -l demo -c -l
                   set -e
@@ -1744,8 +1785,9 @@ spec:
             EOF
             new_pane "virtual garden HA" Enter <<"EOF"
               flag_wait rootless_operator_seed_up &&
+              stopwatch_start &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
-              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' sysd) -n bash -c; stopwatch_stop
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
                 su -l demo -c -l
                   set -e
@@ -1870,7 +1912,7 @@ spec:
               gcc -static -o remount remount.c
               vim -n ~/remount.c
             EOF
-            new_pane "fix Gardener shoot nodes: remount /sys rw as root from the outside" Enter <<"EOF"
+            new_pane "fix Gardener shoot nodes: remount /sys rw as root from the outside / (long running)" Enter <<"EOF"
               # When docker or containerd create a privileged container, they mount /sys
               # read-write. However, when K8s creates a privileged pod, it mounts /sys
               # read-only.
@@ -1922,6 +1964,8 @@ spec:
               # nsenter -t $PID -m -p -e -C /bin/sh
               # mount -o remount,rw /sys
               # nsenter -t $PID -m -p -e -C /bin/sh -c 'mount | grep " /sys " | grep rw || mount -o remount,rw /sys'
+              flag_wait rootless_virtual_garden_ha &&
+              stopwatch_start &&
               while true; do
                 for i in $(pgrep -u demo -f '^/sbin/init'); do
                   mountinfo="/proc/$i/mountinfo"
@@ -1944,11 +1988,12 @@ spec:
                   fi
                 done
                 sleep 1m
-              done | ts
+              done | ts; stopwatch_stop
             EOF
 
-            new_window "/etc/hosts" "hosts" Enter <<"EOF"
+            new_window "/etc/hosts" "hosts / (long running)" Enter <<"EOF"
               flag_wait sysd_rootless_docker_service &&
+              stopwatch_start &&
               inotifywait -m -e moved_to /home/demo/etc --include '/.*\.hosts$' 2>&1 \
               | grep --line-buffered -E 'Watches established.|MOVED_TO' \
               | while read line; do
@@ -1958,7 +2003,7 @@ spec:
                   cat /home/demo/etc/*.hosts          >> /etc/hosts 2>/dev/null
                   sed -n '/# Gardener/,$p' /etc/hosts | ts
                   echo
-                done
+                done; stopwatch_stop
             EOF
 
             new_window "demo" "demo" Enter <<"EOF"
@@ -2010,6 +2055,7 @@ spec:
               is_state_tested || {
                 flag_wait rootless_shoot_ha_ready_deleted &&
                 flag_wait rootless_managedseed_seed_ready &&
+                stopwatch_start &&
                 time (
                   set -e -o pipefail
                   BEFORE=$(
@@ -2074,6 +2120,7 @@ spec:
                   echo "Diff:"
                   diff -U 10 -u --color=always <(echo "$BEFORE") <(echo "$AFTER") | grep -v /dev/fd || true
                 ) && flag_notify registry_mitigation
+                stopwatch_stop
               }
             EOF
             new_pane "offline" Enter <<"EOF"
@@ -2085,14 +2132,14 @@ spec:
                 flag_wait managedseed_nested_workerless_shoot_deleted &&
                 flag_wait managedseed_nested_shoot_deleted &&
                 flag_wait registry_mitigation
-              fi &&
+              fi && stopwatch_start
               {
                 iptables -I FORWARD -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
                 iptables -I INPUT   -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
                 iptables -I FORWARD -i docker_veth0 -j REJECT -p udp --reject-with icmp-port-unreachable
                 iptables -I INPUT   -i docker_veth0 -j REJECT -p udp --reject-with icmp-port-unreachable
               } &&
-              flag_notify offline
+              flag_notify offline; stopwatch_stop
             EOF
             new_pane "online" <<"EOF"
               nsenter -t 1 -n
@@ -2102,21 +2149,17 @@ spec:
               iptables  -D INPUT   -i docker_veth0 -j REJECT -p udp --reject-with icmp-port-unreachable
             EOF
 
-            new_window "timing" "timing" Enter <<"EOF"
-              while [ ! -f /root/elapsed_until_tmux ]; do sleep 1; done &&
-              echo &&
-              echo "Elapsed time until the tmux session was setup: $(cat /root/elapsed_until_tmux)" &&
-              flag_wait rootless_demo_ready &&
-              end=$(date +%s) &&
-              echo $end > /tmp/rootless_demo_ready &&
-              diff=$(( end - $(cat /root/start) )) &&
-              elapsed=$(date -u -d @${diff} +"%T") &&
-              echo $elapsed > /root/elapsed_until_rootless_demo_ready &&
-              echo "Elapsed time until the rootless demo was ready: $elapsed"
+            new_window "profiling" "profiling" Enter <<"EOF"
+              while true; do
+                clear
+                date
+                stopwatch_profile
+                sleep 10
+              done
             EOF
 
-            tmux select-window -t 1
-            tmux select-pane -t 0
+            # tmux select-window -t 1
+            # tmux select-pane -t 0
           SCRIPT_EOF
 
           sed 's/^  //' <<"SCRIPT_EOF" > /home/demo/prepare_tmux.sh
@@ -2179,35 +2222,41 @@ spec:
             new_window "shoot lifecycle" "Create" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               flag_wait rootless_virtual_garden_ha &&
-              is_state_tested || {
+              if ! is_state_tested; then
+                stopwatch_start &&
                 k apply -f example/provider-local/shoot.yaml &&
                 time (k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Processing shoot local --timeout=-1s
                       k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot local --timeout=-1s
                       k wait -n garden-local --for=condition=SystemComponentsHealthy                   shoot local --timeout=-1s) &&
                 flag_notify rootless_shoot_ready
-              }
+                stopwatch_stop
+              fi
             EOF
             new_pane "upgrade to HA" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              is_state_tested || {
+              if ! is_state_tested; then
                 time flag_wait rootless_shoot_ready &&
+                stopwatch_start &&
                 k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type="zone"' example/provider-local/shoot.yaml) &&
                 time (k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Processing shoot local --timeout=-1s
                       k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot local --timeout=-1s
                       k wait -n garden-local --for=condition=SystemComponentsHealthy                   shoot local --timeout=-1s) &&
                 flag_notify rootless_shoot_ha_ready
-              }
+                stopwatch_stop
+              fi
             EOF
             new_pane "Delete" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              is_state_tested || {
+              if ! is_state_tested; then
                 time flag_wait rootless_shoot_ha_ready &&
+                stopwatch_start &&
                 k annotate shoot local -n garden-local 'confirmation.gardener.cloud/deletion=true' &&
                 time k delete shoot local -n garden-local &&
                 flag_notify rootless_shoot_ha_ready_deleted
                 flag_delete rootless_shoot_ready
                 flag_delete rootless_shoot_ha_ready
-              }
+                stopwatch_stop
+              fi
             EOF
             new_pane "Reconcile" <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
@@ -2314,6 +2363,7 @@ spec:
             new_window "managed seed" "create shoot" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               time flag_wait rootless_virtual_garden_ha &&
+              stopwatch_start &&
               k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type="zone" |
                                .spec.networking.providerConfig = {
                                  "apiVersion": "calico.networking.extensions.gardener.cloud/v1alpha1",
@@ -2325,15 +2375,16 @@ spec:
               time (k wait -n garden --for=jsonpath='{.status.lastOperation.state}'=Processing shoot managedseed --timeout=-1s
                     k wait -n garden --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot managedseed --timeout=-1s
                     k wait -n garden --for=condition=SystemComponentsHealthy                   shoot managedseed --timeout=-1s) &&
-              flag_notify rootless_managedseed_shoot_ready
+              flag_notify rootless_managedseed_shoot_ready; stopwatch_stop
             EOF
             new_pane "create managed seed" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               time flag_wait rootless_managedseed_shoot_ready &&
+              stopwatch_start &&
               k apply -f example/provider-local/managedseeds/managedseed.yaml &&
               time ( k wait -n garden managedseed managedseed --for=condition=SeedRegistered --timeout=-1s &&
                     until k wait seed managedseed --for=condition=SeedSystemComponentsHealthy --timeout=-1s 2>/dev/null; do sleep 1; done ) &&
-              flag_notify rootless_managedseed_seed_ready
+              flag_notify rootless_managedseed_seed_ready; stopwatch_stop
             EOF
             new_pane "managed seed pods" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
@@ -2357,6 +2408,7 @@ spec:
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               is_state_tested || {
                 time flag_wait rootless_managedseed_seed_ready &&
+                stopwatch_start &&
                 k apply -f <(yq '.metadata.name="local-wl-ms" |
                                  .spec.seedName="managedseed" |
                                  .spec.networking.services="10.6.0.0/16"' example/provider-local/shoot-workerless.yaml) &&
@@ -2364,15 +2416,18 @@ spec:
                       k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot local-wl-ms --timeout=-1s
                       k wait -n garden-local --for=condition=SystemComponentsHealthy                   shoot local-wl-ms --timeout=-1s) &&
                 flag_notify managedseed_nested_workerless_shoot_ready
+                stopwatch_stop
               }
             EOF
             new_pane "delete workerless shoot on managed seed" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               is_state_tested || {
                 time flag_wait managedseed_nested_workerless_shoot_ready &&
+                stopwatch_start &&
                 k annotate    shoot local-wl-ms -n garden-local 'confirmation.gardener.cloud/deletion=true' &&
                 time k delete shoot local-wl-ms -n garden-local &&
                 flag_notify managedseed_nested_workerless_shoot_deleted
+                stopwatch_start
               }
             EOF
             new_pane "regular shoot on managed seed" Enter <<"EOF"
@@ -2381,6 +2436,7 @@ spec:
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               is_state_tested || {
                 time flag_wait rootless_managedseed_seed_ready &&
+                stopwatch_start &&
                 k apply -f <(yq '.metadata.name="local-ms"               |
                                  .spec.seedName="managedseed"            |
                                  .spec.networking.nodes=   "10.7.0.0/16" |
@@ -2391,15 +2447,18 @@ spec:
                       k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot local-ms --timeout=-1s
                       k wait -n garden-local --for=condition=SystemComponentsHealthy                   shoot local-ms --timeout=-1s) &&
                 flag_notify managedseed_nested_shoot_ready
+                stopwatch_stop
               }
             EOF
             new_pane "delete regular shoot on managed seed" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               is_state_tested || {
                 time flag_wait managedseed_nested_shoot_ready &&
+                stopwatch_start &&
                 k annotate    shoot local-ms -n garden-local 'confirmation.gardener.cloud/deletion=true' &&
                 time k delete shoot local-ms -n garden-local &&
                 flag_notify managedseed_nested_shoot_deleted
+                stopwatch_stop
               }
             EOF
 
@@ -2496,6 +2555,7 @@ spec:
             new_window "image preload" "image preload" Enter <<"EOF"
               is_state_tested || {
                 flag_wait rootless_kind_operator_up_ready &&
+                stopwatch_start &&
                 for i in alpine:latest nginx:latest; do
                   docker pull $i
                   docker tag $i localhost:5001/$i
@@ -2504,11 +2564,13 @@ spec:
                 for i in $(curl -s localhost:5001/v2/_catalog | jq '.repositories[]' -r | grep -v -E 'gardener|skaffold'); do
                   curl -s localhost:5001/v2/$i/tags/list | jq .
                 done
+                stopwatch_stop
               }
             EOF
 
-            new_window "virtual garden" "refresh kubeconfig" Enter <<"EOF"
+            new_window "virtual garden" "refresh kubeconfig / (long running)" Enter <<"EOF"
               flag_wait rootless_virtual_garden_ha &&
+              stopwatch_start &&
               rm -f ~/secrets.watch.bookmark &&
               while true; do
                 BOOKMARK="resourceVersion=$(cat ~/secrets.watch.bookmark 2>/dev/null)"
@@ -2536,22 +2598,24 @@ spec:
                            print "Updated the kubeconfig of the virtual Garden cluster in " kubeconfig
                            system(sprintf("echo %s | base64 -d > %s.wip", $3, kubeconfig))
                            system(sprintf("mv %s.wip %s", kubeconfig, kubeconfig))
-                         }' | ts
+                         }' | ts; stopwatch_stop
             EOF
-            new_pane "token" Enter <<"EOF"
+            new_pane "token / (long running)" Enter <<"EOF"
               flag_wait rootless_virtual_garden_ha &&
               sleep 10 &&
+              stopwatch_start &&
               inotifywait -m -e moved_to $PWD/example/operator/virtual-garden --include '/kubeconfig$' 2>&1 \
               | grep --line-buffered -E 'Watches established.|MOVED_TO' \
               | while read line; do
                     echo "virtual garden kubeconfig token" | ts
                     yq '.users[0].user.token' $PWD/example/operator/virtual-garden/kubeconfig | jwtd
-                  done
+                  done; stopwatch_stop
             EOF
 
-            new_window "hosts" "soil shoot APIs" Enter <<"EOF"
+            new_window "hosts" "soil shoot APIs / (long running)" Enter <<"EOF"
               mkdir -p ~/etc
               flag_wait rootless_virtual_garden_ha &&
+              stopwatch_start &&
               rm -f ~/gateways.watch.bookmark &&
               while true; do
                 BOOKMARK="resourceVersion=$(cat ~/gateways.watch.bookmark 2>/dev/null)"
@@ -2615,11 +2679,12 @@ spec:
                     system(sprintf("mv %s.wip %s", hosts, hosts))
                     print "-"
                     fflush()
-                  }' | ts
+                  }' | ts; stopwatch_stop
             EOF
-            new_pane "managed seed shoot APIs" Enter <<"EOF"
+            new_pane "managed seed shoot APIs / (long running)" Enter <<"EOF"
               mkdir -p ~/etc
               flag_wait rootless_managedseed_seed_ready &&
+              stopwatch_start &&
               g target --shoot managedseed &&
               eval $(gardenctl kubectl-env bash) &&
               rm -f ~/gateways_ms.watch.bookmark &&
@@ -2676,10 +2741,11 @@ spec:
                     print "-"
                     system(sprintf("mv %s.wip %s", hosts, hosts))
                     fflush()
-                  }' | ts
+                  }' | ts; stopwatch_stop
             EOF
-            new_pane "shoots hosted on the managed seed cluster" Enter <<"EOF"
+            new_pane "shoots hosted on the managed seed cluster / (long running)" Enter <<"EOF"
               flag_wait rootless_managedseed_seed_ready &&
+              stopwatch_start &&
               g target --shoot managedseed &&
               eval $(gardenctl kubectl-env bash) &&
               while true; do
@@ -2687,19 +2753,21 @@ spec:
                 k port-forward --address 172.18.255.20 -n istio-ingress svc/istio-ingressgateway 443
                 sleep 10
                 echo "Restarting the port-forward"
-              done |& ts
+              done |& ts; stopwatch_stop
             EOF
 
             new_window "demo setup" "build demo_image" Enter <<"EOF"
               flag_wait rootless_virtual_garden_ha &&
+              stopwatch_start &&
               cd cell &&
               time docker build -t demo_image --progress plain . |& sed -E 's/ +/ /g' &&
               docker system prune -f &&
-              flag_notify rootless_demo_image
+              flag_notify rootless_demo_image; stopwatch_stop
             EOF
             new_pane "run the demo container" Enter <<"EOF"
               flag_wait rootless_demo_image &&
               flag_wait offline &&
+              stopwatch_start &&
               # https://docs.docker.com/engine/reference/run/#runtime-constraints-on-resources
               RUNTIME_GARDEN=/home/demo/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator &&
               VIRTUAL_GARDEN=/home/demo/go/src/github.com/gardener/gardener/example/operator/virtual-garden      &&
@@ -2716,11 +2784,12 @@ spec:
                          sh -c "/home/demo/prepare-cell.sh > /home/demo/prepare-cell.log 2>&1" &&
               echo "Demo container:"                                                           &&
               docker ps --filter name=demo                                                     &&
-              flag_notify rootless_demo_run
+              flag_notify rootless_demo_run; stopwatch_stop
             EOF
-            new_pane "Manage /etc/hosts" Enter <<"EOF"
+            new_pane "Manage /etc/hosts / (long running)" Enter <<"EOF"
               flag_wait rootless_demo_run &&
-              sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' docker exec -u root demo sh -c
+              stopwatch_start &&
+              sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' docker exec -u root demo sh -c; stopwatch_stop
                 inotifywait -m -e moved_to /home/demo/etc --include '/.*\.hosts$' 2>&1 \
                 | grep --line-buffered -E 'Watches established.|MOVED_TO' \
                 | while read line; do
@@ -2733,9 +2802,10 @@ spec:
                   done
               DEMO_EOF
             EOF
-            new_pane "Merge the virtual-garden and the runtime-garden (KinD) kube configs" Enter <<"EOF"
+            new_pane "Merge the virtual-garden and the runtime-garden (KinD) kube configs / (long running)" Enter <<"EOF"
               flag_wait rootless_demo_run &&
-              sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' docker exec -u root demo sh -c
+              stopwatch_start &&
+              sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' docker exec -u root demo sh -c; stopwatch_stop
                 mkdir -p /home/demo/.kube
                 chown demo:demo /home/demo/.kube
 
@@ -2781,9 +2851,10 @@ spec:
             EOF
             new_pane "DNAT" Enter << "EOF"
               flag_wait rootless_demo_run &&
+              stopwatch_start &&
               CONTROL_PLANE_IP=$(docker exec gardener-operator-local-control-plane ip addr show eth0 \
                                  | awk '/inet /{print $2}' | cut -d '/' -f 1)                                  &&
-              sed 's/^  //' <<DEMO_EOF | xargs -d '\0' docker exec -u root demo sh -c && flag_notify rootless_demo_dnat
+              sed 's/^  //' <<DEMO_EOF | xargs -d '\0' docker exec -u root demo sh -c && flag_notify rootless_demo_dnat; stopwatch_stop
                 iptables -t nat -A OUTPUT -o eth0 -p tcp -d 172.18.255.3  --dport 443   -j DNAT --to-destination $CONTROL_PLANE_IP:31443 # Virtual Garden
                 iptables -t nat -A OUTPUT -o eth0 -p tcp -d 172.18.255.1  --dport 443   -j DNAT --to-destination $CONTROL_PLANE_IP:30443 # Soil / HA Istio/Envoy ingress
                 iptables -t nat -A OUTPUT -o eth0 -p tcp -d 172.18.255.10 --dport 443   -j DNAT --to-destination $CONTROL_PLANE_IP:30444 # Soil / zone 1 Istio/Envoy ingress
@@ -2793,13 +2864,15 @@ spec:
             EOF
             new_pane "Managed seed IP" Enter << "EOF"
               flag_wait rootless_demo_dnat &&
-              sed 's/^  //' <<DEMO_EOF | xargs -d '\0' docker exec -u root demo sh -c && flag_notify rootless_demo_managedseed_ip
+              stopwatch_start &&
+              sed 's/^  //' <<DEMO_EOF | xargs -d '\0' docker exec -u root demo sh -c && flag_notify rootless_demo_managedseed_ip; stopwatch_stop
                 ip addr add 172.18.255.20 dev lo
               DEMO_EOF
             EOF
-            new_pane "Managed seed port forward" Enter << "EOF"
+            new_pane "Managed seed port forward / (long running)" Enter << "EOF"
               flag_wait rootless_demo_managedseed_ip &&
-              sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' docker exec demo bash -l -c && flag_notify rootless_demo_port_forward
+              stopwatch_start &&
+              sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' docker exec demo bash -l -c && flag_notify rootless_demo_port_forward; stopwatch_stop
                 g target --shoot managedseed &&
                 eval $(gardenctl kubectl-env bash) &&
                 while ! k port-forward --address 172.18.255.20 -n istio-ingress svc/istio-ingressgateway 443; do
@@ -2816,6 +2889,7 @@ spec:
                 dd if=/dev/zero of=~/disk.buffer bs=1M count=$((1024 * 5)) &&
                 docker exec demo touch /tmp/demo_tested
               else
+                stopwatch_start
                 export GOOGLE_IP=$(cat /tmp/google_ip)
                 time (
                   sed 's/^  //' <<"DEMO_CONTAINER" | xargs -0 docker exec -e GOOGLE_IP demo bash -l -c |& ts && \
@@ -2871,6 +2945,7 @@ spec:
                     touch /tmp/demo_tested
               DEMO_CONTAINER
                 )
+                stopwatch_stop
               fi
             EOF
 
