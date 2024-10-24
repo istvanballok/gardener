@@ -59,7 +59,7 @@ spec:
           echo "Disk usage"
           df -h
           time du -sh ~/.cache/* /var/lib/docker/* \
-                      /home/demo/.* \
+                      $(find /home/demo -mindepth 1 -maxdepth 1) \
                       /home/demo/go/src/github.com/gardener/gardener/dev \
                       /home/demo/go/src/github.com/gardener/gardener/cell/* | sort -rh || true
           if [ $(df /root | awk '/sdb/ {print $4}') -lt $((10 * 1024 * 1024)) ]; then
