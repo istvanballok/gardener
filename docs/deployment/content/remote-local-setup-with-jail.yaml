@@ -1918,10 +1918,10 @@ spec:
                   regex_ro="^[0-9]+ [0-9]+ [0-9]+:[0-9]+ / /sys rw,nosuid,nodev,noexec,relatime shared:[0-9]+ - sysfs sysfs ro$"
                   regex_rw="^[0-9]+ [0-9]+ [0-9]+:[0-9]+ / /sys rw,nosuid,nodev,noexec,relatime shared:[0-9]+ - sysfs sysfs rw$"
                   if grep -q -E "$regex_ro" $mountinfo; then
-                    echo
                     # make sure the world was successfully stopped before remounting
                     docker pause sysd > /dev/null &&
                     sleep 1 &&
+                    echo &&
                     ./remount $i
                     grep " /sys " $mountinfo
                     if ! grep -q -E "$regex_rw" $mountinfo; then
