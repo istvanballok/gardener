@@ -1895,11 +1895,13 @@ spec:
                     docker pause sysd > /dev/null &&
                     sleep 1 &&
                     ./remount --pid $i
-                    docker unpause sysd > /dev/null
                     grep " /sys " $mountinfo
                     if ! grep -q -E "$regex_rw" $mountinfo; then
                       echo "Remount did not work"
+                      docker unpause sysd > /dev/null
                       break 2
+                    else
+                      docker unpause sysd > /dev/null
                     fi
                   fi
                 done
