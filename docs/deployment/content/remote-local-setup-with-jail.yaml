@@ -1794,7 +1794,6 @@ spec:
                     while ((nchar = getline(&line, &len, fp)) != -1) {
                         /* Trim line to remove possible trailing newline */
                         if (line[nchar-1] == '\n') {
-                            // TODO: Check whether this leaves out one byte when line is freed
                             line[nchar-1] = 0;
                         }
 
