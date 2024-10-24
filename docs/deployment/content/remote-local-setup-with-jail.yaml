@@ -1199,11 +1199,11 @@ spec:
                 ##### Prepare the panes for the demo scenario here #####
 
                 new_window "garden" "garden" Enter <<"EOF"
-                  export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig
+                  export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig.modified
                   nice watch is_tmux_window_shown.sh "&&" k get garden
                 EOF
                 new_pane "last operations" Enter <<"EOF"
-                  export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig
+                  export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig.modified
                   while true; do k get garden local -o json -w 2>/dev/null \
                     | jq -r --unbuffered '.status.lastOperation |
                                           [.progress, .description] |
@@ -1215,7 +1215,7 @@ spec:
                   done
                 EOF
                 new_pane "garden conditions" Enter <<"EOF"
-                  export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig
+                  export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig.modified
                   while true; do
                     clear
                     is_tmux_window_shown.sh &&
@@ -1301,7 +1301,7 @@ spec:
                 EOF
 
                 new_window "runtime&seed pods" "pods" Enter <<"EOF"
-                  export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig
+                  export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig.modified
                   # the while loop is used instead of watch to allow for scrolling a longer list in the tmux pane
                   while true; do
                     clear
@@ -1660,9 +1660,8 @@ spec:
                 ip address add $DOCKER_IP dev lo || true
                 KUBECONFIG=/home/demo/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator/kubeconfig
                 PORT=$(yq '.clusters[0].cluster.server' $KUBECONFIG | sed -E 's/.*:([^:]+)$/\1/')
-                cp $KUBECONFIG $KUBECONFIG.original
-                yq -i ".clusters[0].cluster.server=\"https://$DOCKER_IP:6443\"" $KUBECONFIG
-                cp $KUBECONFIG /home/demo/.kube/config
+                yq ".clusters[0].cluster.server=\"https://$DOCKER_IP:6443\"" $KUBECONFIG > $KUBECONFIG.modified
+                cp $KUBECONFIG.modified /home/demo/.kube/config
                 sed 's/^  //' <<DEMO_EOF | xargs -d '\0' \
                 su -l demo -c -l
                   set -e
@@ -2702,8 +2701,8 @@ spec:
               flag_wait rootless_demo_image &&
               flag_wait offline &&
               # https://docs.docker.com/engine/reference/run/#runtime-constraints-on-resources
-              RUNTIME_GARDEN=/home/demo/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator/kubeconfig &&
-              VIRTUAL_GARDEN=/home/demo/go/src/github.com/gardener/gardener/example/operator/virtual-garden/kubeconfig      &&
+              RUNTIME_GARDEN=/home/demo/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator &&
+              VIRTUAL_GARDEN=/home/demo/go/src/github.com/gardener/gardener/example/operator/virtual-garden      &&
               docker run -d --rm                                                         \
                          --network kind                                                  \
                          --name demo                                                     \
@@ -2767,7 +2766,7 @@ spec:
                         | jq '
                             .contexts[0].context.namespace = "garden-local"
                           ') \
-                      <(yq -o json /home/demo/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator/kubeconfig \
+                      <(yq -o json /home/demo/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator/kubeconfig.modified \
                         | jq '
                             .contexts[0].context.namespace = "garden"
                           ') \
@@ -2827,7 +2826,7 @@ spec:
                     while [ ! -f ~/.kube/config ]; do sleep 1; done
 
                     echo "check the runtime garden (KinD) cluster"
-                    export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig
+                    export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig.modified
                     k get pods -A | nl
 
                     echo "create a shoot"
