@@ -2307,7 +2307,14 @@ spec:
             new_window "managed seed" "create shoot" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               time flag_wait rootless_virtual_garden_ha &&
-              k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type="zone"' example/provider-local/managedseeds/shoot-managedseed.yaml) &&
+              k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type="zone" |
+                               .spec.networking.providerConfig = {
+                                 "apiVersion": "calico.networking.extensions.gardener.cloud/v1alpha1",
+                                 "kind": "NetworkConfig",
+                                 "ipam": {
+                                   "type": "calico-ipam" # support nested shoots
+                                 }
+                               }' example/provider-local/managedseeds/shoot-managedseed.yaml) &&
               time (k wait -n garden --for=jsonpath='{.status.lastOperation.state}'=Processing shoot managedseed --timeout=-1s
                     k wait -n garden --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot managedseed --timeout=-1s
                     k wait -n garden --for=condition=SystemComponentsHealthy                   shoot managedseed --timeout=-1s) &&
