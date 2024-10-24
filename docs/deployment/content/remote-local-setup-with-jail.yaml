@@ -55,7 +55,7 @@ spec:
         - /bin/sh
         - -c
         - |
-          set -ex -o pipefail
+          set -exv -o pipefail
           echo "Disk usage"
           df -h
           time du -sh ~/.cache/* /var/lib/docker/* \
@@ -83,6 +83,23 @@ spec:
                   mandoc mc moreutils mount ncurses neovim openssl parallel procps sed shadow    \
                   shadow-login socat strace sysstat sysstat-doc tar tcpdump tmux tmux-doc tzdata \
                   util-linux vim wget yq
+
+          echo "A privileged pod sees the cgroup of the host:"
+          cat /proc/self/cgroup
+          find /sys/fs/cgroup/ -type d | wc -l
+          mkdir /sys/fs/cgroup/$(cat /proc/self/cgroup | cut -d: -f3)/test
+
+          echo "Switch to a new cgroup namespace with the current cgroup as root"
+
+          mount --bind /sys/fs/cgroup/$(cat /proc/self/cgroup | cut -d: -f3) /sys/fs/cgroup
+          <<"UNSHARE_CGROUP_EOF" xargs -d '\0' unshare -C /bin/bash -c &
+
+          set -exv -o pipefail
+
+          echo "Now the current cgroup seems to be root:"
+          cat /proc/self/cgroup
+          echo "and it sees only its child cgroups"
+          find /sys/fs/cgroup/ -type d
 
           apk add -u tmux --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main
 
@@ -767,7 +784,8 @@ spec:
             sysctl -w net.ipv6.conf.eth0.disable_ipv6=1
             # https://docs.docker.com/reference/cli/dockerd/
             # https://d2iq.com/blog/running-kind-inside-a-kubernetes-cluster-for-continuous-integration
-            nice dockerd-entrypoint.sh --cgroup-parent docker 2>&1 | tee ~/.dockerd.log
+            # --cgroup-parent docker is not needed because the whole script is in its own cgroup namespace
+            nice dockerd-entrypoint.sh 2>&1 | tee ~/.dockerd.log
           EOF
 
           until docker ps -a >/dev/null 2>&1; do sleep 1; done
@@ -2854,6 +2872,8 @@ spec:
             rm /tmp/alive
           } &
           touch /tmp/ready
+          wait
+          UNSHARE_CGROUP_EOF
           wait
         startupProbe:
           exec: {command: [cat, /tmp/ready]}
