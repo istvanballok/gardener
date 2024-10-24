@@ -2600,7 +2600,7 @@ spec:
                            system(sprintf("mv %s.wip %s", kubeconfig, kubeconfig))
                          }' | ts; stopwatch_stop
             EOF
-            new_pane "token | (long running)" Enter <<"EOF"
+            new_pane "refresh kubeconfig token if needed | (long running)" Enter <<"EOF"
               flag_wait rootless_virtual_garden_ha &&
               sleep 10 &&
               stopwatch_start &&
