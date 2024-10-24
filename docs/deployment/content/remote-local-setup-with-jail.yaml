@@ -2977,6 +2977,13 @@ spec:
             echo "Restarting after 5.x days of uptime to prevent issues with the registry cache expiration while offline" &&
             rm /tmp/alive
           } &
+          {
+            sleep 2h
+            if [ ! -f /tmp/sync/rootless_demo_ready ]; then
+              echo "The demo is not ready after 2 hours, trigger a restart"
+              rm /tmp/alive
+            fi
+          } &
           touch /tmp/ready
           wait
           UNSHARE_CGROUP_EOF
