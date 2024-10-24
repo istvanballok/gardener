@@ -67,7 +67,7 @@ spec:
                       $(find /home/demo -mindepth 1 -maxdepth 1) \
                       /home/demo/go/src/github.com/gardener/gardener/dev \
                       /home/demo/go/src/github.com/gardener/gardener/cell/* | sort -rh || true
-          if [ $(df /root | awk '/sdb/ {print $4}') -lt $((10 * 1024 * 1024)) ]; then
+          if [ "$(df /root | awk '/root/ {print $4}')" -lt $((10 * 1024 * 1024)) ]; then
             echo "Less than 10 GB left on the persistent volume"
             # Don't self heal, let a person investigate what filled up the disk
             # find /root -mindepth 2 -maxdepth 2 -exec rm -rf '{}' \;
