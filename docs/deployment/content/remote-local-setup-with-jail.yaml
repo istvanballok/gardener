@@ -1700,7 +1700,7 @@ spec:
                   set -e
                   cd ../etcd-druid
                   nice time docker buildx build --platform=$(docker info --format '{{.OSType}}/{{.Architecture}}') --target builder -t etcd-druid-builder --progress plain .
-                  nice time make                         docker-build |& cat
+                  nice time make REGISTRY=localhost:5001 docker-build |& cat
                   nice time make REGISTRY=localhost:5001 docker-push  |& grep -v -E 'Preparing|Waiting'
                   docker system prune -f
                   flag_notify rootless_etcd_druid_patched
