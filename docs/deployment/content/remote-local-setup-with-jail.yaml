@@ -765,7 +765,9 @@ spec:
             ip link set eth0 up
             ip route add default via 172.31.0.1
             sysctl -w net.ipv6.conf.eth0.disable_ipv6=1
-            nice dockerd-entrypoint.sh 2>&1 | tee ~/.dockerd.log
+            # https://docs.docker.com/reference/cli/dockerd/
+            # https://d2iq.com/blog/running-kind-inside-a-kubernetes-cluster-for-continuous-integration
+            nice dockerd-entrypoint.sh --cgroup-parent docker 2>&1 | tee ~/.dockerd.log
           EOF
 
           until docker ps -a >/dev/null 2>&1; do sleep 1; done
