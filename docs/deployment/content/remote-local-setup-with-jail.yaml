@@ -2084,7 +2084,7 @@ spec:
               if ! is_state_tested; then
                 flag_wait rootless_shoot_ha_ready_deleted &&
                 flag_wait managedseed_nested_workerless_shoot_deleted &&
-                # flag_wait managedseed_nested_shoot_deleted && # TODO overlayfs issue
+                flag_wait managedseed_nested_shoot_deleted &&
                 flag_wait registry_mitigation
               fi &&
               {
