@@ -363,7 +363,7 @@ spec:
               {
                 echo "Started at / Duration / Session / Window / Pane "
                 find /tmp/timing/ -type f -printf '%T@ %p\n' | sort -n | awk '{print $2}' | xargs cat
-              } | column -t -s / | nl
+              } | column -t -s "|" | nl
             }
             function flag_notify {
               if [ "$(whoami)" == "root" ]; then
@@ -1685,7 +1685,7 @@ spec:
                 DEMO_EOF
               NETWORK_EOF
             EOF
-            new_pane "make kind-operator-up fix (socat - long running)" Enter <<"EOF"
+            new_pane "make kind-operator-up fix | (long running)" Enter <<"EOF"
               flag_wait rootless_kind_operator_up &&
               stopwatch_start &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
@@ -1912,7 +1912,7 @@ spec:
               gcc -static -o remount remount.c
               vim -n ~/remount.c
             EOF
-            new_pane "fix Gardener shoot nodes: remount /sys rw as root from the outside / (long running)" Enter <<"EOF"
+            new_pane "fix Gardener shoot nodes: remount /sys rw as root from the outside | (long running)" Enter <<"EOF"
               # When docker or containerd create a privileged container, they mount /sys
               # read-write. However, when K8s creates a privileged pod, it mounts /sys
               # read-only.
@@ -1991,7 +1991,7 @@ spec:
               done | ts; stopwatch_stop
             EOF
 
-            new_window "/etc/hosts" "hosts / (long running)" Enter <<"EOF"
+            new_window "etc/hosts" "add the shoot domains to etc/hosts | (long running)" Enter <<"EOF"
               flag_wait sysd_rootless_docker_service &&
               stopwatch_start &&
               inotifywait -m -e moved_to /home/demo/etc --include '/.*\.hosts$' 2>&1 \
@@ -2568,7 +2568,7 @@ spec:
               }
             EOF
 
-            new_window "virtual garden" "refresh kubeconfig / (long running)" Enter <<"EOF"
+            new_window "virtual garden" "refresh kubeconfig | (long running)" Enter <<"EOF"
               flag_wait rootless_virtual_garden_ha &&
               stopwatch_start &&
               rm -f ~/secrets.watch.bookmark &&
@@ -2600,7 +2600,7 @@ spec:
                            system(sprintf("mv %s.wip %s", kubeconfig, kubeconfig))
                          }' | ts; stopwatch_stop
             EOF
-            new_pane "token / (long running)" Enter <<"EOF"
+            new_pane "token | (long running)" Enter <<"EOF"
               flag_wait rootless_virtual_garden_ha &&
               sleep 10 &&
               stopwatch_start &&
@@ -2612,7 +2612,7 @@ spec:
                   done; stopwatch_stop
             EOF
 
-            new_window "hosts" "soil shoot APIs / (long running)" Enter <<"EOF"
+            new_window "hosts" "soil shoot APIs | (long running)" Enter <<"EOF"
               mkdir -p ~/etc
               flag_wait rootless_virtual_garden_ha &&
               stopwatch_start &&
@@ -2681,7 +2681,7 @@ spec:
                     fflush()
                   }' | ts; stopwatch_stop
             EOF
-            new_pane "managed seed shoot APIs / (long running)" Enter <<"EOF"
+            new_pane "managed seed shoot APIs | (long running)" Enter <<"EOF"
               mkdir -p ~/etc
               flag_wait rootless_managedseed_seed_ready &&
               stopwatch_start &&
@@ -2743,7 +2743,7 @@ spec:
                     fflush()
                   }' | ts; stopwatch_stop
             EOF
-            new_pane "shoots hosted on the managed seed cluster / (long running)" Enter <<"EOF"
+            new_pane "shoots hosted on the managed seed cluster | (long running)" Enter <<"EOF"
               flag_wait rootless_managedseed_seed_ready &&
               stopwatch_start &&
               g target --shoot managedseed &&
@@ -2786,7 +2786,7 @@ spec:
               docker ps --filter name=demo                                                     &&
               flag_notify rootless_demo_run; stopwatch_stop
             EOF
-            new_pane "Manage /etc/hosts / (long running)" Enter <<"EOF"
+            new_pane "Manage /etc/hosts | (long running)" Enter <<"EOF"
               flag_wait rootless_demo_run &&
               stopwatch_start &&
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' docker exec -u root demo sh -c; stopwatch_stop
@@ -2802,7 +2802,7 @@ spec:
                   done
               DEMO_EOF
             EOF
-            new_pane "Merge the virtual-garden and the runtime-garden (KinD) kube configs / (long running)" Enter <<"EOF"
+            new_pane "Merge the virtual-garden and the runtime-garden (KinD) kube configs | (long running)" Enter <<"EOF"
               flag_wait rootless_demo_run &&
               stopwatch_start &&
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' docker exec -u root demo sh -c; stopwatch_stop
@@ -2869,7 +2869,7 @@ spec:
                 ip addr add 172.18.255.20 dev lo
               DEMO_EOF
             EOF
-            new_pane "Managed seed port forward / (long running)" Enter << "EOF"
+            new_pane "Managed seed port forward | (long running)" Enter << "EOF"
               flag_wait rootless_demo_managedseed_ip &&
               stopwatch_start &&
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' docker exec demo bash -l -c && flag_notify rootless_demo_port_forward; stopwatch_stop
