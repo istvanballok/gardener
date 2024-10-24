@@ -1644,6 +1644,7 @@ spec:
                   set -e
                   nice time make kind-operator-up
                   mkdir -p ~/.kube
+                  chmod 644 example/gardener-local/kind/operator/kubeconfig
                   cp example/gardener-local/kind/operator/kubeconfig ~/.kube/config
                   flag_notify rootless_kind_operator_up
                 DEMO_EOF
