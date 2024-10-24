@@ -682,6 +682,43 @@ spec:
               2.45.2
             PATCH_EOF
 
+            sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0006-support-nested-machines.patch
+              From 118ce28338eb15389374921371b76d9dcca3928a Mon Sep 17 00:00:00 2001
+              From: dev <dev>
+              Date: Thu, 24 Oct 2024 10:03:25 +0200
+              Subject: [PATCH] support nested machines
+
+              ---
+               .../machine-provider/local/create_machine.go         | 12 ++++++++++--
+               1 file changed, 10 insertions(+), 2 deletions(-)
+
+              diff --git a/pkg/provider-local/machine-provider/local/create_machine.go b/pkg/provider-local/machine-provider/local/create_machine.go
+              index 0c2aec352f..ff84e66f31 100644
+              --- a/pkg/provider-local/machine-provider/local/create_machine.go
+              +++ b/pkg/provider-local/machine-provider/local/create_machine.go
+              @@ -90,8 +90,16 @@ func (d *localDriver) applyPod(
+               	pod.Spec = corev1.PodSpec{
+               		Containers: []corev1.Container{
+               			{
+              -				Name:            "node",
+              -				Image:           providerSpec.Image,
+              +				Name:  "node",
+              +				Image: providerSpec.Image,
+              +				Command: []string{
+              +					"/bin/bash",
+              +					"-c",
+              +					`
+              +					mount --bind /sys/fs/cgroup/$(cat /proc/self/cgroup | cut -d: -f3) /sys/fs/cgroup
+              +					exec unshare -C /usr/local/bin/entrypoint /sbin/init
+              +					`,
+              +				},
+               				ImagePullPolicy: corev1.PullIfNotPresent,
+               				SecurityContext: &corev1.SecurityContext{
+               					Privileged: pointer.Bool(true),
+              --
+              2.44.0
+            PATCH_EOF
+
             if [[ $NAMESPACE == demo* ]] || [[ $NAMESPACE == test* ]]; then
               if ! git am ~/gardener-patches/00*.patch; then
                 echo "Please check/rebase the patches as needed."
