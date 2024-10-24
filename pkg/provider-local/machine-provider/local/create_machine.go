@@ -90,16 +90,8 @@ func (d *localDriver) applyPod(
 	pod.Spec = corev1.PodSpec{
 		Containers: []corev1.Container{
 			{
-				Name:  "node",
-				Image: providerSpec.Image,
-				Command: []string{
-					"/bin/bash",
-					"-c",
-					`
-					mount --bind /sys/fs/cgroup/$(cat /proc/self/cgroup | cut -d: -f3) /sys/fs/cgroup
-					exec unshare -C /usr/local/bin/entrypoint /sbin/init
-					`,
-				},
+				Name:            "node",
+				Image:           providerSpec.Image,
 				ImagePullPolicy: corev1.PullIfNotPresent,
 				SecurityContext: &corev1.SecurityContext{
 					Privileged: pointer.Bool(true),
