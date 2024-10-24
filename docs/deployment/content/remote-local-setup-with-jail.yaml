@@ -2132,7 +2132,7 @@ spec:
                 flag_wait managedseed_nested_workerless_shoot_deleted &&
                 flag_wait managedseed_nested_shoot_ready &&
                 flag_wait registry_mitigation
-              fi && stopwatch_start
+              fi && stopwatch_start &&
               {
                 iptables -I FORWARD -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
                 iptables -I INPUT   -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
