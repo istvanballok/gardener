@@ -2130,7 +2130,7 @@ spec:
               if ! is_state_tested; then
                 flag_wait rootless_shoot_ha_ready_deleted &&
                 flag_wait managedseed_nested_workerless_shoot_deleted &&
-                flag_wait managedseed_nested_shoot_deleted &&
+                flag_wait managedseed_nested_shoot_ready &&
                 flag_wait registry_mitigation
               fi && stopwatch_start
               {
@@ -2450,7 +2450,7 @@ spec:
                 stopwatch_stop
               }
             EOF
-            new_pane "delete regular shoot on managed seed" Enter <<"EOF"
+            new_pane "delete regular shoot on managed seed" <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               is_state_tested || {
                 time flag_wait managedseed_nested_shoot_ready &&
