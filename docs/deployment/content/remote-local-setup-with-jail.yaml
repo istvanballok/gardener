@@ -339,8 +339,8 @@ spec:
               START=$(date +%s)
               echo "$(
                       date -u -d @$((START - $(cat /rls_start))) +"%T"
-                    ) / RUNNING / $(
-                      tmux display-message -p -t "$TMUX_PANE" '#S / #W / #T'
+                    ) | RUNNING | $(
+                      tmux display-message -p -t "$TMUX_PANE" '#S | #W | #T'
                     )" > /tmp/timing/"$(tmux display-message -p -t "$TMUX_PANE" '#S.#W.#T' | sed -E 's/[^A-Za-z0-9.]+/_/g')"
             }
             function stopwatch_stop {
@@ -349,17 +349,17 @@ spec:
               END=$(date +%s)
               echo "$(
                       date -u -d @$((START - $(cat /rls_start))) +"%T"
-                    ) / $(
+                    ) | $(
                       date -u -d @$((END - START)) +"%T"
-                    ) / $(
-                      tmux display-message -p -t "$TMUX_PANE" '#S / #W / #T'
+                    ) | $(
+                      tmux display-message -p -t "$TMUX_PANE" '#S | #W | #T'
                     )" > /tmp/timing/"$(tmux display-message -p -t "$TMUX_PANE" '#S.#W.#T' | sed -E 's/[^A-Za-z0-9.]+/_/g')"
             }
             function stopwatch_profile {
               mkdir -p /tmp/timing
               chown -R demo:demo /tmp/timing
               {
-                echo "Started at / Duration / Session / Window / Pane "
+                echo "Started at | Duration | Session | Window | Pane "
                 find /tmp/timing/ -type f -printf '%T@ %p\n' | sort -n | awk '{print $2}' | xargs cat
               } | column -t -s "|" | nl
             }
