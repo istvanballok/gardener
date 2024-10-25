@@ -2950,7 +2950,7 @@ spec:
                           ') \
                       <(yq -o json /home/demo/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator/kubeconfig.modified \
                         | jq '
-                            .contexts[0].context.name      = "runtime"
+                            .contexts[0].name              = "runtime" |
                             .contexts[0].context.namespace = "garden"
                           ') \
                     | yq -P \
