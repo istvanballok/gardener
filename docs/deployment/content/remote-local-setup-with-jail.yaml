@@ -2941,6 +2941,7 @@ spec:
                           ') \
                       <(yq -o json /home/demo/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator/kubeconfig.modified \
                         | jq '
+                            .contexts[0].context.name      = "runtime"
                             .contexts[0].context.namespace = "garden"
                           ') \
                     | yq -P \
@@ -3003,12 +3004,10 @@ spec:
                     while [ ! -f ~/.kube/config ]; do sleep 1; done
 
                     echo "check the runtime garden (KinD) cluster"
-                    export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig.modified
-                    k get pods -A | nl
+                    k --context runtime get pods -A | nl
 
                     echo "create a shoot"
-                    export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-                    k apply -f example/provider-local/shoot.yaml
+                    k apply --context garden -f example/provider-local/shoot.yaml
                     time (
                       k -n garden-local wait shoot local --timeout=-1s --for=jsonpath='{.status.lastOperation.state}'=Processing
                       k -n garden-local wait shoot local --timeout=-1s --for=jsonpath='{.status.lastOperation.state}'=Succeeded
