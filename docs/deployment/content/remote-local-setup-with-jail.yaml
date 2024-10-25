@@ -1509,6 +1509,15 @@ spec:
               git log --color -p origin/master.. --author dev | less -RN
             EOF
 
+            new_window "profiling" "profiling" Enter <<"EOF"
+              while true; do
+                clear
+                date
+                stopwatch_profile
+                sleep 10
+              done
+            EOF
+
             new_window "rootless docker" "Dockerfile ubuntu_systemd_rootless_docker" Enter <<"EOF"
               mkdir -p docker
               cd docker
@@ -2153,17 +2162,8 @@ spec:
               iptables  -D INPUT   -i docker_veth0 -j REJECT -p udp --reject-with icmp-port-unreachable
             EOF
 
-            new_window "profiling" "profiling" Enter <<"EOF"
-              while true; do
-                clear
-                date
-                stopwatch_profile
-                sleep 10
-              done
-            EOF
-
-            # tmux select-window -t 1
-            # tmux select-pane -t 0
+            tmux select-window -t 6
+            tmux select-pane -t 0
           SCRIPT_EOF
 
           sed 's/^  //' <<"SCRIPT_EOF" > /home/demo/prepare_tmux.sh
