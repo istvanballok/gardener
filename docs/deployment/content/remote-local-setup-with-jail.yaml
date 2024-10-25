@@ -1458,12 +1458,6 @@ spec:
                 sleep 1m
               done
             EOF
-            new_pane "sar -w      -- Task creation and system switching activity" Enter <<"EOF"
-              while true; do
-                S_COLORS=always sar -h -w 10 10                  | grep -v -E --line-buffered 'Linux|^$'
-                sleep 1m
-              done
-            EOF
             new_pane "sar -b      -- I/O and transfer rate          TODO check high disk writes" Enter <<"EOF"
               while true; do
                 S_COLORS=always sar -h -b 10 10                  | grep -v -E --line-buffered 'Linux|^$'
@@ -1473,6 +1467,12 @@ spec:
             new_pane "sar -d      -- Block device activity          TODO check disk writes" Enter <<"EOF"
               while true; do
                 S_COLORS=always sar -h -d 10 10                  | grep -v -E --line-buffered 'Linux|^$'
+                sleep 1m
+              done
+            EOF
+            new_pane "sar -w      -- Task creation and system switching activity" Enter <<"EOF"
+              while true; do
+                S_COLORS=always sar -h -w 10 10                  | grep -v -E --line-buffered 'Linux|^$'
                 sleep 1m
               done
             EOF
