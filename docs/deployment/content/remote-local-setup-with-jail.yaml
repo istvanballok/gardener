@@ -1479,16 +1479,16 @@ spec:
                 EOF
 
                 new_window "shoot lifecycle" "Create" <<"EOF"
-                  export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-                  k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type="zone"' example/provider-local/shoot.yaml)
+                  k --context garden apply -f <(yq '
+                    .spec.controlPlane.highAvailability.failureTolerance.type="zone"
+                  ' example/provider-local/shoot.yaml)
                 EOF
                 new_pane "Reconcile" <<"EOF"
-                  export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-                  k annotate shoot local -n garden-local 'gardener.cloud/operation=reconcile'
+                  k --context garden annotate shoot local -n garden-local 'gardener.cloud/operation=reconcile'
                 EOF
                 new_pane "Delete" <<"EOF"
-                  export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-                  k annotate shoot local -n garden-local 'confirmation.gardener.cloud/deletion=true' && k delete shoot local -n garden-local
+                  k --context garden annotate shoot local -n garden-local 'confirmation.gardener.cloud/deletion=true' &&
+                  k --context garden delete shoot local -n garden-local
                 EOF
 
                 new_window "runtime&seed pods" "pods" Enter <<"EOF"
