@@ -1600,19 +1600,27 @@ spec:
               git log --color -p origin/master.. --author dev | less -RN
             EOF
 
-            new_window "profiling" "currently running" Enter <<"EOF"
+            new_window "profiling" "profiling" Enter <<"EOF"
               while true; do
                 clear
                 date
-                stopwatch_profile | grep "RUNNING" | grep -v "long running" | sort -k3 -r
+                stopwatch_profile | grep -v "long running"
                 sleep 10
               done
             EOF
-            new_pane "all" Enter <<"EOF"
+            new_pane "currently running" Enter <<"EOF"
               while true; do
                 clear
                 date
-                stopwatch_profile
+                stopwatch_profile | grep "RUNNING" | grep -v "long running"
+                sleep 10
+              done
+            EOF
+            new_pane "long running" Enter <<"EOF"
+              while true; do
+                clear
+                date
+                stopwatch_profile | grep "long running"
                 sleep 10
               done
             EOF
@@ -1620,7 +1628,7 @@ spec:
               while true; do
                 clear
                 date
-                stopwatch_profile | grep -v -E "RUNNING|00:00:0" | sort -k3 -r
+                stopwatch_profile | grep -v -E "RUNNING|00:00:" | sort -k3 -r
                 sleep 10
               done
             EOF
@@ -2147,7 +2155,7 @@ spec:
                 scriptreplay -m 1 --log-timing {}/timing.log --log-out {}/out.log
             EOF
 
-            new_window "offline" "registry mitigation" Enter <<"EOF"
+            new_window "offline" "pull all the cached images sequentially and assert they can be pulled even offline" Enter <<"EOF"
               # The pull through container registry cache 'registry:2.8.3'
               # that is used to mirror the needed images from gcr.io, quay.io, ...
               # seems to have a bug such that
@@ -2175,7 +2183,6 @@ spec:
                       nsenter -t 1 -n iptables -I FORWARD -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
                       nsenter -t 1 -n iptables -I INPUT   -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
                     fi
-
 
                     sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
                     nsenter -t $(pgrep -f '^/proc/self/exe --state-dir=/run/user/2000/dockerd-rootless') -n bash -c
@@ -2229,7 +2236,7 @@ spec:
                 stopwatch_stop
               }
             EOF
-            new_pane "offline" Enter <<"EOF"
+            new_pane "take the demo environment OFFLINE" Enter <<"EOF"
               nsenter -t 1 -n
               flag_wait rootless_demo_image &&
               flag_wait rootless_managedseed_seed_ready &&
@@ -2391,7 +2398,7 @@ spec:
                 k annotate    shoot local-wl-ms -n garden-local 'confirmation.gardener.cloud/deletion=true' &&
                 time k delete shoot local-wl-ms -n garden-local &&
                 flag_notify managedseed_nested_workerless_shoot_deleted
-                stopwatch_start
+                stopwatch_stop
               }
             EOF
             new_pane "regular shoot on managed seed" Enter <<"EOF"
@@ -3051,13 +3058,15 @@ spec:
               fi
             EOF
 
-            new_window "demo" "demo" Enter <<"EOF"
+            new_window "demo" "the demo environment is READY" Enter <<"EOF"
               flag_wait rootless_demo_managedseed_ip &&
               if ! is_state_tested; then
                 flag_wait rootless_demo_tested
               fi &&
               until docker exec demo ls /tmp/demo_tested >/dev/null 2>&1; do sleep 1; done &&
+              stopwatch_start &&
               flag_notify rootless_demo_ready &&
+              stopwatch_stop &&
               docker exec -it demo tmux -u a -t gardener-demo
             EOF
 
