@@ -1419,15 +1419,15 @@ spec:
                 sleep 1m
               done
             EOF
-            new_pane "sar -q CPU  -- CPU pressure" Enter <<"EOF"
+            new_pane "sar -r      -- Memory utilization" Enter <<"EOF"
               while true; do
-                S_COLORS=always sar -h -q CPU 10 10             | grep -v -E --line-buffered 'Linux|^$'
+                S_COLORS=always sar -h -r 10 10                  | grep -v -E --line-buffered 'Linux|^$'
                 sleep 1m
               done
             EOF
-            new_pane "sar -q IO   -- I/O pressure" Enter <<"EOF"
+            new_pane "sar -q CPU  -- CPU pressure" Enter <<"EOF"
               while true; do
-                S_COLORS=always sar -h -q IO 10 10             | grep -v -E --line-buffered 'Linux|^$'
+                S_COLORS=always sar -h -q CPU 10 10             | grep -v -E --line-buffered 'Linux|^$'
                 sleep 1m
               done
             EOF
@@ -1437,9 +1437,9 @@ spec:
                 sleep 1m
               done
             EOF
-            new_pane "sar -r      -- Memory utilization" Enter <<"EOF"
+            new_pane "sar -q IO   -- I/O pressure" Enter <<"EOF"
               while true; do
-                S_COLORS=always sar -h -r 10 10                  | grep -v -E --line-buffered 'Linux|^$'
+                S_COLORS=always sar -h -q IO 10 10             | grep -v -E --line-buffered 'Linux|^$'
                 sleep 1m
               done
             EOF
