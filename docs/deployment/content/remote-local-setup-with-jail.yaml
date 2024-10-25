@@ -53,6 +53,8 @@ spec:
                   shadow-login socat strace sysstat sysstat-doc tar tcpdump tmux tmux-doc tzdata \
                   util-linux vim wget yq
 
+          useradd -m -s /bin/bash -u 2000 demo
+
           echo "A privileged pod sees the cgroup of the host:"
           cat /proc/self/cgroup
           find /sys/fs/cgroup/ -type d | wc -l
@@ -73,8 +75,6 @@ spec:
 
 
           apk add -u tmux --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main
-
-          useradd -m -s /bin/bash -u 2000 demo
 
           mkdir -p ~/.cache/wget
           cd ~/.cache/wget
