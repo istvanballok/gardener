@@ -1596,7 +1596,15 @@ spec:
               git log --color -p origin/master.. --author dev | less -RN
             EOF
 
-            new_window "profiling" "profiling" Enter <<"EOF"
+            new_window "profiling" "currently running" Enter <<"EOF"
+              while true; do
+                clear
+                date
+                stopwatch_profile | grep "RUNNING" | grep -v "long running" | sort -k3 -r
+                sleep 10
+              done
+            EOF
+            new_pane "all" Enter <<"EOF"
               while true; do
                 clear
                 date
@@ -1604,7 +1612,7 @@ spec:
                 sleep 10
               done
             EOF
-            new_pane "slow steps" Enter <<"EOF"
+            new_pane "slow tasks" Enter <<"EOF"
               while true; do
                 clear
                 date
@@ -1697,7 +1705,7 @@ spec:
               docker system prune -f &&
               flag_notify ubuntu_systemd_rootless_docker_docker_build; stopwatch_stop
             EOF
-            new_pane "docker run ubuntu_systemd_rootless_docker" Enter <<"EOF"
+            new_pane "docker run ubuntu_systemd_rootless_docker | (long running)" Enter <<"EOF"
               rm -rf          /home/demo/.docker-rootless-socket
               mkdir -p        /home/demo/.docker-rootless \
                               /home/demo/.docker-rootless-socket \
