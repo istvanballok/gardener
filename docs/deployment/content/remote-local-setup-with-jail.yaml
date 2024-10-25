@@ -1623,7 +1623,7 @@ spec:
               echo "RUN echo $(date +%Y-%m-%d) && apt-get update && apt-get upgrade -y" >> Dockerfile
               vim -n Dockerfile
             EOF
-            new_pane "docker build ubuntu_systemd_rootless_docker" Enter <<"EOF"
+            new_pane "docker build -t ubuntu_systemd_rootless_docker" Enter <<"EOF"
               cd docker
               stopwatch_start &&
               docker build -t ubuntu_systemd_rootless_docker --progress plain . &&
@@ -1643,6 +1643,7 @@ spec:
                               /home/demo/cache \
                               /home/demo/etc
               flag_wait ubuntu_systemd_rootless_docker_docker_build &&
+              stopwatch_start &&
               docker run -it --privileged --rm \
                      -v /home/demo/cache:/home/demo/cache \
                      -v /home/demo/etc:/home/demo/etc \
@@ -1652,10 +1653,9 @@ spec:
                      -v /home/demo/.docker-rootless:/home/demo/.local \
                      --tmpfs /tmp --tmpfs /run --tmpfs /run/lock \
                      --cpus=13 --memory=52g \
-                     --name ubuntu_systemd_rootless_docker ubuntu_systemd_rootless_docker
+                     --name ubuntu_systemd_rootless_docker ubuntu_systemd_rootless_docker; stopwatch_stop
             EOF
             new_pane "install rootless docker in ubuntu_systemd_rootless_docker" Enter <<"EOF"
-              stopwatch_start &&
               flag_wait ubuntu_systemd_rootless_docker_docker_build &&
               while ! docker exec ubuntu_systemd_rootless_docker systemctl status | grep -E 'State: running' >/dev/null; do
                 sleep 1;
@@ -1664,6 +1664,7 @@ spec:
                   docker exec ubuntu_systemd_rootless_docker bash -c 'systemctl list-units --state=failed --no-pager --no-legend --plain | awk "{print \$1}" | xargs -r systemctl start'
                 fi
               done &&
+              stopwatch_start &&
               sed 's/^  //' <<"SYSD" | xargs -d '\0' \
               docker exec ubuntu_systemd_rootless_docker bash -c && flag_notify ubuntu_systemd_rootless_docker_rootless_docker_service; stopwatch_stop
                 sysctl -w net.ipv4.ping_group_range="0 2147483647"
