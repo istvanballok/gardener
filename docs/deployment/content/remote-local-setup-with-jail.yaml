@@ -3055,7 +3055,7 @@ spec:
 
             new_window "demo" "demo" Enter <<"EOF"
               flag_wait rootless_demo_managedseed_ip &&
-              if !is_state_tested; then
+              if ! is_state_tested; then
                 flag_wait rootless_demo_tested
               fi &&
               until docker exec demo ls /tmp/demo_tested >/dev/null 2>&1; do sleep 1; done &&
