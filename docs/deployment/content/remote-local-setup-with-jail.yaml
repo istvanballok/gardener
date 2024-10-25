@@ -1372,22 +1372,22 @@ spec:
             echo '{"current-context": "kind-gardener-operator-local"}' > ~/.kube/config
             source /usr/local/bin/tmux_functions.sh
             nsenter -t $(cat /root/dockerd_netns_pid) -n tmux new -d -s root -n top1 -x 250 -y 70
-            tmux select-pane -T top; mkdir -p ~/.config/procps; rm -f ~/.config/procps/toprc
+            tmux select-pane -T "top - Running in tree"; mkdir -p ~/.config/procps; rm -f ~/.config/procps/toprc
             for k in top Enter z C c i t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
-            new_pane "top sorted by TIME+" Enter <<"EOF"
+            new_pane "top - sorted by TIME+" Enter <<"EOF"
               top
             EOF
-            for k in " " V f Down Down s q; do sleep .2; tmux send $k; done
+            for k in " " V f Down Down s q i; do sleep .2; tmux send $k; done
 
-            new_window "top2" "top sorted by PID" Enter <<"EOF"
+            new_window "top2" "top - sorted by PID (recently started processes)" Enter <<"EOF"
               top
             EOF
             for k in " " g 2 z; do sleep .2; tmux send $k; done
-            new_pane "top sorted by MEM%" Enter <<"EOF"
+            new_pane "top - sorted by MEM%" Enter <<"EOF"
               top
             EOF
             for k in " " g 3 z; do sleep .2; tmux send $k; done
-            new_pane "top sorted by nMaj" Enter <<"EOF"
+            new_pane "top - sorted by nMaj" Enter <<"EOF"
               top
             EOF
             for k in " " g 3 z f Down Down Down Down Down Down Down s q f; do sleep .2; tmux send $k; done
