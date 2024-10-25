@@ -1688,7 +1688,7 @@ spec:
                 DEMO_EOF
               NETWORK_EOF
             EOF
-            new_pane "make kind-operator-up fix | (long running)" Enter <<"EOF"
+            new_pane "make kind-operator-up fix (port mapping with socat) | (long running)" Enter <<"EOF"
               flag_wait rootless_kind_operator_up &&
               stopwatch_start &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
@@ -1725,7 +1725,7 @@ spec:
                 DEMO_EOF
               NETWORK_EOF
             EOF
-            new_pane "wait for the KinD cluster" Enter <<"EOF"
+            new_pane "wait for the KinD cluster to become ready" Enter <<"EOF"
               flag_wait rootless_kind_operator_up_fix &&
               stopwatch_start &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
@@ -1740,7 +1740,7 @@ spec:
                 DEMO_EOF
               NETWORK_EOF
             EOF
-            new_pane "build and push patched etcd-druid" Enter <<"EOF"
+            new_pane "build and push the patched etcd-druid image" Enter <<"EOF"
               flag_wait rootless_kind_operator_up_ready &&
               stopwatch_start &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
