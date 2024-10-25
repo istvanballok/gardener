@@ -2867,7 +2867,8 @@ spec:
               VIRTUAL_GARDEN=/home/demo/go/src/github.com/gardener/gardener/example/operator/virtual-garden      &&
               docker run -d --rm                                                         \
                          --network kind                                                  \
-                         --name demo                                                     \
+                         --name     demo                                                 \
+                         --hostname demo                                                 \
                          --privileged                                                    \
                          --cpus=1 --memory=2g --pids-limit 1000                          \
                          --add-host api.virtual-garden.local.gardener.cloud:172.18.255.3 \
