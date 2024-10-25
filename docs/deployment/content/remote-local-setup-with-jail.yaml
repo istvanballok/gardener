@@ -722,6 +722,7 @@ spec:
             function stopwatch_profile {
               mkdir -p /tmp/timing
               chown -R demo:demo /tmp/timing
+              echo $(date -u -d @$(($(date +%s) - $(cat /rls_start))) +"%T")
               {
                 echo "Started at | Duration | Session | Window | Pane "
                 cat /tmp/timing/* | sort
@@ -1598,7 +1599,7 @@ spec:
               while true; do
                 clear
                 date
-                stopwatch_profile | grep "RUNNING" | grep -v "long running"
+                stopwatch_profile | grep -E "Started at|RUNNING" | grep -v "long running"
                 sleep 10
               done
             EOF
@@ -1606,7 +1607,7 @@ spec:
               while true; do
                 clear
                 date
-                stopwatch_profile | grep "long running"
+                stopwatch_profile | grep -E "Started at|long running"
                 sleep 10
               done
             EOF
