@@ -1517,6 +1517,13 @@ spec:
                 sleep 10
               done
             EOF
+            new_pane "slow steps" Enter <<"EOF"
+              while true; do
+                clear
+                date
+                stopwatch_profile | grep -v -E "RUNNING|00:00:0" | sort -k3 -r
+                sleep 10
+              done
 
             new_window "rootless docker" "Dockerfile ubuntu_systemd_rootless_docker" Enter <<"EOF"
               mkdir -p docker
