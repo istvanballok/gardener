@@ -1890,7 +1890,7 @@ spec:
               su -l demo
             EOF
 
-            new_window "remount /sys" "source code" Enter <<"EOF"
+            new_window "remount /sys rw" "remount.c is a small C program executed as root to remount /sys rw in the untrusted mount ns of the k8s nodes" Enter <<"EOF"
               sed 's/^  //' <<"REMOUNT" > ~/remount.c
                 #define _GNU_SOURCE
 
@@ -1991,7 +1991,7 @@ spec:
               gcc -static -o remount remount.c
               vim -n ~/remount.c
             EOF
-            new_pane "fix Gardener shoot nodes: remount /sys rw as root from the outside | (long running)" Enter <<"EOF"
+            new_pane "fix Gardener shoot nodes: remount /sys rw as root without entering untrusted namespaces | (long running)" Enter <<"EOF"
               # When docker or containerd create a privileged container, they mount /sys
               # read-write. However, when K8s creates a privileged pod, it mounts /sys
               # read-only.
