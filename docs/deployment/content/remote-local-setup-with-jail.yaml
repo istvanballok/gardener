@@ -1139,6 +1139,19 @@ spec:
                   # compare interactively: uniq | cat; uniq_unbuffered | cat
                   awk '{if (prev!=$0) print; fflush(); prev=$0}'
                 }
+                function flag_notify {
+                  mkdir -p /tmp/sync
+                  touch /tmp/sync/$1
+                }
+                function flag_wait {
+                  mkdir -p /tmp/sync
+                  [ -f /tmp/sync/$1 ] || inotifywait -qq /tmp/sync --include /$1$
+                  sleep 1
+                }
+                function flag_delete {
+                  mkdir -p /tmp/sync
+                  rm /tmp/sync/$1
+                }
                 function jwtd {
                   jq -R '
                     split(".")[1] |
@@ -1310,9 +1323,31 @@ spec:
 
                 ##### Prepare the panes for the demo scenario here #####
 
-                new_window "garden" "garden" Enter <<"EOF"
-                  export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig.modified
-                  nice watch is_tmux_window_shown.sh "&&" k get garden
+                new_window "garden" "watch k get garden" Enter <<"EOF"
+                  while true; do
+                    clear
+                    if is_tmux_window_shown.sh; then
+                      while true; do
+                        k --context runtime get garden -w | uniq_unbuffered \
+                        | while read line; do
+                          flag_notify watch_garden
+                          done
+                        sleep 10
+                      done &
+                      while flag_wait watch_garden; do
+                        flag_delete watch_garden
+                        clear
+                        date
+                        k --context runtime get garden
+                        sleep 1
+                        if ! is_tmux_window_shown.sh; then
+                          kill %1
+                          break
+                        fi
+                      done
+                    fi
+                    sleep 10s
+                  done
                 EOF
                 new_pane "last operations" Enter <<"EOF"
                   export KUBECONFIG=$PWD/example/gardener-local/kind/operator/kubeconfig.modified
