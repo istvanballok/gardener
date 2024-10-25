@@ -360,7 +360,7 @@ spec:
               chown -R demo:demo /tmp/timing
               {
                 echo "Started at | Duration | Session | Window | Pane "
-                find /tmp/timing/ -type f -printf '%T@ %p\n' | sort -n | awk '{print $2}' | xargs cat
+                ls /tmp/timing/* -t -r --time birth | xargs cat
               } | column -t -s "|" | nl
             }
             function flag_notify {
