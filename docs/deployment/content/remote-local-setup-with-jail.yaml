@@ -719,6 +719,35 @@ spec:
               2.44.0
             PATCH_EOF
 
+            sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0007-HA-virtual-garden.patch
+              From 05e808832a3e5e478ef20fe9dff48496fc742d19 Mon Sep 17 00:00:00 2001
+              From: dev <dev>
+              Date: Fri, 25 Oct 2024 10:14:35 +0200
+              Subject: [PATCH] HA virtual garden
+
+              ---
+               example/operator/20-garden.yaml | 4 ++--
+               1 file changed, 2 insertions(+), 2 deletions(-)
+
+              diff --git a/example/operator/20-garden.yaml b/example/operator/20-garden.yaml
+              index 87cb7b50f..b18300b3c 100644
+              --- a/example/operator/20-garden.yaml
+              +++ b/example/operator/20-garden.yaml
+              @@ -50,8 +50,8 @@ spec:
+                 #         name: defaultIssuerPrivateKey
+                 #       server: https://acme-staging-v02.api.letsencrypt.org/directory # for productive purposes use e.g. https://acme-v02.api.letsencrypt.org/directory
+                 virtualCluster:
+              -  # controlPlane:
+              -  #   highAvailability: {}
+              +    controlPlane:
+              +      highAvailability: {}
+                   dns:
+                     domains:
+                     - virtual-garden.local.gardener.cloud
+              --
+              2.45.2
+            PATCH_EOF
+
             if [[ $NAMESPACE == demo* ]] || [[ $NAMESPACE == test* ]]; then
               if ! git am ~/gardener-patches/00*.patch; then
                 echo "Please check/rebase the patches as needed."
@@ -1786,7 +1815,7 @@ spec:
                 DEMO_EOF
               NETWORK_EOF
             EOF
-            new_pane "make operator-seed-up" Enter <<"EOF"
+            new_pane "make operator-seed-up (HA)" Enter <<"EOF"
               flag_wait rootless_operator_up &&
               stopwatch_start &&
               sysctl -w kernel.keys.maxkeys=$((200 * 10)) &&
@@ -1797,26 +1826,11 @@ spec:
                 su -l demo -c -l
                   set -e
                   nice time make operator-seed-up || nice time make operator-seed-up
+                  time (kubectl wait --for=jsonpath='{.status.lastOperation.state}'=Succeeded  garden local --timeout=-1s
+                        kubectl wait --for=condition=VirtualComponentsHealthy                  garden local --timeout=-1s
+                        kubectl wait --for=condition=RuntimeComponentsHealthy                  garden local --timeout=-1s
+                        kubectl wait --for=condition=VirtualGardenAPIServerAvailable           garden local --timeout=-1s)
                   flag_notify rootless_operator_seed_up
-                DEMO_EOF
-              NETWORK_EOF
-            EOF
-            new_pane "virtual garden HA" Enter <<"EOF"
-              flag_wait rootless_operator_seed_up &&
-              stopwatch_start &&
-              sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
-              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' ubuntu_systemd_rootless_docker) -n bash -c; stopwatch_stop
-                sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
-                su -l demo -c -l
-                  set -e
-                  k get garden local -o json | jq '
-                    .spec.virtualCluster.controlPlane.highAvailability = {}
-                  ' | k apply -f - &&
-                  time (kubectl wait --for=jsonpath='{.status.lastOperation.state}'=Processing garden local --timeout=-1s  &&
-                        kubectl wait --for=jsonpath='{.status.lastOperation.state}'=Succeeded  garden local --timeout=-1s  &&
-                        kubectl wait --for=condition=VirtualComponentsHealthy                  garden local --timeout=-1s  &&
-                        kubectl wait --for=condition=RuntimeComponentsHealthy                  garden local --timeout=-1s  &&
-                        kubectl wait --for=condition=VirtualGardenAPIServerAvailable           garden local --timeout=-1s) &&
                   flag_notify rootless_virtual_garden_ha
                 DEMO_EOF
               NETWORK_EOF
