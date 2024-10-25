@@ -726,6 +726,7 @@ spec:
             function flag_notify {
               if [ "$(whoami)" == "root" ]; then
                 su -l demo -c -l "flag_notify $1"
+                return $?
               fi
               mkdir -p /tmp/sync
               touch /tmp/sync/$1
@@ -733,6 +734,7 @@ spec:
             function flag_wait {
               if [ "$(whoami)" == "root" ]; then
                 su -l demo -c -l "flag_wait $1"
+                return $?
               fi
               mkdir -p /tmp/sync
               [ -f /tmp/sync/$1 ] || inotifywait -qq /tmp/sync --include /$1$
@@ -741,6 +743,7 @@ spec:
             function flag_delete {
               if [ "$(whoami)" == "root" ]; then
                 su -l demo -c -l "flag_delete $1"
+                return $?
               fi
               mkdir -p /tmp/sync
               rm /tmp/sync/$1
