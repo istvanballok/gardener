@@ -1703,7 +1703,7 @@ spec:
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
               su -l demo -c -l; stopwatch_stop
                 set -e
-                time make kind-operator-down
+                time make kind-operator-down || time make kind-operator-down
                 rm -rf ~/.kube/config
                 flag_notify rootless_kind_operator_down
               DEMO_EOF
@@ -1717,7 +1717,7 @@ spec:
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
                 su -l demo -c -l
                   set -e
-                  nice time make kind-operator-up
+                  nice time make kind-operator-up || nice time make kind-operator-up
                   mkdir -p ~/.kube
                   chmod 644 example/gardener-local/kind/operator/kubeconfig
                   flag_notify rootless_kind_operator_up
@@ -1802,7 +1802,7 @@ spec:
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
                 su -l demo -c -l
                   set -e
-                  nice time make operator-up
+                  nice time make operator-up || nice time make operator-up
                   flag_notify rootless_operator_up
                 DEMO_EOF
               NETWORK_EOF
@@ -1817,7 +1817,7 @@ spec:
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
                 su -l demo -c -l
                   set -e
-                  nice time make operator-seed-up
+                  nice time make operator-seed-up || nice time make operator-seed-up
                   flag_notify rootless_operator_seed_up
                 DEMO_EOF
               NETWORK_EOF
