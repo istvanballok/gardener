@@ -1405,14 +1405,20 @@ spec:
             nsenter -t $(cat /root/dockerd_netns_pid) -n tmux new -d -s root -n top -x 250 -y 70
             tmux select-pane -T top; mkdir -p ~/.config/procps; rm -f ~/.config/procps/toprc
             for k in top Enter z C c i t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
-            new_window "sar 1" "man" Enter <<"EOF"
+            new_window "sar1" "man" Enter <<"EOF"
               man S_COLORS=always sar | sed -n '
-                1,5p; 98,141p; 142,172p; 180,227p; 436,478p; 1294,1386p; 1437,1512p; 1552,1602p; 1629,1636p;
+                1,5p; 98,141p; 142,172p; 180,227p; 243,275p; 436,478p; 1294,1386p; 1437,1512p; 1552,1602p; 1629,1636p;
               ' | grep --color=Always -P '^              (?!following|that|values|are)[a-z%][^ ]*|$' | less -RNS
             EOF
             new_pane "sar -q LOAD -- System load (queue length and load averages)" Enter <<"EOF"
               while true; do
                 S_COLORS=always sar -h -q LOAD 10 10             | grep -v -E --line-buffered 'Linux|^$'
+                sleep 1m
+              done
+            EOF
+            new_pane "sar -u      -- CPU utilization" Enter <<"EOF"
+              while true; do
+                S_COLORS=always sar -h -u 10 10                  | grep -v -E --line-buffered 'Linux|^$'
                 sleep 1m
               done
             EOF
@@ -1445,20 +1451,14 @@ spec:
             # tmux resize-pane -t 1 -x 50%
             tmux select-pane -t 0
 
-            new_window "sar 2" "man" Enter <<"EOF"
+            new_window "sar2" "man" Enter <<"EOF"
               man S_COLORS=always sar | sed -n '
-                1,5p; 98,141p; 142,172p; 180,227p; 436,478p; 1294,1386p; 1437,1512p; 1552,1602p; 1629,1636p;
+                1,5p; 98,141p; 142,172p; 180,227p; 243,275p; 436,478p; 1294,1386p; 1437,1512p; 1552,1602p; 1629,1636p;
               ' | grep --color=Always -P '^              (?!following|that|values|are)[a-z%][^ ]*|$' | less -RNS
             EOF
-            new_pane "sar -B      -- Paging statistics" Enter <<"EOF"
+            new_pane "sar -B      -- Paging statistics              TODO check high pgpgout/s and fault/s - disk writes?" Enter <<"EOF"
               while true; do
                 S_COLORS=always sar -h -B -h 10 10               | grep -v -E --line-buffered 'Linux|^$'
-                sleep 1m
-              done
-            EOF
-            new_pane "sar -u      -- CPU utilization" Enter <<"EOF"
-              while true; do
-                S_COLORS=always sar -h -u 10 10                  | grep -v -E --line-buffered 'Linux|^$'
                 sleep 1m
               done
             EOF
@@ -1468,25 +1468,31 @@ spec:
                 sleep 1m
               done
             EOF
-            new_pane "sar -b      -- I/O and transfer rate" Enter <<"EOF"
+            new_pane "sar -b      -- I/O and transfer rate          TODO check high disk writes" Enter <<"EOF"
               while true; do
                 S_COLORS=always sar -h -b 10 10                  | grep -v -E --line-buffered 'Linux|^$'
                 sleep 1m
               done
             EOF
-            new_pane "sar -d      -- Activity for each block device" Enter <<"EOF"
+            new_pane "sar -d      -- Block device activity          TODO check disk writes" Enter <<"EOF"
               while true; do
                 S_COLORS=always sar -h -d 10 10                  | grep -v -E --line-buffered 'Linux|^$'
                 sleep 1m
               done
             EOF
-            new_pane "sar -F      -- Network devices" Enter <<"EOF"
+            new_pane "sar -F      -- Filesystem statistics" Enter <<"EOF"
+              while true; do
+                S_COLORS=always sar -h -F MOUNT --fs=/root,/etc/hosts 10 10 | grep -v -E --line-buffered 'Linux|^$'
+                sleep 1m
+              done
+            EOF
+            new_pane "sar -F      -- Network activity (offline after prepared)" Enter <<"EOF"
               while true; do
                 S_COLORS=always sar -h -n DEV 10 10              | grep -v -E --line-buffered 'Linux|^$'
                 sleep 1m
               done
             EOF
-            new_pane "sar -F      -- Rootless docker network devices" Enter <<"EOF"
+            new_pane "sar -F      -- Network activity in the demo   TODO check high network activity" Enter <<"EOF"
               while true; do
                 nsenter -t $(pgrep -f '^/proc/self/exe --state-dir=/run/user/2000/dockerd-rootless') -n bash -c "
                 S_COLORS=always sar -h -n DEV 10 10              | grep -v -E --line-buffered 'Linux|^$'"
