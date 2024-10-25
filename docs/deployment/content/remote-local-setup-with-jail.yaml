@@ -1445,7 +1445,6 @@ spec:
             EOF
             tmux set -w main-pane-width 40%
             tmux select-layout main-vertical-mirrored # requires tmux 3.5
-            # tmux resize-pane -t 1 -x 50%
             tmux select-pane -t 0
 
             new_window "sar2" "man" Enter <<"EOF"
