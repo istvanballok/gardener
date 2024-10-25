@@ -1,3 +1,55 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: remote-local-setup-with-jail
+  labels: {component: remote-local-setup-with-jail}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {component: remote-local-setup-with-jail}
+  template:
+    metadata:
+      labels: {component: remote-local-setup-with-jail}
+    spec:
+      terminationGracePeriodSeconds: 1
+      containers:
+      - name: dev
+        image: docker:26-dind
+        command:
+        - /bin/sh
+        - /cm/init.sh
+        startupProbe:
+          exec: {command: [cat, /tmp/ready]}
+          failureThreshold: 720 # 2h
+          periodSeconds: 10
+        livenessProbe:
+          exec: {command: [test, -f, /tmp/alive]}
+        env:
+        - {name: ENV, value: /root/greeting.sh} # ash sources the ENV file
+        - {name: NAMESPACE, valueFrom: {fieldRef: {fieldPath: metadata.namespace}}}
+        resources:
+          requests: {cpu: 14, memory: 56G}
+          limits:   {cpu: 14, memory: 56G}
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - {name: home,    mountPath: /root}
+        - {name: home,    mountPath: /home,           subPath: .home}
+        - {name: home,    mountPath: /var/lib/docker, subPath: .docker}
+        - {name: modules, mountPath: /lib/modules, readOnly: true}
+        - {name: cm,      mountPath: /cm,          readOnly: true}
+      volumes:
+      - {name: modules, hostPath: {type: Directory, path: /lib/modules}}
+      - {name: cm,      configMap: {name: remote-local-setup-with-jail}}
+  volumeClaimTemplates:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata: {name: home}
+    spec:
+      accessModes: [ReadWriteOnce]
+      resources: {requests: {storage: 80Gi}}
+      volumeMode: Filesystem
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -2974,58 +3026,6 @@ data:
     wait
     UNSHARE_CGROUP_EOF
     wait
----
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: remote-local-setup-with-jail
-  labels: {component: remote-local-setup-with-jail}
-spec:
-  replicas: 1
-  selector:
-    matchLabels: {component: remote-local-setup-with-jail}
-  template:
-    metadata:
-      labels: {component: remote-local-setup-with-jail}
-    spec:
-      terminationGracePeriodSeconds: 1
-      containers:
-      - name: dev
-        image: docker:26-dind
-        command:
-        - /bin/sh
-        - /cm/init.sh
-        startupProbe:
-          exec: {command: [cat, /tmp/ready]}
-          failureThreshold: 720 # 2h
-          periodSeconds: 10
-        livenessProbe:
-          exec: {command: [test, -f, /tmp/alive]}
-        env:
-        - {name: ENV, value: /root/greeting.sh} # ash sources the ENV file
-        - {name: NAMESPACE, valueFrom: {fieldRef: {fieldPath: metadata.namespace}}}
-        resources:
-          requests: {cpu: 14, memory: 56G}
-          limits:   {cpu: 14, memory: 56G}
-        securityContext:
-          privileged: true
-        volumeMounts:
-        - {name: home,    mountPath: /root}
-        - {name: home,    mountPath: /home,           subPath: .home}
-        - {name: home,    mountPath: /var/lib/docker, subPath: .docker}
-        - {name: modules, mountPath: /lib/modules, readOnly: true}
-        - {name: cm,      mountPath: /cm,          readOnly: true}
-      volumes:
-      - {name: modules, hostPath: {type: Directory, path: /lib/modules}}
-      - {name: cm,      configMap: {name: remote-local-setup-with-jail}}
-  volumeClaimTemplates:
-  - apiVersion: v1
-    kind: PersistentVolumeClaim
-    metadata: {name: home}
-    spec:
-      accessModes: [ReadWriteOnce]
-      resources: {requests: {storage: 80Gi}}
-      volumeMode: Filesystem
 ---
 apiVersion: v1
 kind: ServiceAccount
