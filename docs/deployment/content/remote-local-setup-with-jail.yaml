@@ -700,7 +700,9 @@ spec:
             fi
             function stopwatch_start {
               mkdir -p /tmp/timing
-              chown -R demo:demo /tmp/timing
+              if [ "$(whoami)" == "root" ]; then
+                chown -R demo:demo /tmp/timing
+              fi
               START=$(date +%s)
               echo "$(
                       date -u -d @$((START - $(cat /rls_start))) +"%T"
@@ -710,7 +712,9 @@ spec:
             }
             function stopwatch_stop {
               mkdir -p /tmp/timing
-              chown -R demo:demo /tmp/timing
+              if [ "$(whoami)" == "root" ]; then
+                chown -R demo:demo /tmp/timing
+              fi
               END=$(date +%s)
               echo "$(
                       date -u -d @$((START - $(cat /rls_start))) +"%T"
