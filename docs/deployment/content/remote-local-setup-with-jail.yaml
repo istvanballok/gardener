@@ -55,7 +55,9 @@ spec:
         - /bin/sh
         - -c
         - |
-          set -exv -o pipefail
+          set -ex -o pipefail
+          exec 2>&1
+
           date +%s > /rls_start
 
           echo "Disk usage"
@@ -97,7 +99,8 @@ spec:
           mount --bind /sys/fs/cgroup/$(cat /proc/self/cgroup | cut -d: -f3) /sys/fs/cgroup
           <<"UNSHARE_CGROUP_EOF" xargs -d '\0' unshare -C /bin/bash -c &
 
-          set -exv -o pipefail
+          set -ex -o pipefail
+          exec 2>&1
 
           echo "Now the current cgroup seems to be root:"
           cat /proc/self/cgroup
