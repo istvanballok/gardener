@@ -84,7 +84,7 @@ spec:
 
           apk add apache2-utils bash bash-completion bat bind-tools brotli conntrack-tools       \
                   coreutils curl diffutils dnsmasq docker-bash-completion findutils fzf g++ gawk \
-                  gcompat git git-prompt grep helm inotify-tools iproute2 jq k9s less lsof make  \
+                  gcompat git git-prompt grep helm inotify-tools iotop iotop-doc iproute2 jq k9s less lsof make \
                   mandoc mc moreutils mount ncurses neovim openssl parallel procps sed shadow    \
                   shadow-login socat strace sysstat sysstat-doc tar tcpdump tmux tmux-doc tzdata \
                   util-linux vim wget yq
@@ -1427,6 +1427,14 @@ spec:
             for k in " " g 3 z f Down Down Down Down Down Down Down s q f; do sleep .2; tmux send $k; done
             for i in $(seq 1 34); do sleep .05; tmux send Down; done
             for k in Space q; do sleep .2; tmux send $k; done
+
+            new_window "iotop" "iotop" Enter <<"EOF"
+              iotop -P -o -d 60
+            EOF
+            for k in " " Left Left; do sleep .2; tmux send $k; done
+            new_pane "man" Enter <<"EOF"
+              man iotop
+            EOF
 
             new_window "sar1" "man" Enter <<"EOF"
               man S_COLORS=always sar | sed -n '
