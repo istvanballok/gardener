@@ -371,7 +371,7 @@ spec:
             #   +          role: soil
             #          spec:
             #   +        taints:
-            #   +          - key: seed.gardener.cloud/protect
+            #   +          - key: seed.gardener.cloud/protected
             #            backup:
             #              provider: local
             #              region: local
@@ -384,7 +384,7 @@ spec:
             #        shoot.gardener.cloud/cloud-config-execution-max-delay-seconds: "0"
             #    spec:
             #   +  tolerations:
-            #   +    - key: seed.gardener.cloud/protect
+            #   +    - key: seed.gardener.cloud/protected
             #   +  seedSelector:
             #   +    matchLabels:
             #   +      role: soil
