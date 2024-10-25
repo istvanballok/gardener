@@ -723,7 +723,7 @@ spec:
               chown -R demo:demo /tmp/timing
               {
                 echo "Started at | Duration | Session | Window | Pane "
-                ls /tmp/timing/* -t -r --time birth | xargs cat
+                cat /tmp/timing/* | sort
               } | column -t -s "|" | nl
             }
             function flag_notify {
