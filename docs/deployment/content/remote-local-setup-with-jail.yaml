@@ -1518,39 +1518,31 @@ spec:
                 EOF
 
                 new_window "gardenctl" "gardenctl" <<"EOF"
-                  gardenctl config set-garden local --kubeconfig $PWD/example/operator/virtual-garden/kubeconfig
                   eval $(gardenctl kubectl-env bash)
-                  g target --garden local --shoot local
+                  g target --shoot managedseed
                 EOF
-                new_window "ad-hoc" "ad-hoc" Enter <<"EOF"
-                  # Use this pane for ad-hoc commands
-                EOF
-
-                #### Misc ####
 
                 new_window "k9s" "k9s" <<"EOF"
                   nice k9s
                 EOF
 
                 mkdir -p ~/.config/procps; rm -f ~/.config/procps/toprc
-                new_window "misc" "top" Enter <<"EOF"
+                new_window "stats" "top" Enter <<"EOF"
                   top
                 EOF
                 sleep 1
                 for k in z C c t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
-                new_pane "sar" Enter <<"EOF"
-                  while true; do S_COLORS=always sar -B -q LOAD -r -u -w -h 10 10 | grep -v -E --line-buffered 'Linux|^$'; sleep 1m; done
+                new_pane "sar - high major page faults could indicate thrashing" Enter <<"EOF"
+                  while true; do
+                    S_COLORS=always sar -B -h 60 10 | grep -v -E --line-buffered 'Linux|^$'
+                    sleep 1m
+                  done
                 EOF
-
                 new_pane "demo CPU limit" <<"EOF"
-                  nice dd if=/dev/zero of=/dev/null
+                  nice dd if=/dev/zero of=/dev/null &
                 EOF
-
                 new_pane "disk" Enter <<"EOF"
                   df -h
-                EOF
-                new_pane "findmnt" Enter <<"EOF"
-                  findmnt
                 EOF
 
                 tmux select-window -t 0
