@@ -748,6 +748,53 @@ spec:
               2.45.2
             PATCH_EOF
 
+            sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0008-soil-hosts-only-the-managedseed-shoot.patch
+              From 40c4ac96d6d512ca4050157582a2c60e0ac9d456 Mon Sep 17 00:00:00 2001
+              From: dev <dev>
+              Date: Fri, 25 Oct 2024 10:27:17 +0200
+              Subject: [PATCH] soil hosts only the managedseed shoot
+
+              ---
+               example/gardener-local/gardenlet/operator/gardenlet.yaml   | 5 +++++
+               example/provider-local/managedseeds/shoot-managedseed.yaml | 5 +++++
+               2 files changed, 10 insertions(+)
+
+              diff --git a/example/gardener-local/gardenlet/operator/gardenlet.yaml b/example/gardener-local/gardenlet/operator/gardenlet.yaml
+              index ed693b176..fdfccc857 100644
+              --- a/example/gardener-local/gardenlet/operator/gardenlet.yaml
+              +++ b/example/gardener-local/gardenlet/operator/gardenlet.yaml
+              @@ -15,6 +15,11 @@ spec:
+                     gardenClusterAddress: https://api.virtual-garden.local.gardener.cloud
+                   seedConfig:
+                     spec:
+              +        metadata:
+              +          labels:
+              +            role: soil
+              +        taints:
+              +          - key: seed.gardener.cloud/protect
+                       backup:
+                         provider: local
+                         region: local
+              diff --git a/example/provider-local/managedseeds/shoot-managedseed.yaml b/example/provider-local/managedseeds/shoot-managedseed.yaml
+              index ac2c2da88..e85fdf85d 100644
+              --- a/example/provider-local/managedseeds/shoot-managedseed.yaml
+              +++ b/example/provider-local/managedseeds/shoot-managedseed.yaml
+              @@ -6,6 +6,11 @@ metadata:
+                 annotations:
+                   shoot.gardener.cloud/cloud-config-execution-max-delay-seconds: "0"
+               spec:
+              +  tolerations:
+              +    - key: seed.gardener.cloud/protect
+              +  seedSelector:
+              +    matchLabels:
+              +      role: soil
+                 cloudProfile:
+                   name: local
+                 secretBindingName: local
+              --
+              2.45.2
+            PATCH_EOF
+
             if [[ $NAMESPACE == demo* ]] || [[ $NAMESPACE == test* ]]; then
               if ! git am ~/gardener-patches/00*.patch; then
                 echo "Please check/rebase the patches as needed."
