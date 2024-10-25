@@ -1188,8 +1188,8 @@ spec:
 
                 The demo environment is based the [local setup][] documentation of Gardener that
                 allows you to deploy Gardener on your own machine. It is slightly restricted
-                compared to a local setup to avoid abusing this free environment but it should
-                not limit the exploration of the features in any way.
+                compared to a local setup to avoid abusing this environment but it should not
+                limit the exploration of the features in any way.
 
                 The interaction with the terminal session is captured for security purposes so
                 please refrain from typing in any sensitive information. The environment is
