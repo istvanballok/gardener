@@ -1856,6 +1856,7 @@ spec:
                 su -l demo -c -l
                   set -e
                   cd ../etcd-druid
+                  echo ".git" > .dockerignore
                   nice time docker buildx build --platform=$(docker info --format '{{.OSType}}/{{.Architecture}}') --target builder -t etcd-druid-builder --progress plain .
                   nice time make REGISTRY=localhost:5001 docker-build |& cat
                   nice time make REGISTRY=localhost:5001 docker-push  |& grep -v -E 'Preparing|Waiting'
