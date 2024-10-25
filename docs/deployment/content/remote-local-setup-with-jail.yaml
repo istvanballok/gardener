@@ -290,7 +290,7 @@ spec:
               index 0c2aec352f..ff84e66f31 100644
               --- a/pkg/provider-local/machine-provider/local/create_machine.go
               +++ b/pkg/provider-local/machine-provider/local/create_machine.go
-              @@ -90,8 +90,16 @@ func (d *localDriver) applyPod(
+              @@ -90,8 +90,17 @@ func (d *localDriver) applyPod(
                	pod.Spec = corev1.PodSpec{
                		Containers: []corev1.Container{
                			{
@@ -302,6 +302,7 @@ spec:
               +					"/bin/bash",
               +					"-c",
               +					`
+              +					umount /dev/kmsg
               +					mount --bind /sys/fs/cgroup/$(cat /proc/self/cgroup | cut -d: -f3) /sys/fs/cgroup
               +					exec unshare -C /usr/local/bin/entrypoint /sbin/init
               +					`,
