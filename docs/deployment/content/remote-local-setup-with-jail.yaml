@@ -840,6 +840,7 @@ data:
       if [[ $NAMESPACE == demo* ]] || [[ $NAMESPACE == test* ]]; then
         if ! git am ~/gardener-patches/00*.patch; then
           echo "Please check/rebase the patches as needed."
+          sleep 10m
           exit 1
         fi
         sed -i 's|europe-docker.pkg.dev/gardener-project/releases/gardener/etcd-druid|localhost:5001/gardener/etcd-druid|' imagevector/containers.yaml
@@ -2889,7 +2890,7 @@ data:
                     ') \
                 <(yq -o json /home/demo/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator/kubeconfig.modified \
                   | jq '
-                      .contexts[0].context.name      = "runtime"
+                      .contexts[0].name              = "runtime" |
                       .contexts[0].context.namespace = "garden"
                     ') \
               | yq -P \
