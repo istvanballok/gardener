@@ -364,10 +364,10 @@ spec:
               @@ -15,6 +15,11 @@ spec:
                      gardenClusterAddress: https://api.virtual-garden.local.gardener.cloud
                    seedConfig:
+              +      metadata:
+              +        labels:
+              +          role: soil
                      spec:
-              +        metadata:
-              +          labels:
-              +            role: soil
               +        taints:
               +          - key: seed.gardener.cloud/protect
                        backup:
@@ -1603,6 +1603,7 @@ spec:
                 stopwatch_profile | grep -v -E "RUNNING|00:00:0" | sort -k3 -r
                 sleep 10
               done
+            EOF
 
             new_window "rootless docker" "Dockerfile ubuntu_systemd_rootless_docker" Enter <<"EOF"
               mkdir -p docker
