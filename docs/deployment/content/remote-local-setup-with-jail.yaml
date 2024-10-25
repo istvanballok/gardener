@@ -2351,22 +2351,6 @@ spec:
                     until k wait seed managedseed --for=condition=SeedSystemComponentsHealthy --timeout=-1s 2>/dev/null; do sleep 1; done ) &&
               flag_notify rootless_managedseed_seed_ready; stopwatch_stop
             EOF
-            new_pane "managed seed pods" Enter <<"EOF"
-              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              time flag_wait rootless_managedseed_seed_ready &&
-              while true; do
-                if is_tmux_window_shown.sh; then
-                  bash -o pipefail generate-admin-kubeconf.sh --namespace garden --shoot-name managedseed > /tmp/managedseed.kubeconfig &&
-                  clear &&
-                  while is_tmux_window_shown.sh &&
-                        k --kubeconfig /tmp/managedseed.kubeconfig get pods -A -o wide | nl; do
-                          sleep 10s
-                          clear
-                  done
-                fi
-                sleep 10s
-              done
-            EOF
             new_pane "workerless shoot on managed seed" Enter <<"EOF"
               # Note: regular shoots do not work due to nesting overlayfs, see errors in dmesg
               # Note: the managed seed has 1 node and no zones, so it is not HA
