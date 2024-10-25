@@ -1391,13 +1391,11 @@ spec:
                 EOF
 
                 new_window "seed&shoots" "seed&shoots" Enter <<"EOF"
-                  export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-                  nice watch is_tmux_window_shown.sh "&&" k get -A seeds,managedseeds,shoots
+                  nice watch is_tmux_window_shown.sh "&&" k --context garden get -A seeds,managedseeds,shoots
                 EOF
                 new_pane "last operations seed" Enter <<"EOF"
-                  export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
                   while true; do
-                    k get seed -o json -w 2>/dev/null \
+                    k --context garden get seed -o json -w 2>/dev/null \
                     | jq -r --unbuffered '[ "[seed=\(.metadata.name)]",
                                             (.status.lastOperation |
                                             [.progress, .description] |
@@ -1409,9 +1407,8 @@ spec:
                   done
                 EOF
                 new_pane "last operations shoot" Enter <<"EOF"
-                  export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
                   while true; do
-                    k get shoot -A -o json -w 2>/dev/null  \
+                    k --context garden get shoot -A -o json -w 2>/dev/null  \
                     | jq -r --unbuffered '[ "[shoot=\(.metadata.namespace)/\(.metadata.name)]",
                                             (.status.lastOperation |
                                             [.progress, .description] |
@@ -1423,29 +1420,61 @@ spec:
                   done
                 EOF
                 new_pane "seed conditions" Enter <<"EOF"
-                  export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
                   while true; do
                     clear
-                    is_tmux_window_shown.sh &&
-                    k get seeds -o json | jq '
-                      [.items[] |
-                      { name: .metadata.name,
-                        conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
-                    ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl
-                    sleep 2s
+                    if is_tmux_window_shown.sh; then
+                      while true; do
+                        k --context garden get seeds -w -o json | jq -c '.status.conditions' | uniq_unbuffered \
+                        | while read line; do
+                            flag_notify watch_seed
+                          done
+                        sleep 10
+                      done &
+                      while flag_wait watch_seed; do
+                        flag_delete watch_seed
+                        clear
+                        k --context garden get seeds -o json | jq '
+                          [.items[] |
+                          { name: .metadata.name,
+                            conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
+                        ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl
+                        sleep 1
+                        if ! is_tmux_window_shown.sh; then
+                          kill %1
+                          break
+                        fi
+                      done
+                    fi
+                    sleep 10s
                   done
                 EOF
                 new_horizontal_pane "shoot conditions" Enter <<"EOF"
-                  export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
                   while true; do
                     clear
-                    is_tmux_window_shown.sh &&
-                    k get shoots -A -o json | jq '
-                      [.items[] |
-                      { name: [.metadata.namespace, .metadata.name] | join("/"),
-                        conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
-                    ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl
-                    sleep 2s
+                    if is_tmux_window_shown.sh; then
+                      while true; do
+                        k --context garden get shoots -A -w -o json | jq -c '.status.conditions' | uniq_unbuffered \
+                        | while read line; do
+                            flag_notify watch_shoot
+                          done
+                        sleep 10
+                      done &
+                      while flag_wait watch_shoot; do
+                        flag_delete watch_shoot
+                        clear
+                        k --context garden get shoots -A -o json | jq '
+                          [.items[] |
+                          { name: [.metadata.namespace, .metadata.name] | join("/"),
+                            conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
+                        ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl
+                        sleep 1
+                        if ! is_tmux_window_shown.sh; then
+                          kill %1
+                          break
+                        fi
+                      done
+                    fi
+                    sleep 10s
                   done
                 EOF
 
