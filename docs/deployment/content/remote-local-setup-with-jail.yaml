@@ -27,12 +27,15 @@ spec:
           echo "Disk usage"
 
           rm -rf /home/demo/disk.buffer
-
           df -h
-          time du -sh ~/.cache/* /var/lib/docker/* \
+          time du -sh \
+                      /home/demo/.docker-rootless/share/docker/* \
+                      /home/demo/go/src/github.com/gardener/gardener/dev/* \
+                      /home/demo/go/src/github.com/gardener/gardener/cell/* \
+                      /home/demo/.cache/* \
+                      ~/.cache/* /var/lib/docker/* \
                       $(find /home/demo -mindepth 1 -maxdepth 1) \
-                      /home/demo/go/src/github.com/gardener/gardener/dev \
-                      /home/demo/go/src/github.com/gardener/gardener/cell/* | sort -rh || true
+               | grep -v -E 'K\s' | sort -rh || true
           if [ "$(df /root | awk '/root/ {print $4}')" -lt $((10 * 1024 * 1024)) ]; then
             echo "Less than 10 GB left on the persistent volume"
             # Don't self heal, let a person investigate what filled up the disk
