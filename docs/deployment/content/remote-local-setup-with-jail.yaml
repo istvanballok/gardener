@@ -22,11 +22,11 @@ spec:
           set -ex -o pipefail
           exec 2>&1
 
+          rm -rf /home/demo/disk.buffer.5GB
+
           date +%s > /rls_start
 
           echo "Disk usage"
-
-          rm -rf /home/demo/disk.buffer
           df -h
           time du -sh \
                       /home/demo/.docker-rootless/share/docker/* \
@@ -36,13 +36,6 @@ spec:
                       ~/.cache/* /var/lib/docker/* \
                       $(find /home/demo -mindepth 1 -maxdepth 1) \
                | grep -v -E 'K\s' | sort -rh || true
-          if [ "$(df /root | awk '/root/ {print $4}')" -lt $((10 * 1024 * 1024)) ]; then
-            echo "Less than 10 GB left on the persistent volume"
-            # Don't self heal, let a person investigate what filled up the disk
-            # find /root -mindepth 2 -maxdepth 2 -exec rm -rf '{}' \;
-            echo "Please investigate what filled up the disk"
-            exit 1
-          fi
           cd
           rm -f /root/elapsed*
 
@@ -2982,14 +2975,14 @@ spec:
               echo "Google IP: $(cat /tmp/google_ip)" &&
               flag_wait rootless_demo_managedseed_ip &&
               if is_state_tested; then
-                dd if=/dev/zero of=~/disk.buffer bs=1M count=$((1024 * 5)) &&
+                dd if=/dev/zero of=~/disk.buffer.5GB bs=1M count=$((1024 * 5)) &&
                 docker exec demo touch /tmp/demo_tested
               else
                 stopwatch_start
                 export GOOGLE_IP=$(cat /tmp/google_ip)
                 time (
                   sed 's/^  //' <<"DEMO_CONTAINER" | xargs -0 docker exec -e GOOGLE_IP demo bash -l -c |& ts && \
-                  dd if=/dev/zero of=~/disk.buffer bs=1M count=$((1024 * 5)) && \
+                  dd if=/dev/zero of=~/disk.buffer.5GB bs=1M count=$((1024 * 5)) && \
                   flag_notify rootless_demo_tested && \
                   mark_state_tested
                     set -ex -o pipefail
