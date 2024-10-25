@@ -1405,9 +1405,29 @@ spec:
             mkdir -p ~/.kube
             echo '{"current-context": "kind-gardener-operator-local"}' > ~/.kube/config
             source /usr/local/bin/tmux_functions.sh
-            nsenter -t $(cat /root/dockerd_netns_pid) -n tmux new -d -s root -n top -x 250 -y 70
+            nsenter -t $(cat /root/dockerd_netns_pid) -n tmux new -d -s root -n top1 -x 250 -y 70
             tmux select-pane -T top; mkdir -p ~/.config/procps; rm -f ~/.config/procps/toprc
             for k in top Enter z C c i t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
+            new_pane "top sorted by TIME+" Enter <<"EOF"
+              top
+            EOF
+            for k in " " V f Down Down s q; do sleep .2; tmux send $k; done
+
+            new_window "top2" "top sorted by PID" Enter <<"EOF"
+              top
+            EOF
+            for k in " " g 2 z; do sleep .2; tmux send $k; done
+            new_pane "top sorted by MEM%" Enter <<"EOF"
+              top
+            EOF
+            for k in " " g 3 z; do sleep .2; tmux send $k; done
+            new_pane "top sorted by nMaj" Enter <<"EOF"
+              top
+            EOF
+            for k in " " g 3 z f Down Down Down Down Down Down Down s q f; do sleep .2; tmux send $k; done
+            for i in $(seq 1 34); do sleep .05; tmux send Down; done
+            for k in Space q; do sleep .2; tmux send $k; done
+
             new_window "sar1" "man" Enter <<"EOF"
               man S_COLORS=always sar | sed -n '
                 1,5p; 98,141p; 142,172p; 180,227p; 243,275p; 436,478p; 1294,1386p; 1437,1512p; 1552,1602p; 1629,1636p;
