@@ -1043,6 +1043,10 @@ spec:
                 source ~/.bashrc
               EOF
 
+              RUN sed 's/^  //' <<"EOF" > ~/.bash_history
+                eval $(gardenctl kubectl-env bash)
+              EOF
+
               RUN sed 's/^  //' <<"EOF" > ~/.bashrc
                 [ -z "$TMUX" ] && export TERM=xterm-256color
                 set -o pipefail
