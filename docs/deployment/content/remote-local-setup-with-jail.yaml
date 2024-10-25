@@ -1,3 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: remote-local-setup-with-jail
+data:
+  init.sh: |
+    set -x
+---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -19,6 +27,7 @@ spec:
         - /bin/sh
         - -c
         - |
+          ls /cm/init.sh
           set -ex -o pipefail
           exec 2>&1
 
@@ -3120,8 +3129,10 @@ spec:
         - {name: home,    mountPath: /home,           subPath: .home}
         - {name: home,    mountPath: /var/lib/docker, subPath: .docker}
         - {name: modules, mountPath: /lib/modules, readOnly: true}
+        - {name: cm,      mountPath: /cm,          readOnly: true}
       volumes:
       - {name: modules, hostPath: {type: Directory, path: /lib/modules}}
+      - {name: cm,      configMap: {name: remote-local-setup-with-jail}}
   volumeClaimTemplates:
   - apiVersion: v1
     kind: PersistentVolumeClaim
