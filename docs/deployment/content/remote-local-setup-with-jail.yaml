@@ -2106,7 +2106,6 @@ spec:
             EOF
 
             new_window "demo" "demo" Enter <<"EOF"
-              # tmux a
               {
                 while ! tmux capture-pane -p -t $TMUX_PANE | grep -v -E '^$' | tail -n 1 | grep -E '\$$' >/dev/null; do
                   sleep 10
@@ -2621,7 +2620,9 @@ spec:
             EOF
 
             new_window "gardenctl" "gardenctl" <<"EOF"
-              eval $(gardenctl kubectl-env bash)
+              flag_wait rootless_virtual_garden_ha &&
+              source ~/.bashrc &&
+              eval $(gardenctl kubectl-env bash) &&
               g target --shoot managedseed
             EOF
 
