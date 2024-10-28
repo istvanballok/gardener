@@ -929,11 +929,6 @@ spec:
                 set -x
                 source /usr/local/bin/tmux_functions.sh
                 while ! [ -f ~/.kube/config ]; do sleep 1; done
-                tmux new -d -s gardener-demo -n demo -x 2000 -y 2000
-                tmux select-pane -T demo;
-                send_commands Enter <<"EOF"
-                  cat ~/welcome.md
-                EOF
 
                 tmux new -d -s advanced -n demo -x 2000 -y 2000
                 tmux select-pane -T demo;
@@ -1167,6 +1162,14 @@ spec:
 
                 tmux select-window -t 0
                 tmux select-pane -t 1
+
+                sleep 1
+
+                tmux new -d -s gardener-demo -n demo -x 2000 -y 2000
+                tmux select-pane -T demo;
+                send_commands Enter <<"EOF"
+                  cat ~/welcome.md
+                EOF
 
                 echo "The tmux session is prepared. To attach to it, run 'tmux a'."
                 while [ ! -f /tmp/demo_tested ]; do sleep 1; done
