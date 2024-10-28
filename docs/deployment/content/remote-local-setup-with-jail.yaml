@@ -47,7 +47,10 @@ spec:
                   gcompat git git-prompt grep helm inotify-tools iotop iotop-doc iproute2 jq k9s less lsof make \
                   mandoc mc moreutils mount ncurses neovim openssl parallel procps sed shadow    \
                   shadow-login socat strace sysstat sysstat-doc tar tcpdump tmux tmux-doc tzdata \
-                  util-linux vim wget yq
+                  util-linux vim wget yq ncurses-terminfo-base=6.4_p20240420-r1
+
+          apk add -u tmux tmux-doc --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main
+
 
           useradd -m -s /bin/bash -u 2000 demo
 
@@ -72,9 +75,6 @@ spec:
           cat /proc/self/cgroup
           echo "and it sees only its child cgroups"
           find /sys/fs/cgroup/ -type d
-
-
-          apk add -u tmux --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main
 
           mkdir -p ~/.cache/wget
           cd ~/.cache/wget
