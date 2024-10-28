@@ -990,19 +990,18 @@ spec:
           sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
             mkdir -p cell
             cd cell
-            if [ -d gardener/.git ]; then
-              cd gardener
-              git fetch origin HEAD --tags
-              if [[ $NAMESPACE == demo* ]]; then
-                git checkout $(git tag | sort -V | tail -n 1)
-              elif [[ $NAMESPACE == test* ]]; then
-                git checkout master
-                git reset --hard origin/master
-              fi
-              cd -
-            else
+            if [ ! -d gardener/.git ]; then
               git clone ~/go/src/github.com/gardener/gardener gardener
             fi
+            cd gardener
+            git fetch origin HEAD --tags
+            if [[ $NAMESPACE == demo* ]]; then
+              git checkout $(git tag | sort -V | tail -n 1)
+            elif [[ $NAMESPACE == test* ]]; then
+              git checkout master
+              git reset --hard origin/master
+            fi
+            cd -
             mkdir -p scripts
             cp /usr/local/bin/tmux_functions.sh scripts
             cp /usr/local/bin/is_tmux_window_shown.sh scripts
