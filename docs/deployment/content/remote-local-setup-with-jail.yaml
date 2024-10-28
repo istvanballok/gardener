@@ -3246,7 +3246,6 @@ spec:
           privileged: true
         volumeMounts:
         - {name: home,    mountPath: /root}
-        - {name: home,    mountPath: /home,           subPath: .home}
         - {name: home,    mountPath: /var/lib/docker, subPath: .docker}
         - {name: modules, mountPath: /lib/modules, readOnly: true}
       volumes:
