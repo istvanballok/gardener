@@ -1982,16 +1982,28 @@ spec:
                 iptables -I INPUT   -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
                 iptables -I FORWARD -i docker_veth0 -j REJECT -p udp --reject-with icmp-port-unreachable
                 iptables -I INPUT   -i docker_veth0 -j REJECT -p udp --reject-with icmp-port-unreachable
+                iptables -I FORWARD -i docker_veth0 -j REJECT -p icmp --reject-with icmp-host-unreachable
+                iptables -I INPUT   -i docker_veth0 -j REJECT -p icmp --reject-with icmp-host-unreachable
+                iptables -I FORWARD -i docker_veth0 -j REJECT -j DROP
+                iptables -I INPUT   -i docker_veth0 -j REJECT -j DROP
                 chown -R registry_guard:registry_guard /home/demo/go/src/github.com/gardener/gardener/dev/local-registry
               } &&
               flag_notify offline; stopwatch_stop
             EOF
             new_pane "online" <<"EOF"
               nsenter -t 1 -n
-              iptables  -D FORWARD -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset &&
-              iptables  -D INPUT   -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset &&
-              iptables  -D FORWARD -i docker_veth0 -j REJECT -p udp --reject-with icmp-port-unreachable &&
-              iptables  -D INPUT   -i docker_veth0 -j REJECT -p udp --reject-with icmp-port-unreachable
+              iptables -D FORWARD -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset &&
+              iptables -D INPUT   -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset &&
+              iptables -D FORWARD -i docker_veth0 -j REJECT -p udp --reject-with icmp-port-unreachable &&
+              iptables -D INPUT   -i docker_veth0 -j REJECT -p udp --reject-with icmp-port-unreachable &&
+              iptables -D FORWARD -i docker_veth0 -j REJECT -p icmp --reject-with icmp-host-unreachable &&
+              iptables -D INPUT   -i docker_veth0 -j REJECT -p icmp --reject-with icmp-host-unreachable &&
+              iptables -D FORWARD -i docker_veth0 -j REJECT -j DROP &&
+              iptables -D INPUT   -i docker_veth0 -j REJECT -j DROP
+            EOF
+            new_pane "stats" Enter <<"EOF"
+              nsenter -t 1 -n
+              iptables -nvL | grep -E -A 1 "Chain|docker_veth0"
             EOF
 
             tmux select-window -t 6
