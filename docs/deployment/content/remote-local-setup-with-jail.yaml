@@ -22,20 +22,8 @@ spec:
           set -ex -o pipefail
           exec 2>&1
 
-          rm -rf /home/demo/disk.buffer.5GB
-
           date +%s > /rls_start
 
-          echo "Disk usage"
-          df -h
-          time du -sh \
-                      /home/demo/.docker-rootless/share/docker/* \
-                      /home/demo/go/src/github.com/gardener/gardener/dev/* \
-                      /home/demo/go/src/github.com/gardener/gardener/cell/* \
-                      /home/demo/.cache/* \
-                      ~/.cache/* /var/lib/docker/* \
-                      $(find /home/demo -mindepth 1 -maxdepth 1) \
-               | grep -v -E 'K\s' | sort -rh || true
           cd
           rm -f /root/elapsed*
 
@@ -51,8 +39,26 @@ spec:
 
           apk add -u tmux tmux-doc --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main
 
+          if [ ! -f ~/inner.disk ]; then
+            truncate -s 50G ~/inner.disk # sparse file
+            mkfs.ext4 ~/inner.disk
+          fi
+          mount ~/inner.disk /home
 
           useradd -m -s /bin/bash -u 2000 demo
+
+          rm -rf /home/demo/disk.buffer.5GB
+
+          echo "Disk usage"
+          df -h
+          time du -sh \
+                      /home/demo/.docker-rootless/share/docker/* \
+                      /home/demo/go/src/github.com/gardener/gardener/dev/* \
+                      /home/demo/go/src/github.com/gardener/gardener/cell/* \
+                      /home/demo/.cache/* \
+                      ~/.cache/* /var/lib/docker/* \
+                      $(find /home/demo -mindepth 1 -maxdepth 1) \
+               | grep -v -E 'K\s' | sort -rh || true
 
           # \$1 contains the Gardener and etcd patches (see below)
           # They were extracted from this main script to overcome the 32 page (32*4K=128K) argument length limit of the exec syscall
