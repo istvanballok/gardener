@@ -799,6 +799,13 @@ spec:
               RUN sed 's/^  //' <<"EOF" > ~/welcome.md
                 # Welcome to the online Gardener Demo environment
 
+                Please follow the step by step instructions on the side to explore the features
+                of Gardener interactively.
+              EOF
+
+              RUN sed 's/^  //' <<"EOF" > /dev/null # ~/welcome.md
+                # Welcome to the online Gardener Demo environment
+
                 [Gardener][] is an open source project contributed by SAP and others that
                 provides a Kubernetes-based solution to manage Kubernetes clusters on various
                 cloud providers in a uniform way.
@@ -829,10 +836,9 @@ spec:
                 [tmux]:        https://github.com/tmux/tmux/wiki
                 [local setup]: https://github.com/gardener/gardener/blob/master/
                                docs/deployment/getting_started_locally.md
-
               EOF
 
-              RUN sed 's/^  //' <<"EOF" > ~/demo.md
+              RUN sed 's/^  //' <<"EOF" > /dev/null # ~/demo.md
                 # Welcome to the online Gardener Demo environment
 
                 [Gardener][] is an open source project contributed by SAP and others that
@@ -926,7 +932,7 @@ spec:
                 tmux new -d -s advanced -n demo -x 2000 -y 2000
                 tmux select-pane -T demo;
                 send_commands Enter <<"EOF"
-                  less ~/demo.md
+                  cat ~/welcome.md
                 EOF
 
                 ##### Prepare the panes for the demo scenario here #####
