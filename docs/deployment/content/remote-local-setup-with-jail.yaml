@@ -40,9 +40,11 @@ spec:
           apk add -u tmux tmux-doc --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main
 
           if [ ! -f ~/inner.disk ]; then
-            truncate -s 50G ~/inner.disk # sparse file
+            truncate -s 60G ~/inner.disk # sparse file
             mkfs.ext4 ~/inner.disk
           fi
+          rm -rf /home # migration to the inner disk
+          mkdir -p /home
           mount ~/inner.disk /home
 
           useradd -m -s /bin/bash -u 2000 demo
