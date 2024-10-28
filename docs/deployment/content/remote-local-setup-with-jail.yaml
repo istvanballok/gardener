@@ -1189,15 +1189,9 @@ spec:
                 while ! [ -f ~/.kube/config ]; do sleep 1; done
                 tmux new -d -s gardener-demo -n demo -x 2000 -y 2000
                 tmux select-pane -T demo
-                send_commands Enter <<"EOF"
-                  # Welcome to the Gardener Demo!
-                EOF
 
                 tmux new -d -s advanced -n demo -x 2000 -y 2000
                 tmux select-pane -T demo
-                send_commands Enter <<"EOF"
-                  # Welcome to the Gardener Demo!
-                EOF
 
                 ##### Prepare the panes for the demo scenario here #####
 
