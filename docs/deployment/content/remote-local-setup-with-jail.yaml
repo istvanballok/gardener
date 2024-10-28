@@ -2517,6 +2517,7 @@ spec:
             new_pane "managed seed shoot APIs | (long running)" Enter <<"EOF"
               mkdir -p ~/etc
               flag_wait rootless_managedseed_seed_ready &&
+              source ~/.bashrc &&
               stopwatch_start &&
               g target --shoot managedseed &&
               eval $(gardenctl kubectl-env bash) &&
@@ -2578,6 +2579,7 @@ spec:
             EOF
             new_pane "shoots hosted on the managed seed cluster | (long running)" Enter <<"EOF"
               flag_wait rootless_managedseed_seed_ready &&
+              source ~/.bashrc &&
               stopwatch_start &&
               g target --shoot managedseed &&
               eval $(gardenctl kubectl-env bash) &&
