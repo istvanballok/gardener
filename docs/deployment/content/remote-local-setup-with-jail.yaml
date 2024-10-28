@@ -1183,15 +1183,32 @@ spec:
               ADD scripts/tmux_functions.sh /usr/local/bin/tmux_functions.sh
               ADD scripts/is_tmux_window_shown.sh /usr/local/bin/is_tmux_window_shown.sh
 
+              RUN sed 's/^  //' <<"EOF" > ~/welcome.md
+                # Welcome to the online Gardener Demo environment
+
+
+              EOF
+
+              RUN sed 's/^  //' <<"EOF" > ~/demo.md
+                # Welcome to the online Gardener Demo environment
+
+              EOF
+
               RUN sed 's/^  //' <<"SCRIPT_EOF" > ~/prepare-cell.sh
                 set -x
                 source /usr/local/bin/tmux_functions.sh
                 while ! [ -f ~/.kube/config ]; do sleep 1; done
                 tmux new -d -s gardener-demo -n demo -x 2000 -y 2000
-                tmux select-pane -T demo
+                tmux select-pane -T demo;
+                send_commands Enter <<"EOF"
+                  cat ~/welcome.md
+                EOF
 
                 tmux new -d -s advanced -n demo -x 2000 -y 2000
-                tmux select-pane -T demo
+                tmux select-pane -T demo;
+                send_commands Enter <<"EOF"
+                  less ~/demo.md
+                EOF
 
                 ##### Prepare the panes for the demo scenario here #####
 
