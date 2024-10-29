@@ -513,7 +513,7 @@ spec:
           sysctl -w net.ipv6.conf.eth0.disable_ipv6=1
           # https://docs.docker.com/reference/cli/dockerd/
           # https://d2iq.com/blog/running-kind-inside-a-kubernetes-cluster-for-continuous-integration
-          #cgroup-parent docker is not needed because the whole script is in its own cgroup namespace
+          # --cgroup-parent docker is not needed because the whole script is in its own cgroup namespace
           nice dockerd-entrypoint.sh dockerd --host=unix:///var/run/docker.sock 2>&1 | tee ~/.dockerd.log &
 
           until docker ps -a >/dev/null 2>&1; do sleep 1; done
