@@ -1753,7 +1753,7 @@ spec:
                         iptables -I FORWARD -o eth0 -j REJECT -p tcp --reject-with tcp-reset
                         iptables -I OUTPUT  -o eth0 -j REJECT
                         iptables -I OUTPUT  -o eth0 -j REJECT -p tcp --reject-with tcp-reset
-                      NETWORK_EOF
+              NETWORK_EOF
                     fi
 
                     sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
@@ -1794,7 +1794,7 @@ spec:
                         iptables -D FORWARD -o eth0 -j REJECT -p tcp --reject-with tcp-reset
                         iptables -D OUTPUT  -o eth0 -j REJECT
                         iptables -D OUTPUT  -o eth0 -j REJECT -p tcp --reject-with tcp-reset
-                      NETWORK_EOF
+              NETWORK_EOF
                     fi
                   done
                   AFTER=$(
