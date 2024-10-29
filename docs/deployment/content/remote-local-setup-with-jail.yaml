@@ -336,7 +336,7 @@ spec:
                       tmux display-message -p -t "$TMUX_PANE" '#S | #W | #T'
                     )" > /tmp/timing/"$(tmux display-message -p -t "$TMUX_PANE" '#S.#W.#T' | sed -E 's/[^A-Za-z0-9.]+/_/g')"
             }
-            function stopwatch_profile {
+            function stopwatch_tasks {
               mkdir -p /tmp/timing
               chown -R demo:demo /tmp/timing
               echo "DATE:   $(date)"
@@ -1198,9 +1198,35 @@ spec:
             mkdir -p ~/.kube
             echo '{"current-context": "kind-gardener-operator-local"}' > ~/.kube/config
             source /usr/local/bin/tmux_functions.sh
-            nsenter -t $(cat /root/dockerd_netns_pid) -n tmux new -d -s root -n top1 -x 250 -y 70
-            tmux select-pane -T "top - Running in tree"; mkdir -p ~/.config/procps; rm -f ~/.config/procps/toprc
-            for k in top Enter z C c i t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
+            nsenter -t $(cat /root/dockerd_netns_pid) -n tmux new -d -s root -n tasks -x 250 -y 70
+            tmux select-pane -T "all";
+            send_commands Enter <<"EOF"
+              while true; do
+                clear
+                stopwatch_tasks | grep -v "long running"
+                sleep $(echo "2 - $(date +%s.%3N) % 2 + 1" | bc)
+              done
+            EOF
+            new_pane "currently running" Enter <<"EOF"
+              while true; do
+                clear
+                stopwatch_tasks | tail -n +3 | grep -E "STARTED AT|RUNNING" | grep -v "long running"
+                sleep $(echo "2 - $(date +%s.%3N) % 2 + 1" | bc)
+              done
+            EOF
+            new_pane "long running" Enter <<"EOF"
+              while true; do
+                clear
+                stopwatch_tasks | tail -n +3 | grep -E "STARTED AT|long running"
+                sleep $(echo "2 - $(date +%s.%3N) % 2 + 1" | bc)
+              done
+            EOF
+
+            mkdir -p ~/.config/procps; rm -f ~/.config/procps/toprc
+            new_window "top1" "top - Running in tree" Enter <<"EOF"
+              top
+            EOF
+            for k in " " z C c i t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
             new_pane "top - sorted by TIME+" Enter <<"EOF"
               top
             EOF
@@ -1338,28 +1364,6 @@ spec:
               su -l demo
               cd ../etcd-druid
               git log --color -p origin/master.. --author dev | less -RN
-            EOF
-
-            new_window "profiling" "profiling" Enter <<"EOF"
-              while true; do
-                clear
-                stopwatch_profile | grep -v "long running"
-                sleep $(echo "2 - $(date +%s.%3N) % 2 + 1" | bc)
-              done
-            EOF
-            new_pane "currently running" Enter <<"EOF"
-              while true; do
-                clear
-                stopwatch_profile | tail -n +3 | grep -E "STARTED AT|RUNNING" | grep -v "long running"
-                sleep $(echo "2 - $(date +%s.%3N) % 2 + 1" | bc)
-              done
-            EOF
-            new_pane "long running" Enter <<"EOF"
-              while true; do
-                clear
-                stopwatch_profile | tail -n +3 | grep -E "STARTED AT|long running"
-                sleep $(echo "2 - $(date +%s.%3N) % 2 + 1" | bc)
-              done
             EOF
 
             new_window "rootless docker" "Dockerfile ubuntu_systemd_rootless_docker" Enter <<"EOF"
