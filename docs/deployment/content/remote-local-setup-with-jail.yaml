@@ -457,6 +457,7 @@ spec:
             set -g window-size smallest
             set -g history-limit 100000
             set -g status-left-length 30
+            set -g escape-time 500
           EOF
 
           cp ~/.bash_profile ~/.bashrc ~/.tmux.conf /home/demo
