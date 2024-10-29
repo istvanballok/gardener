@@ -1373,6 +1373,9 @@ spec:
             new_window "make kind-operator" "make kind-operator-down" Enter <<"EOF"
               rm -rf /home/demo/go/src/github.com/gardener/gardener/dev/local-backupbuckets &&
               rm -rf /home/demo/go/src/github.com/gardener/gardener/dev/local-registry/localhost &&
+              if [[ $(du -s /home/demo/go/src/github.com/gardener/gardener/dev/local-registry | cut -f 1) -gt $((4*1024*1024)) ]]; then
+                rm -rf /home/demo/go/src/github.com/gardener/gardener/dev/local-registry
+              fi &&
               flag_wait ubuntu_systemd_rootless_docker_rootless_docker_service &&
               stopwatch_start &&
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
