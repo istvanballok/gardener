@@ -1510,10 +1510,10 @@ spec:
               docker exec -it ubuntu_systemd_rootless_docker bash
             EOF
             new_pane "interact with the rootless docker as the demo user from the default environment, outside of the ubuntu_systemd_rootless_docker container" <<"EOF"
+              # docker ps
               flag_wait ubuntu_systemd_rootless_docker_rootless_docker_service &&
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' ubuntu_systemd_rootless_docker) -n \
               su -l demo
-              docker ps
             EOF
 
             new_window "make kind-operator" "make kind-operator-down" Enter <<"EOF"
