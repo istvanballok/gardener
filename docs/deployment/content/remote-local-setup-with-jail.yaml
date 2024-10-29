@@ -1733,6 +1733,7 @@ spec:
             EOF
 
             new_window "offline" "pull all the cached images sequentially and assert they can be pulled even offline" Enter <<"EOF"
+              cat <<DOC_EOF >/dev/null
               # The pull through container registry cache 'registry:2.8.3'
               # that is used to mirror the needed images from gcr.io, quay.io, ...
               # seems to have a bug such that
@@ -1742,6 +1743,7 @@ spec:
               # and pull them sequentially to ensure that the cache is complete and consistent.
               # The test also asserts that all the images can be pulled
               # even when the Internet access is blocked.
+              DOC_EOF
               cd /home/demo/go/src/github.com/gardener/gardener
               is_state_tested || {
                 flag_wait rootless_shoot_ha_ready_deleted &&
