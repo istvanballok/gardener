@@ -1505,6 +1505,10 @@ spec:
                         kubectl wait --for=condition=VirtualComponentsHealthy                  garden local --timeout=-1s
                         kubectl wait --for=condition=RuntimeComponentsHealthy                  garden local --timeout=-1s
                         kubectl wait --for=condition=VirtualGardenAPIServerAvailable           garden local --timeout=-1s)
+                  sleep 10
+                  echo "Check the the virtual garden API server is available"
+                  export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
+                  while ! kubectl get shoot -A; do sleep 10; done
                   flag_notify rootless_operator_seed_up
                   flag_notify rootless_virtual_garden_ha
                 DEMO_EOF
