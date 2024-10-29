@@ -1362,21 +1362,6 @@ spec:
               docker stop ubuntu_systemd_rootless_docker
             EOF
 
-            new_window "inspect rootless docker" "exec into the ubuntu_systemd_rootless_docker container running the rootless docker daemon" Enter <<"EOF"
-              # Try these commands:
-              # machinectl shell demo@
-              # systemctl  --user status docker.service
-              # journalctl --user -xeu   docker.service
-              flag_wait ubuntu_systemd_rootless_docker_rootless_docker_service &&
-              docker exec -it ubuntu_systemd_rootless_docker bash
-            EOF
-            new_pane "interact with the rootless docker as the demo user from the default environment, outside of the ubuntu_systemd_rootless_docker container" <<"EOF"
-              # docker ps
-              flag_wait ubuntu_systemd_rootless_docker_rootless_docker_service &&
-              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' ubuntu_systemd_rootless_docker) -n \
-              su -l demo
-            EOF
-
             new_window "make kind-operator" "make kind-operator-down" Enter <<"EOF"
               rm -rf /home/demo/go/src/github.com/gardener/gardener/dev/local-backupbuckets &&
               flag_wait ubuntu_systemd_rootless_docker_rootless_docker_service &&
@@ -1870,6 +1855,21 @@ spec:
             new_pane "stats" Enter <<"EOF"
               nsenter -t 1 -n
               iptables -nvL | grep -E -A 1 "Chain|docker_veth0"
+            EOF
+
+            new_window "inspect rootless docker" "exec into the ubuntu_systemd_rootless_docker container running the rootless docker daemon" <<"EOF"
+              # Try these commands:
+              # machinectl shell demo@
+              # systemctl  --user status docker.service
+              # journalctl --user -xeu   docker.service
+              flag_wait ubuntu_systemd_rootless_docker_rootless_docker_service &&
+              docker exec -it ubuntu_systemd_rootless_docker bash
+            EOF
+            new_pane "interact with the rootless docker as the demo user from the default environment, outside of the ubuntu_systemd_rootless_docker container" <<"EOF"
+              # docker ps
+              flag_wait ubuntu_systemd_rootless_docker_rootless_docker_service &&
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' ubuntu_systemd_rootless_docker) -n \
+              su -l demo
             EOF
 
             new_window "patches" "gardener" Enter <<"EOF"
