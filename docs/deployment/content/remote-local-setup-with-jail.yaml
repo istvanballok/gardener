@@ -2268,8 +2268,8 @@ spec:
                 stopwatch_start &&
                 k annotate shoot local -n garden-local 'confirmation.gardener.cloud/deletion=true' &&
                 time k delete shoot local -n garden-local &&
-                flag_notify rootless_shoot_ha_ready_deleted
-                flag_delete rootless_shoot_ready
+                flag_notify rootless_shoot_ha_ready_deleted &&
+                flag_delete rootless_shoot_ready &&
                 flag_delete rootless_shoot_ha_ready
                 stopwatch_stop
               fi
