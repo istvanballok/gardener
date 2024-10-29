@@ -1340,7 +1340,9 @@ spec:
                 sleep 1;
                 if docker exec ubuntu_systemd_rootless_docker systemctl status | grep -E 'State: degraded' >/dev/null; then
                   echo "Restarting failed services"
-                  docker exec ubuntu_systemd_rootless_docker bash -c 'systemctl list-units --state=failed --no-pager --no-legend --plain | awk "{print \$1}" | xargs -r systemctl start'
+                  docker exec ubuntu_systemd_rootless_docker bash -c '
+                    systemctl list-units --state=failed --no-pager --no-legend --plain | awk "{print \$1}" | xargs -r systemctl start
+                  '
                 fi
               done &&
               stopwatch_start &&
