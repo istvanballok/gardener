@@ -1225,6 +1225,17 @@ spec:
               done
             EOF
 
+            new_window "recordings" "fzf" <<"EOF"
+              mkdir -p ~/script_recordings
+              cd ~/script_recordings
+              find . -name input.log -size +0 | sed -E 's|./(.*)/input.log|\1|' | fzf --preview '
+                ls -lht {}/*
+                echo
+                tail -n +2 {}/input.log | strings | sed -E "s/\[[^Mm]+(M|m)//g" | grep -v -E "^$|;rgb:"
+              ' | xargs -o -I {} \
+                scriptreplay -m 1 --log-timing {}/timing.log --log-out {}/out.log
+            EOF
+
             new_window "rootless docker" "Dockerfile ubuntu_systemd_rootless_docker" Enter <<"EOF"
               mkdir -p docker
               cd docker
@@ -1718,17 +1729,6 @@ spec:
               time su -l demo -c -l '~/prepare_tmux.sh' &&
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' ubuntu_systemd_rootless_docker) -n \
               su -l demo
-            EOF
-
-            new_window "recordings" "fzf" <<"EOF"
-              mkdir -p ~/script_recordings
-              cd ~/script_recordings
-              find . -name input.log -size +0 | sed -E 's|./(.*)/input.log|\1|' | fzf --preview '
-                ls -lht {}/*
-                echo
-                tail -n +2 {}/input.log | strings | sed -E "s/\[[^Mm]+(M|m)//g" | grep -v -E "^$|;rgb:"
-              ' | xargs -o -I {} \
-                scriptreplay -m 1 --log-timing {}/timing.log --log-out {}/out.log
             EOF
 
             new_window "offline" "pull all the cached images sequentially and assert they can be pulled even offline" Enter <<"EOF"
