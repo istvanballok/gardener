@@ -510,31 +510,11 @@ spec:
             fi
           DEMO_EOF
 
-          unshare -n /bin/sh -c 'sleep inf' &
-          dockerd_netns_pid=$!
-          echo $dockerd_netns_pid > /root/dockerd_netns_pid
-          ip link add docker_veth0 type veth peer name docker_veth1
-          ip addr add 172.31.0.1/16 dev docker_veth0
-          ip link set docker_veth0 up
-          sysctl -w net.ipv6.conf.docker_veth0.disable_ipv6=1
-          sysctl -w net.ipv4.ip_forward=1
-          iptables -t nat -A POSTROUTING -s 172.31.0.1/16 -o eth0 -j MASQUERADE
-          ip route add 172.17.0.0/16 via 172.31.0.2
-          ip route add 172.18.0.0/16 via 172.31.0.2
-          ip link set docker_veth1 netns $dockerd_netns_pid
-          sed 's/^  //' <<"EOF" | xargs -0 \
-          nsenter -t $dockerd_netns_pid -n bash -c &
-            ip link set lo up
-            ip link set docker_veth1 name eth0
-            ip addr add 172.31.0.2/16 dev eth0
-            ip link set eth0 up
-            ip route add default via 172.31.0.1
-            sysctl -w net.ipv6.conf.eth0.disable_ipv6=1
-            # https://docs.docker.com/reference/cli/dockerd/
-            # https://d2iq.com/blog/running-kind-inside-a-kubernetes-cluster-for-continuous-integration
-            #cgroup-parent docker is not needed because the whole script is in its own cgroup namespace
-            nice dockerd-entrypoint.sh 2>&1 | tee ~/.dockerd.log
-          EOF
+          sysctl -w net.ipv6.conf.eth0.disable_ipv6=1
+          # https://docs.docker.com/reference/cli/dockerd/
+          # https://d2iq.com/blog/running-kind-inside-a-kubernetes-cluster-for-continuous-integration
+          #cgroup-parent docker is not needed because the whole script is in its own cgroup namespace
+          nice dockerd-entrypoint.sh 2>&1 | tee ~/.dockerd.log &
 
           until docker ps -a >/dev/null 2>&1; do sleep 1; done
 
@@ -1199,7 +1179,7 @@ spec:
             mkdir -p ~/.kube
             echo '{"current-context": "kind-gardener-operator-local"}' > ~/.kube/config
             source /usr/local/bin/tmux_functions.sh
-            nsenter -t $(cat /root/dockerd_netns_pid) -n tmux new -d -s root -n tasks -x 250 -y 70
+            tmux new -d -s root -n tasks -x 250 -y 70
             tmux select-pane -T "all";
             send_commands Enter <<"EOF"
               while true; do
@@ -1767,8 +1747,13 @@ spec:
                     echo
                     if [ "$phase" = "offline" ]; then
                       echo "Blocking network traffic from the registry mirrors to the Internet"
-                      nsenter -t 1 -n iptables -I FORWARD -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
-                      nsenter -t 1 -n iptables -I INPUT   -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
+                      sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
+                      nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' ubuntu_systemd_rootless_docker) -n bash -c
+                        iptables -I FORWARD -o eth0 -j REJECT
+                        iptables -I FORWARD -o eth0 -j REJECT -p tcp --reject-with tcp-reset
+                        iptables -I OUTPUT  -o eth0 -j REJECT
+                        iptables -I OUTPUT  -o eth0 -j REJECT -p tcp --reject-with tcp-reset
+                      NETWORK_EOF
                     fi
 
                     sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
@@ -1803,8 +1788,13 @@ spec:
               NETWORK_EOF
                     if [ "$phase" = "offline" ]; then
                       echo "Restoring network traffic to the Internet"
-                      nsenter -t 1 -n iptables -D FORWARD -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
-                      nsenter -t 1 -n iptables -D INPUT   -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
+                      sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
+                      nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' ubuntu_systemd_rootless_docker) -n bash -c
+                        iptables -D FORWARD -o eth0 -j REJECT
+                        iptables -D FORWARD -o eth0 -j REJECT -p tcp --reject-with tcp-reset
+                        iptables -D OUTPUT  -o eth0 -j REJECT
+                        iptables -D OUTPUT  -o eth0 -j REJECT -p tcp --reject-with tcp-reset
+                      NETWORK_EOF
                     fi
                   done
                   AFTER=$(
@@ -1824,42 +1814,55 @@ spec:
               }
             EOF
             new_pane "take the demo environment OFFLINE" Enter <<"EOF"
-              nsenter -t 1 -n
-              flag_wait rootless_demo_image &&
-              flag_wait rootless_managedseed_seed_ready &&
-              if ! is_state_tested; then
-                flag_wait rootless_shoot_ha_ready_deleted &&
-                flag_wait managedseed_nested_workerless_shoot_deleted &&
-                flag_wait managedseed_nested_shoot_ready &&
-                flag_wait registry_mitigation
-              fi && stopwatch_start &&
-              {
-                iptables -I FORWARD -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
-                iptables -I INPUT   -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset
-                iptables -I FORWARD -i docker_veth0 -j REJECT -p udp --reject-with icmp-port-unreachable
-                iptables -I INPUT   -i docker_veth0 -j REJECT -p udp --reject-with icmp-port-unreachable
-                iptables -I FORWARD -i docker_veth0 -j REJECT -p icmp --reject-with icmp-host-unreachable
-                iptables -I INPUT   -i docker_veth0 -j REJECT -p icmp --reject-with icmp-host-unreachable
-                iptables -I FORWARD -i docker_veth0 -j REJECT
-                iptables -I INPUT   -i docker_veth0 -j REJECT
-                chown -R registry_guard:registry_guard /home/demo/go/src/github.com/gardener/gardener/dev/local-registry
-              } &&
-              flag_notify offline; stopwatch_stop
+              flag_wait ubuntu_systemd_rootless_docker_rootless_docker_service &&
+              sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' ubuntu_systemd_rootless_docker) -n bash -c
+                set -e
+                flag_wait rootless_demo_image
+                flag_wait rootless_managedseed_seed_ready
+                if ! is_state_tested; then
+                  flag_wait rootless_shoot_ha_ready_deleted
+                  flag_wait managedseed_nested_workerless_shoot_deleted
+                  flag_wait managedseed_nested_shoot_ready
+                  flag_wait registry_mitigation
+                fi
+                stopwatch_start
+                {
+                  iptables -I FORWARD -o eth0 -j REJECT
+                  iptables -I FORWARD -o eth0 -j REJECT -p tcp --reject-with tcp-reset
+                  iptables -I OUTPUT  -o eth0 -j REJECT
+                  iptables -I OUTPUT  -o eth0 -j REJECT -p tcp --reject-with tcp-reset
+
+                  chown -R registry_guard:registry_guard /home/demo/go/src/github.com/gardener/gardener/dev/local-registry
+                }
+                flag_notify offline
+                stopwatch_stop
+              NETWORK_EOF
             EOF
             new_pane "online" <<"EOF"
-              nsenter -t 1 -n
-              iptables -D FORWARD -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset &&
-              iptables -D INPUT   -i docker_veth0 -j REJECT -p tcp --reject-with tcp-reset &&
-              iptables -D FORWARD -i docker_veth0 -j REJECT -p udp --reject-with icmp-port-unreachable &&
-              iptables -D INPUT   -i docker_veth0 -j REJECT -p udp --reject-with icmp-port-unreachable &&
-              iptables -D FORWARD -i docker_veth0 -j REJECT -p icmp --reject-with icmp-host-unreachable &&
-              iptables -D INPUT   -i docker_veth0 -j REJECT -p icmp --reject-with icmp-host-unreachable &&
-              iptables -D FORWARD -i docker_veth0 -j REJECT &&
-              iptables -D INPUT   -i docker_veth0 -j REJECT
+              flag_wait ubuntu_systemd_rootless_docker_rootless_docker_service &&
+              sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' ubuntu_systemd_rootless_docker) -n bash -c
+                iptables -D FORWARD -o eth0 -j REJECT
+                iptables -D FORWARD -o eth0 -j REJECT -p tcp --reject-with tcp-reset
+                iptables -D OUTPUT  -o eth0 -j REJECT
+                iptables -D OUTPUT  -o eth0 -j REJECT -p tcp --reject-with tcp-reset
+              NETWORK_EOF
             EOF
             new_pane "stats" Enter <<"EOF"
-              nsenter -t 1 -n
-              iptables -nvL | grep -E -A 1 "Chain|docker_veth0"
+              flag_wait ubuntu_systemd_rootless_docker_rootless_docker_service &&
+              sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' ubuntu_systemd_rootless_docker) -n bash -c
+                while true; do
+                  clear
+                  iptables -nvL
+                  sleep 1m
+                done
+              NETWORK_EOF
+            EOF
+            new_pane "ad-hoc" <<"EOF"
+              flag_wait ubuntu_systemd_rootless_docker_rootless_docker_service &&
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' ubuntu_systemd_rootless_docker) -n
             EOF
 
             new_window "inspect rootless docker" "exec into the ubuntu_systemd_rootless_docker container running the rootless docker daemon" <<"EOF"
@@ -2061,11 +2064,6 @@ spec:
 
             new_window "ad-hoc" "root" Enter <<"EOF"
               # Use this pane for ad-hoc commands as root
-            EOF
-            new_pane "always online" Enter <<"EOF"
-              # Use this pane for ad-hoc commands as root,
-              # with Internet access even when the demo environment is offline
-              nsenter -t 1 -n
             EOF
 
             tmux select-window -t 0
