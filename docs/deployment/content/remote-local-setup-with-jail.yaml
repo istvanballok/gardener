@@ -1217,6 +1217,34 @@ spec:
                 scriptreplay -m 1 --log-timing {}/timing.log --log-out {}/out.log
             EOF
 
+            new_window "guard" "guard" <<"EOF"
+              flag_wait overload_detected &&
+              echo "Overload or unintended usage detected" | ts &&
+              sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
+              su -l demo -c -l; sleep 1; docker pause ubuntu_systemd_rootless_docker
+                sed 's/^  //' <<"DEMO_CONTAINER_EOF" | xargs -d '\0' docker exec demo sh -c
+                  for i in $(tmux lsc | awk -F ":" '{print $1}'); do
+                    tmux display-message -c $i -N -d 5000 \
+                      "Gardener demo system overload or unintended usage was detected. The demo environment is frozen now. See you next time."
+                  done
+                DEMO_CONTAINER_EOF
+              DEMO_EOF
+            EOF
+            new_pane "unpause" <<"EOF"
+              docker unpause ubuntu_systemd_rootless_docker
+            EOF
+            new_pane "magic keyword" <<"EOF"
+              cd script_recordings
+              tail -f -n +2 $(ls -t | head -n 1)/input.log \
+              | stdbuf -o0 tr -dc '[:print:]\r\n' \
+              | stdbuf -o0 tr '\r' '\n' \
+              | grep superman \
+              | while read line; do
+                  echo "magic keyword detected" | ts
+                  flag_notify overload_detected
+                done
+            EOF
+
             new_window "rootless docker" "Dockerfile ubuntu_systemd_rootless_docker" Enter <<"EOF"
               mkdir -p docker
               cd docker
