@@ -808,10 +808,11 @@ spec:
               ADD scripts/is_tmux_window_shown.sh /usr/local/bin/is_tmux_window_shown.sh
 
               RUN sed 's/^  //' <<"EOF" > ~/welcome.md
-                # Welcome to the online Gardener Demo environment
+                # Welcome to the interactive Gardener Demo environment
 
-                Please follow the step by step instructions on the side to explore the features
-                of Gardener interactively.
+                Kindly proceed with the step-by-step guide provided to navigate
+                through the features of Gardener interactively.
+
               EOF
 
               RUN sed 's/^  //' <<"EOF" > /dev/null # ~/welcome.md
