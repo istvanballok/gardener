@@ -1344,21 +1344,21 @@ spec:
               while true; do
                 clear
                 stopwatch_profile | grep -v "long running"
-                sleep $(echo "scale=3; (1000 - $(date +%3N)) / 1000" | bc)
+                sleep $(echo "2 - $(date +%s.%3N) % 2 + 1" | bc)
               done
             EOF
             new_pane "currently running" Enter <<"EOF"
               while true; do
                 clear
                 stopwatch_profile | tail -n +3 | grep -E "STARTED AT|RUNNING" | grep -v "long running"
-                sleep $(echo "scale=3; (1000 - $(date +%3N)) / 1000" | bc)
+                sleep $(echo "2 - $(date +%s.%3N) % 2 + 1" | bc)
               done
             EOF
             new_pane "long running" Enter <<"EOF"
               while true; do
                 clear
                 stopwatch_profile | tail -n +3 | grep -E "STARTED AT|long running"
-                sleep $(echo "scale=3; (1000 - $(date +%3N)) / 1000" | bc)
+                sleep $(echo "2 - $(date +%s.%3N) % 2 + 1" | bc)
               done
             EOF
 
