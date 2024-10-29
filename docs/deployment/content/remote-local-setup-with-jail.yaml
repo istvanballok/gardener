@@ -1878,7 +1878,7 @@ spec:
             new_window "recordings" "fzf" <<"EOF"
               mkdir -p ~/script_recordings
               cd ~/script_recordings
-              ls -d * | fzf --preview '
+              find . -name input.log -size +0 | sed -E 's|./(.*)/input.log|\1|' | fzf --preview '
                 ls -lht {}/*
                 echo
                 tail -n +2 {}/input.log | strings | sed -E "s/\[[^Mm]+(M|m)//g" | grep -v -E "^$|;rgb:"
