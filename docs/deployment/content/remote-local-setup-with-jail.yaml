@@ -1816,7 +1816,7 @@ spec:
             new_pane "take the demo environment OFFLINE" Enter <<"EOF"
               flag_wait ubuntu_systemd_rootless_docker_rootless_docker_service &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
-              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' ubuntu_systemd_rootless_docker) -n bash -c
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' ubuntu_systemd_rootless_docker) -n bash -l -c
                 set -e
                 flag_wait rootless_demo_image
                 flag_wait rootless_managedseed_seed_ready
