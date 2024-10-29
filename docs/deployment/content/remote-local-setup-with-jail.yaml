@@ -2003,16 +2003,16 @@ spec:
                 sleep 1m
               done
             EOF
-            new_pane "sar -w      -- Task creation and system switching activity" Enter <<"EOF"
+            new_pane "sar -F      -- Filesystem statistics" Enter <<"EOF"
               while true; do
-                S_COLORS=always sar -h -w 10 10                  | grep -v -E --line-buffered 'Linux|^$'
+                S_COLORS=always sar -h -F MOUNT --fs=/root,/home,/etc/hosts 10 10 | grep -v -E --line-buffered 'Linux|^$'
                 echo
                 sleep 1m
               done
             EOF
-            new_pane "sar -F      -- Filesystem statistics" Enter <<"EOF"
+            new_pane "sar -w      -- Task creation and system switching activity" Enter <<"EOF"
               while true; do
-                S_COLORS=always sar -h -F MOUNT --fs=/root,/home,/etc/hosts 10 10 | grep -v -E --line-buffered 'Linux|^$'
+                S_COLORS=always sar -h -w 10 10                  | grep -v -E --line-buffered 'Linux|^$'
                 echo
                 sleep 1m
               done
