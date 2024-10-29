@@ -1305,7 +1305,7 @@ spec:
             new_pane "docker build -t ubuntu_systemd_rootless_docker" Enter <<"EOF"
               cd docker
               stopwatch_start &&
-              docker build -t ubuntu_systemd_rootless_docker --progress plain . &&
+              docker build -t ubuntu_systemd_rootless_docker --progress plain . |& sed -E 's/ +/ /g' &&
               docker system prune -f &&
               flag_notify ubuntu_systemd_rootless_docker_docker_build; stopwatch_stop
             EOF
