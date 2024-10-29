@@ -1720,15 +1720,6 @@ spec:
               su -l demo
             EOF
 
-            new_window "ad-hoc" "root" Enter <<"EOF"
-              # Use this pane for ad-hoc commands as root
-            EOF
-            new_pane "always online" Enter <<"EOF"
-              # Use this pane for ad-hoc commands as root,
-              # with Internet access even when the demo environment is offline
-              nsenter -t 1 -n
-            EOF
-
             new_window "recordings" "fzf" <<"EOF"
               mkdir -p ~/script_recordings
               cd ~/script_recordings
@@ -2056,6 +2047,15 @@ spec:
             tmux set main-pane-width 40%
             tmux select-layout main-vertical-mirrored # requires tmux 3.5
             tmux select-pane -t 0
+
+            new_window "ad-hoc" "root" Enter <<"EOF"
+              # Use this pane for ad-hoc commands as root
+            EOF
+            new_pane "always online" Enter <<"EOF"
+              # Use this pane for ad-hoc commands as root,
+              # with Internet access even when the demo environment is offline
+              nsenter -t 1 -n
+            EOF
 
             tmux select-window -t 0
             tmux select-pane -t 0
