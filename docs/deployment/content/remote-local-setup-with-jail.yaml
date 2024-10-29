@@ -2012,7 +2012,7 @@ spec:
             EOF
             new_pane "sar -F      -- Filesystem statistics" Enter <<"EOF"
               while true; do
-                S_COLORS=always sar -h -F MOUNT --fs=/root,/etc/hosts 10 10 | grep -v -E --line-buffered 'Linux|^$'
+                S_COLORS=always sar -h -F MOUNT --fs=/root,/home,/etc/hosts 10 10 | grep -v -E --line-buffered 'Linux|^$'
                 echo
                 sleep 1m
               done
@@ -2026,7 +2026,7 @@ spec:
                 1,5p; 98,141p; 142,172p; 180,227p; 243,275p; 436,478p; 1294,1386p; 1437,1512p; 1552,1602p; 1629,1636p;
               ' | grep --color=Always -P '^              (?!following|that|values|are)[a-z%][^ ]*|$' | less -RNS
             EOF
-            new_pane "sar -F      -- Network activity (offline after prepared)" Enter <<"EOF"
+            new_pane "sar -h      -- Network activity (offline after prepared)" Enter <<"EOF"
               while true; do
                 S_COLORS=always sar -h -n DEV 10 10              | grep -v -E --line-buffered 'Linux|^$'
                 echo
@@ -2040,7 +2040,7 @@ spec:
                 sleep 1m
               done
             EOF
-            new_pane "sar -F      -- Network activity in the demo   TODO check high network activity" Enter <<"EOF"
+            new_pane "sar -h      -- Network activity in the demo   TODO check high network activity" Enter <<"EOF"
               while true; do
                 nsenter -t $(pgrep -f '^/proc/self/exe --state-dir=/run/user/2000/dockerd-rootless') -n bash -c "
                   S_COLORS=always sar -h -n DEV 10 10              | grep -v -E --line-buffered 'Linux|^$'
