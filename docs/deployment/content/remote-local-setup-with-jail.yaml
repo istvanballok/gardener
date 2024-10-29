@@ -1225,175 +1225,6 @@ spec:
               done
             EOF
 
-            mkdir -p ~/.config/procps; rm -f ~/.config/procps/toprc
-            new_window "top1" "top - Running in tree" Enter <<"EOF"
-              top
-            EOF
-            for k in " " z C c i t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
-            new_pane "top - sorted by TIME+" Enter <<"EOF"
-              top
-            EOF
-            for k in " " V f Down Down s q i; do sleep .2; tmux send $k; done
-
-            new_window "top2" "top - sorted by PID (recently started processes)" Enter <<"EOF"
-              top
-            EOF
-            for k in " " g 2 z; do sleep .2; tmux send $k; done
-            new_pane "top - sorted by MEM%" Enter <<"EOF"
-              top
-            EOF
-            for k in " " g 3 z; do sleep .2; tmux send $k; done
-            new_pane "top - sorted by nMaj" Enter <<"EOF"
-              top
-            EOF
-            for k in " " g 3 z f Down Down Down Down Down Down Down s q f; do sleep .2; tmux send $k; done
-            for i in $(seq 1 34); do sleep .05; tmux send Down; done
-            for k in Space q; do sleep .2; tmux send $k; done
-
-            new_window "iotop" "iotop" Enter <<"EOF"
-              iotop -P -o -d 60
-            EOF
-            for k in " " Left Left; do sleep .2; tmux send $k; done
-            new_pane "man" Enter <<"EOF"
-              man iotop
-            EOF
-
-            new_window "sar1" "man" Enter <<"EOF"
-              man S_COLORS=always sar | sed -n '
-                1,5p; 98,141p; 142,172p; 180,227p; 243,275p; 436,478p; 1294,1386p; 1437,1512p; 1552,1602p; 1629,1636p;
-              ' | grep --color=Always -P '^              (?!following|that|values|are)[a-z%][^ ]*|$' | less -RNS
-            EOF
-            new_pane "sar -q LOAD -- System load (queue length and load averages)" Enter <<"EOF"
-              while true; do
-                S_COLORS=always sar -h -q LOAD 10 10             | grep -v -E --line-buffered 'Linux|^$'
-                echo
-                sleep 1m
-              done
-            EOF
-            new_pane "sar -u      -- CPU utilization" Enter <<"EOF"
-              while true; do
-                S_COLORS=always sar -h -u 10 10                  | grep -v -E --line-buffered 'Linux|^$'
-                echo
-                sleep 1m
-              done
-            EOF
-            new_pane "sar -r      -- Memory utilization" Enter <<"EOF"
-              while true; do
-                S_COLORS=always sar -h -r 10 10                  | grep -v -E --line-buffered 'Linux|^$'
-                echo
-                sleep 1m
-              done
-            EOF
-            new_pane "sar -q CPU  -- CPU pressure" Enter <<"EOF"
-              while true; do
-                S_COLORS=always sar -h -q CPU 10 10             | grep -v -E --line-buffered 'Linux|^$'
-                echo
-                sleep 1m
-              done
-            EOF
-            new_pane "sar -q MEM  -- Memory pressure" Enter <<"EOF"
-              while true; do
-                S_COLORS=always sar -h -q MEM 10 10             | grep -v -E --line-buffered 'Linux|^$'
-                echo
-                sleep 1m
-              done
-            EOF
-            new_pane "sar -q IO   -- I/O pressure" Enter <<"EOF"
-              while true; do
-                S_COLORS=always sar -h -q IO 10 10             | grep -v -E --line-buffered 'Linux|^$'
-                echo
-                sleep 1m
-              done
-            EOF
-            tmux set -w main-pane-width 40%
-            tmux select-layout main-vertical-mirrored # requires tmux 3.5
-            tmux select-pane -t 0
-
-            new_window "sar2" "man" Enter <<"EOF"
-              man S_COLORS=always sar | sed -n '
-                1,5p; 98,141p; 142,172p; 180,227p; 243,275p; 436,478p; 1294,1386p; 1437,1512p; 1552,1602p; 1629,1636p;
-              ' | grep --color=Always -P '^              (?!following|that|values|are)[a-z%][^ ]*|$' | less -RNS
-            EOF
-            new_pane "sar -B      -- Paging statistics              TODO check high pgpgout/s and fault/s - disk writes?" Enter <<"EOF"
-              while true; do
-                S_COLORS=always sar -h -B -h 10 10               | grep -v -E --line-buffered 'Linux|^$'
-                echo
-                sleep 1m
-              done
-            EOF
-            new_pane "sar -b      -- I/O and transfer rate          TODO check high disk writes" Enter <<"EOF"
-              while true; do
-                S_COLORS=always sar -h -b 10 10                  | grep -v -E --line-buffered 'Linux|^$'
-                echo
-                sleep 1m
-              done
-            EOF
-            new_pane "sar -d      -- Block device activity          TODO check disk writes" Enter <<"EOF"
-              while true; do
-                S_COLORS=always sar -h -d 10 10                  | grep -v -E --line-buffered 'Linux|^$'
-                echo
-                sleep 1m
-              done
-            EOF
-            new_pane "sar -w      -- Task creation and system switching activity" Enter <<"EOF"
-              while true; do
-                S_COLORS=always sar -h -w 10 10                  | grep -v -E --line-buffered 'Linux|^$'
-                echo
-                sleep 1m
-              done
-            EOF
-            new_pane "sar -F      -- Filesystem statistics" Enter <<"EOF"
-              while true; do
-                S_COLORS=always sar -h -F MOUNT --fs=/root,/etc/hosts 10 10 | grep -v -E --line-buffered 'Linux|^$'
-                echo
-                sleep 1m
-              done
-            EOF
-            tmux set main-pane-width 40%
-            tmux select-layout main-vertical-mirrored # requires tmux 3.5
-            tmux select-pane -t 0
-
-            new_window "sar3" "man" Enter <<"EOF"
-              man S_COLORS=always sar | sed -n '
-                1,5p; 98,141p; 142,172p; 180,227p; 243,275p; 436,478p; 1294,1386p; 1437,1512p; 1552,1602p; 1629,1636p;
-              ' | grep --color=Always -P '^              (?!following|that|values|are)[a-z%][^ ]*|$' | less -RNS
-            EOF
-            new_pane "sar -F      -- Network activity (offline after prepared)" Enter <<"EOF"
-              while true; do
-                S_COLORS=always sar -h -n DEV 10 10              | grep -v -E --line-buffered 'Linux|^$'
-                echo
-                sleep 1m
-              done
-            EOF
-            new_pane "ifconfig    -- Network activity (offline after prepared)" Enter <<"EOF"
-              while true; do
-                ifconfig | grep -E "Link encap|bytes" | grep --color -E '^[^ ]+|\([^)]+\)|$'
-                echo
-                sleep 1m
-              done
-            EOF
-            new_pane "sar -F      -- Network activity in the demo   TODO check high network activity" Enter <<"EOF"
-              while true; do
-                nsenter -t $(pgrep -f '^/proc/self/exe --state-dir=/run/user/2000/dockerd-rootless') -n bash -c "
-                  S_COLORS=always sar -h -n DEV 10 10              | grep -v -E --line-buffered 'Linux|^$'
-                "
-                echo
-                sleep 1m
-              done
-            EOF
-            new_pane "ifconfig    -- Network activity in the demo   TODO check high network activity" Enter <<"EOF"
-              while true; do
-                nsenter -t $(pgrep -f '^/proc/self/exe --state-dir=/run/user/2000/dockerd-rootless') -n bash -c "
-                  ifconfig | grep -E "Link encap|bytes" | grep --color -E '^[^ ]+|\([^)]+\)|$'
-                "
-                echo
-                sleep 1m
-              done
-            EOF
-            tmux set main-pane-width 40%
-            tmux select-layout main-vertical-mirrored # requires tmux 3.5
-            tmux select-pane -t 0
-
             new_window "patches" "gardener" Enter <<"EOF"
               su -l demo
               git log --color -p origin/master.. --author dev | less -RN
@@ -2048,6 +1879,175 @@ spec:
               nsenter -t 1 -n
               iptables -nvL | grep -E -A 1 "Chain|docker_veth0"
             EOF
+
+            mkdir -p ~/.config/procps; rm -f ~/.config/procps/toprc
+            new_window "top1" "top - Running in tree" Enter <<"EOF"
+              top
+            EOF
+            for k in " " z C c i t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
+            new_pane "top - sorted by TIME+" Enter <<"EOF"
+              top
+            EOF
+            for k in " " V f Down Down s q i; do sleep .2; tmux send $k; done
+
+            new_window "top2" "top - sorted by PID (recently started processes)" Enter <<"EOF"
+              top
+            EOF
+            for k in " " g 2 z; do sleep .2; tmux send $k; done
+            new_pane "top - sorted by MEM%" Enter <<"EOF"
+              top
+            EOF
+            for k in " " g 3 z; do sleep .2; tmux send $k; done
+            new_pane "top - sorted by nMaj" Enter <<"EOF"
+              top
+            EOF
+            for k in " " g 3 z f Down Down Down Down Down Down Down s q f; do sleep .2; tmux send $k; done
+            for i in $(seq 1 34); do sleep .05; tmux send Down; done
+            for k in Space q; do sleep .2; tmux send $k; done
+
+            new_window "iotop" "iotop" Enter <<"EOF"
+              iotop -P -o -d 60
+            EOF
+            for k in " " Left Left; do sleep .2; tmux send $k; done
+            new_pane "man" Enter <<"EOF"
+              man iotop
+            EOF
+
+            new_window "sar1" "man" Enter <<"EOF"
+              man S_COLORS=always sar | sed -n '
+                1,5p; 98,141p; 142,172p; 180,227p; 243,275p; 436,478p; 1294,1386p; 1437,1512p; 1552,1602p; 1629,1636p;
+              ' | grep --color=Always -P '^              (?!following|that|values|are)[a-z%][^ ]*|$' | less -RNS
+            EOF
+            new_pane "sar -q LOAD -- System load (queue length and load averages)" Enter <<"EOF"
+              while true; do
+                S_COLORS=always sar -h -q LOAD 10 10             | grep -v -E --line-buffered 'Linux|^$'
+                echo
+                sleep 1m
+              done
+            EOF
+            new_pane "sar -u      -- CPU utilization" Enter <<"EOF"
+              while true; do
+                S_COLORS=always sar -h -u 10 10                  | grep -v -E --line-buffered 'Linux|^$'
+                echo
+                sleep 1m
+              done
+            EOF
+            new_pane "sar -r      -- Memory utilization" Enter <<"EOF"
+              while true; do
+                S_COLORS=always sar -h -r 10 10                  | grep -v -E --line-buffered 'Linux|^$'
+                echo
+                sleep 1m
+              done
+            EOF
+            new_pane "sar -q CPU  -- CPU pressure" Enter <<"EOF"
+              while true; do
+                S_COLORS=always sar -h -q CPU 10 10             | grep -v -E --line-buffered 'Linux|^$'
+                echo
+                sleep 1m
+              done
+            EOF
+            new_pane "sar -q MEM  -- Memory pressure" Enter <<"EOF"
+              while true; do
+                S_COLORS=always sar -h -q MEM 10 10             | grep -v -E --line-buffered 'Linux|^$'
+                echo
+                sleep 1m
+              done
+            EOF
+            new_pane "sar -q IO   -- I/O pressure" Enter <<"EOF"
+              while true; do
+                S_COLORS=always sar -h -q IO 10 10             | grep -v -E --line-buffered 'Linux|^$'
+                echo
+                sleep 1m
+              done
+            EOF
+            tmux set -w main-pane-width 40%
+            tmux select-layout main-vertical-mirrored # requires tmux 3.5
+            tmux select-pane -t 0
+
+            new_window "sar2" "man" Enter <<"EOF"
+              man S_COLORS=always sar | sed -n '
+                1,5p; 98,141p; 142,172p; 180,227p; 243,275p; 436,478p; 1294,1386p; 1437,1512p; 1552,1602p; 1629,1636p;
+              ' | grep --color=Always -P '^              (?!following|that|values|are)[a-z%][^ ]*|$' | less -RNS
+            EOF
+            new_pane "sar -B      -- Paging statistics              TODO check high pgpgout/s and fault/s - disk writes?" Enter <<"EOF"
+              while true; do
+                S_COLORS=always sar -h -B -h 10 10               | grep -v -E --line-buffered 'Linux|^$'
+                echo
+                sleep 1m
+              done
+            EOF
+            new_pane "sar -b      -- I/O and transfer rate          TODO check high disk writes" Enter <<"EOF"
+              while true; do
+                S_COLORS=always sar -h -b 10 10                  | grep -v -E --line-buffered 'Linux|^$'
+                echo
+                sleep 1m
+              done
+            EOF
+            new_pane "sar -d      -- Block device activity          TODO check disk writes" Enter <<"EOF"
+              while true; do
+                S_COLORS=always sar -h -d 10 10                  | grep -v -E --line-buffered 'Linux|^$'
+                echo
+                sleep 1m
+              done
+            EOF
+            new_pane "sar -w      -- Task creation and system switching activity" Enter <<"EOF"
+              while true; do
+                S_COLORS=always sar -h -w 10 10                  | grep -v -E --line-buffered 'Linux|^$'
+                echo
+                sleep 1m
+              done
+            EOF
+            new_pane "sar -F      -- Filesystem statistics" Enter <<"EOF"
+              while true; do
+                S_COLORS=always sar -h -F MOUNT --fs=/root,/etc/hosts 10 10 | grep -v -E --line-buffered 'Linux|^$'
+                echo
+                sleep 1m
+              done
+            EOF
+            tmux set main-pane-width 40%
+            tmux select-layout main-vertical-mirrored # requires tmux 3.5
+            tmux select-pane -t 0
+
+            new_window "sar3" "man" Enter <<"EOF"
+              man S_COLORS=always sar | sed -n '
+                1,5p; 98,141p; 142,172p; 180,227p; 243,275p; 436,478p; 1294,1386p; 1437,1512p; 1552,1602p; 1629,1636p;
+              ' | grep --color=Always -P '^              (?!following|that|values|are)[a-z%][^ ]*|$' | less -RNS
+            EOF
+            new_pane "sar -F      -- Network activity (offline after prepared)" Enter <<"EOF"
+              while true; do
+                S_COLORS=always sar -h -n DEV 10 10              | grep -v -E --line-buffered 'Linux|^$'
+                echo
+                sleep 1m
+              done
+            EOF
+            new_pane "ifconfig    -- Network activity (offline after prepared)" Enter <<"EOF"
+              while true; do
+                ifconfig | grep -E "Link encap|bytes" | grep --color -E '^[^ ]+|\([^)]+\)|$'
+                echo
+                sleep 1m
+              done
+            EOF
+            new_pane "sar -F      -- Network activity in the demo   TODO check high network activity" Enter <<"EOF"
+              while true; do
+                nsenter -t $(pgrep -f '^/proc/self/exe --state-dir=/run/user/2000/dockerd-rootless') -n bash -c "
+                  S_COLORS=always sar -h -n DEV 10 10              | grep -v -E --line-buffered 'Linux|^$'
+                "
+                echo
+                sleep 1m
+              done
+            EOF
+            new_pane "ifconfig    -- Network activity in the demo   TODO check high network activity" Enter <<"EOF"
+              while true; do
+                nsenter -t $(pgrep -f '^/proc/self/exe --state-dir=/run/user/2000/dockerd-rootless') -n bash -c "
+                  ifconfig | grep -E "Link encap|bytes" | grep --color -E '^[^ ]+|\([^)]+\)|$'
+                "
+                echo
+                sleep 1m
+              done
+            EOF
+            tmux set main-pane-width 40%
+            tmux select-layout main-vertical-mirrored # requires tmux 3.5
+            tmux select-pane -t 0
 
             tmux select-window -t 0
             tmux select-pane -t 0
