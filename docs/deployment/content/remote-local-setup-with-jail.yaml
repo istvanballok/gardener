@@ -2052,7 +2052,7 @@ spec:
             new_pane "ifconfig    -- Network activity in the demo   TODO check high network activity" Enter <<"EOF"
               while true; do
                 nsenter -t $(pgrep -f '^/proc/self/exe --state-dir=/run/user/2000/dockerd-rootless') -n bash -c "
-                  ifconfig | grep -E "Link encap|bytes" | grep --color -E '^[^ ]+|\([^)]+\)|$'
+                  ifconfig | grep -E 'Link encap|bytes' | grep --color -E '^[^ ]+|\([^)]+\)|$'
                 "
                 echo
                 sleep 1m
