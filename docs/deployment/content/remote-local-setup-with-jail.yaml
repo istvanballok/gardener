@@ -1202,22 +1202,25 @@ spec:
             tmux select-pane -T "all";
             send_commands Enter <<"EOF"
               while true; do
+                stopwatch_tasks | grep -v "long running" > /tmp/stopwatch_tasks_all
                 clear
-                stopwatch_tasks | grep -v "long running"
+                cat /tmp/stopwatch_tasks_all
                 sleep $(echo "2 - $(date +%s.%3N) % 2 + 1" | bc)
               done
             EOF
             new_pane "currently running" Enter <<"EOF"
               while true; do
+                stopwatch_tasks | tail -n +3 | grep -E "STARTED AT|RUNNING" | grep -v "long running" > /tmp/stopwatch_tasks_current
                 clear
-                stopwatch_tasks | tail -n +3 | grep -E "STARTED AT|RUNNING" | grep -v "long running"
+                cat /tmp/stopwatch_tasks_current
                 sleep $(echo "2 - $(date +%s.%3N) % 2 + 1" | bc)
               done
             EOF
             new_pane "long running" Enter <<"EOF"
               while true; do
+                stopwatch_tasks | tail -n +3 | grep -E "STARTED AT|long running" > /tmp/stopwatch_tasks_long
                 clear
-                stopwatch_tasks | tail -n +3 | grep -E "STARTED AT|long running"
+                cat /tmp/stopwatch_tasks_long
                 sleep $(echo "2 - $(date +%s.%3N) % 2 + 1" | bc)
               done
             EOF
@@ -2011,7 +2014,7 @@ spec:
               iptables -nvL | grep -E -A 1 "Chain|docker_veth0"
             EOF
 
-            tmux select-window -t 6
+            tmux select-window -t 0
             tmux select-pane -t 0
           SCRIPT_EOF
 
