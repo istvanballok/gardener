@@ -1358,9 +1358,6 @@ spec:
                 DEMO_EOF
               SYSD
             EOF
-            new_pane "docker stop ubuntu_systemd_rootless_docker" <<"EOF"
-              docker stop ubuntu_systemd_rootless_docker
-            EOF
 
             new_window "make kind-operator" "make kind-operator-down" Enter <<"EOF"
               rm -rf /home/demo/go/src/github.com/gardener/gardener/dev/local-backupbuckets &&
@@ -1870,6 +1867,9 @@ spec:
               flag_wait ubuntu_systemd_rootless_docker_rootless_docker_service &&
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' ubuntu_systemd_rootless_docker) -n \
               su -l demo
+            EOF
+            new_pane "docker stop ubuntu_systemd_rootless_docker" <<"EOF"
+              docker stop ubuntu_systemd_rootless_docker
             EOF
 
             new_window "patches" "gardener" Enter <<"EOF"
