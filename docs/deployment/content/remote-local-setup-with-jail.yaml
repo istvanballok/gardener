@@ -1139,9 +1139,6 @@ spec:
                     sleep 1m
                   done
                 EOF
-                new_pane "demo CPU limit" <<"EOF"
-                  nice dd if=/dev/zero of=/dev/null &
-                EOF
                 new_pane "disk" Enter <<"EOF"
                   df -h
                 EOF
