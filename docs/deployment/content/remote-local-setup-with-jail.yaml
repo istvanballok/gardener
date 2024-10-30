@@ -44,8 +44,6 @@ spec:
             truncate -s 60G ~/inner.disk # sparse file
             mkfs.ext4 ~/inner.disk
           fi
-          rm -rf /home # migration to the inner disk
-          mkdir -p /home
           mount ~/inner.disk /home
 
           useradd -m -s /bin/bash -u 2000 demo
