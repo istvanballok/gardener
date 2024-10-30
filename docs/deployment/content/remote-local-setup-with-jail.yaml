@@ -139,6 +139,11 @@ spec:
                wget -N "https://github.com/bronze1man/yaml2json/releases/download/$VERSION/yaml2json_linux_amd64"
                cp yaml2json_linux_amd64 /usr/local/bin/yaml2json
                chmod +x /usr/local/bin/yaml2json
+          echo diki
+               VERSION=$(curl -Ls -H 'Accept: application/json' https://github.com/gardener/diki/releases/latest | jq -r '.tag_name // "v0.11.0"' -r)
+               wget -N "https://github.com/gardener/diki/releases/download/$VERSION/diki-linux-amd64"
+               cp diki-linux-amd64 /usr/local/bin/diki
+               chmod +x /usr/local/bin/diki
           cd
 
           echo delve
