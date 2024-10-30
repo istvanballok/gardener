@@ -1214,7 +1214,7 @@ spec:
                 scriptreplay -m 1 --log-timing {}/timing.log --log-out {}/out.log
             EOF
 
-            new_window "guard" "guard" <<"EOF"
+            new_window "guard" "guard" Enter <<"EOF"
               flag_wait overload_detected &&
               echo "Overload or unintended usage detected" | ts &&
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
@@ -1232,13 +1232,19 @@ spec:
             EOF
             new_pane "magic keyword" <<"EOF"
               cd script_recordings
-              tail -f -n +2 $(ls -t | head -n 1)/input.log \
-              | stdbuf -o0 tr -dc '[:print:]\r\n' \
-              | stdbuf -o0 tr '\r' '\n' \
-              | grep superman \
+              inotifywait -m -e create . \
               | while read line; do
-                  echo "magic keyword detected" | ts
-                  flag_notify overload_detected
+                  kill %1
+                  echo $line
+                  echo "Waiting for the magic keyword to appear in $(ls -t | head -n 1)" | ts
+                  tail -f -n +2 $(ls -t | head -n 1)/input.log \
+                  | stdbuf -o0 tr -dc '[:print:]\r\n' \
+                  | stdbuf -o0 tr '\r' '\n' \
+                  | grep superman \
+                  | while read line; do
+                      echo "magic keyword detected" | ts | tee $(ls -t | head -n 1)/magic_keyword_detected
+                      flag_notify overload_detected
+                    done &
                 done
             EOF
 
