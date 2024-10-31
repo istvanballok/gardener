@@ -522,6 +522,9 @@ spec:
             fi
           DEMO_EOF
 
+          mkdir -p /etc/docker
+          echo '{"insecure-registries" : ["registry.remote-local-setup-registry.svc.cluster.local:5001"]}' > /etc/docker/daemon.json
+
           sysctl -w net.ipv6.conf.eth0.disable_ipv6=1
           # https://docs.docker.com/reference/cli/dockerd/
           # https://d2iq.com/blog/running-kind-inside-a-kubernetes-cluster-for-continuous-integration
@@ -1237,6 +1240,31 @@ spec:
               done
             EOF
 
+            new_window "registry" "download" Enter <<"EOF"
+              set -e
+              if curl -s registry.remote-local-setup-registry.svc.cluster.local:5001; then
+                for i in $(curl -s registry.remote-local-setup-registry.svc.cluster.local:5001/v2/_catalog | jq '.repositories[]' -r); do
+                  curl -s registry.remote-local-setup-registry.svc.cluster.local:5001/v2/$i/tags/list | jq '"\(.name):\(.tags[])"' -r
+                done | grep rootful | while read image; do
+                  docker pull registry.remote-local-setup-registry.svc.cluster.local:5001/$image
+                  docker tag registry.remote-local-setup-registry.svc.cluster.local:5001/$image $(echo $image | sed 's|rootful/||')
+                done
+              fi
+              flag_notify registry_rootful_download
+            EOF
+            new_pane "upload" Enter <<"EOF"
+              set -e
+              flag_wait ubuntu_systemd_rootless_docker_docker_build &&
+              if curl -s registry.remote-local-setup-registry.svc.cluster.local:5001; then
+                for image in $(docker images | tail -n +2 | awk '{print $1 ":" $2}' \
+                    | grep -v -E "remote-local-setup-registry|gardener|ubuntu_systemd_rootless_docker"); do
+                  docker pull $image || true
+                  docker tag $image registry.remote-local-setup-registry.svc.cluster.local:5001/rootful/$image
+                  docker push registry.remote-local-setup-registry.svc.cluster.local:5001/rootful/$image
+                done
+              fi
+            EOF
+
             new_window "recordings" "fzf" <<"EOF"
               mkdir -p ~/script_recordings
               cd ~/script_recordings
@@ -1361,7 +1389,9 @@ spec:
             EOF
             new_pane "docker build -t ubuntu_systemd_rootless_docker" Enter <<"EOF"
               cd docker
+              flag_wait registry_rootful_download &&
               stopwatch_start &&
+              retry docker pull ubuntu:24.04 &&
               retry docker build -t ubuntu_systemd_rootless_docker --progress plain . |& sed -E 's/ +/ /g' &&
               docker system prune -f &&
               flag_notify ubuntu_systemd_rootless_docker_docker_build; stopwatch_stop
@@ -1411,6 +1441,8 @@ spec:
                 loginctl enable-linger demo
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
                 machinectl shell demo@ /bin/bash -c
+                  mkdir -p ~/.config/docker
+                  echo '{"insecure-registries" : ["registry.remote-local-setup-registry.svc.cluster.local:5001"]}' > ~/.config/docker/daemon.json
                   dockerd-rootless-setuptool.sh install
                 DEMO_EOF
               SYSD
@@ -1513,6 +1545,8 @@ spec:
                   set -e
                   cd ../etcd-druid
                   echo ".git" > .dockerignore
+                  retry docker pull golang:1.22.4
+                  retry docker pull gcr.io/distroless/static-debian11:nonroot
                   retry nice time docker buildx build --platform=$(docker info --format '{{.OSType}}/{{.Architecture}}') --target builder -t etcd-druid-builder --progress plain .
                   retry nice time make REGISTRY=localhost:5001 docker-build |& cat
                   nice time make REGISTRY=localhost:5001 docker-push  |& grep -v -E 'Preparing|Waiting'
@@ -1931,10 +1965,14 @@ spec:
             EOF
 
             new_window "inspect rootless docker" "exec into the ubuntu_systemd_rootless_docker container running the rootless docker daemon" <<"EOF"
+              cat <<DOC_EOF >/dev/null
               # Try these commands:
               # machinectl shell demo@
               # systemctl  --user status docker.service
               # journalctl --user -xeu   docker.service
+              # systemctl --user (start|stop|restart) docker.service
+              # systemctl --user restart docker.service
+              DOC_EOF
               flag_wait ubuntu_systemd_rootless_docker_rootless_docker_service &&
               docker exec -it ubuntu_systemd_rootless_docker bash
             EOF
@@ -2141,9 +2179,35 @@ spec:
             tmux kill-server 2>/dev/null || true
             source /usr/local/bin/tmux_functions.sh
 
-            tmux new -d -s demo -n garden -x 2000 -y 2000
-            tmux select-pane -T garden;
+            tmux new -d -s demo -n registry -x 2000 -y 2000
+
+            tmux select-pane -T download;
             send_commands Enter <<"EOF"
+              set -e
+              if curl -s registry.remote-local-setup-registry.svc.cluster.local:5001; then
+                for i in $(curl -s registry.remote-local-setup-registry.svc.cluster.local:5001/v2/_catalog | jq '.repositories[]' -r); do
+                  curl -s registry.remote-local-setup-registry.svc.cluster.local:5001/v2/$i/tags/list | jq '"\(.name):\(.tags[])"' -r
+                done | grep rootless | while read image; do
+                  docker pull registry.remote-local-setup-registry.svc.cluster.local:5001/$image
+                  docker tag registry.remote-local-setup-registry.svc.cluster.local:5001/$image $(echo $image | sed 's|rootful/||')
+                done
+              fi
+              flag_notify registry_rootless_download
+            EOF
+            new_pane "upload" Enter <<"EOF"
+              set -e
+              flag_wait rootless_kind_operator_up &&
+              if curl -s registry.remote-local-setup-registry.svc.cluster.local:5001; then
+                for image in $(docker images | tail -n +2 | awk '{print $1 ":" $2}' \
+                    | grep -v -E "remote-local-setup-registry|gardener|ubuntu_systemd_rootless_docker|demo_image|localhost|etcd"); do
+                  docker pull $image || true
+                  docker tag $image registry.remote-local-setup-registry.svc.cluster.local:5001/rootful/$image
+                  docker push registry.remote-local-setup-registry.svc.cluster.local:5001/rootful/$image
+                done
+              fi
+            EOF
+
+            new_window "garden" "garden" Enter <<"EOF"
               flag_wait rootless_kind_operator_up &&
               while true; do
                 clear
@@ -2743,6 +2807,7 @@ spec:
               flag_wait rootless_virtual_garden_ha &&
               stopwatch_start &&
               cd cell &&
+              retry docker pull alpine:3.20 &&
               retry time docker build -t demo_image --progress plain . |& sed -E 's/ +/ /g' &&
               docker system prune -f &&
               flag_notify rootless_demo_image; stopwatch_stop
