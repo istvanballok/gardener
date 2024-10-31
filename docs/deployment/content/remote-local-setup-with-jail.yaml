@@ -2898,6 +2898,7 @@ spec:
                     mv ~/.kube/kube_config.tmp ~/.kube/garden.config
 
                     yq -o json example/gardener-local/kind/operator/kubeconfig.modified | jq '
+                            ."current-context"             = "runtime" |
                             .contexts[0].name              = "runtime" |
                             .contexts[0].context.namespace = "garden"
                     ' | yq -P  > ~/.kube/kube_config.tmp
