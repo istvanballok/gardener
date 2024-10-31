@@ -1210,6 +1210,23 @@ spec:
                 sleep $(echo "2 - $(date +%s.%3N) % 2 + 1" | bc)
               done
             EOF
+            new_pane "waiting for" Enter <<"EOF"
+              while true; do
+                {
+                  echo "WAITING FOR | SESSION | WINDOW | PANE "
+                  ps -C inotifywait -o pid,command | grep /tmp/sync | grep -v -E "watch|overload" | sed -E 's| *([0-9]+).*/([^/]+)\$$|\1 \2|' | \
+                  while read pid flag; do
+                    (
+                      eval "$(cat /proc/$pid/environ | xargs -0 -n 1 | grep -i tmux)"
+                      tmux display-message -p -t "$TMUX_PANE" "$flag | #S | #W | #T"
+                    )
+                  done | sort
+                } | column -t -s "|" | nl > /tmp/waiting_for
+                clear
+                cat /tmp/waiting_for
+                sleep $(echo "2 - $(date +%s.%3N) % 2 + 1" | bc)
+              done
+            EOF
 
             new_window "recordings" "fzf" <<"EOF"
               mkdir -p ~/script_recordings
