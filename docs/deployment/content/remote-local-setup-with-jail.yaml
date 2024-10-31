@@ -315,7 +315,7 @@ spec:
             fi
             function retry {
               i=1
-              while ! eval "$*"; do
+              while ! "$@"; do
                 echo
                 echo "Retrying in $i seconds..." | ts
                 sleep $i
