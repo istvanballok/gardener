@@ -313,6 +313,15 @@ spec:
             else
               cd ~
             fi
+            function retry {
+              i=1
+              while ! eval "$*"; do
+                echo
+                echo "Retrying in $i seconds..." | ts
+                sleep $i
+                (( i = 2*i ))
+              done
+            }
             function stopwatch_start {
               mkdir -p /tmp/timing
               if [ "$(whoami)" == "root" ]; then
@@ -1353,7 +1362,7 @@ spec:
             new_pane "docker build -t ubuntu_systemd_rootless_docker" Enter <<"EOF"
               cd docker
               stopwatch_start &&
-              docker build -t ubuntu_systemd_rootless_docker --progress plain . |& sed -E 's/ +/ /g' &&
+              retry docker build -t ubuntu_systemd_rootless_docker --progress plain . |& sed -E 's/ +/ /g' &&
               docker system prune -f &&
               flag_notify ubuntu_systemd_rootless_docker_docker_build; stopwatch_stop
             EOF
@@ -1418,7 +1427,7 @@ spec:
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
               su -l demo -c -l; stopwatch_stop
                 set -e
-                time make kind-operator-down || time make kind-operator-down
+                retry time make kind-operator-down
                 rm -rf ~/.kube/config
                 flag_notify rootless_kind_operator_down
               DEMO_EOF
@@ -1434,7 +1443,7 @@ spec:
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
                 su -l demo -c -l
                   set -e
-                  nice time make kind-operator-up || nice time make kind-operator-up
+                  retry nice time make kind-operator-up
                   mkdir -p ~/.kube
                   chmod 644 example/gardener-local/kind/operator/kubeconfig
                   flag_notify rootless_kind_operator_up
@@ -1504,8 +1513,8 @@ spec:
                   set -e
                   cd ../etcd-druid
                   echo ".git" > .dockerignore
-                  nice time docker buildx build --platform=$(docker info --format '{{.OSType}}/{{.Architecture}}') --target builder -t etcd-druid-builder --progress plain .
-                  nice time make REGISTRY=localhost:5001 docker-build |& cat
+                  retry nice time docker buildx build --platform=$(docker info --format '{{.OSType}}/{{.Architecture}}') --target builder -t etcd-druid-builder --progress plain .
+                  retry nice time make REGISTRY=localhost:5001 docker-build |& cat
                   nice time make REGISTRY=localhost:5001 docker-push  |& grep -v -E 'Preparing|Waiting'
                   docker system prune -f
                   flag_notify rootless_etcd_druid_patched
@@ -1521,7 +1530,7 @@ spec:
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
                 su -l demo -c -l
                   set -e
-                  nice time make operator-up || nice time make operator-up
+                  retry nice time make operator-up
                   flag_notify rootless_operator_up
                 DEMO_EOF
               NETWORK_EOF
@@ -1536,7 +1545,7 @@ spec:
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
                 su -l demo -c -l
                   set -e
-                  nice time make operator-seed-up || nice time make operator-seed-up
+                  retry nice time make operator-seed-up
                   time (kubectl wait --for=jsonpath='{.status.lastOperation.state}'=Succeeded  garden local --timeout=-1s
                         kubectl wait --for=condition=VirtualComponentsHealthy                  garden local --timeout=-1s
                         kubectl wait --for=condition=RuntimeComponentsHealthy                  garden local --timeout=-1s
@@ -2734,7 +2743,7 @@ spec:
               flag_wait rootless_virtual_garden_ha &&
               stopwatch_start &&
               cd cell &&
-              time docker build -t demo_image --progress plain . |& sed -E 's/ +/ /g' &&
+              retry time docker build -t demo_image --progress plain . |& sed -E 's/ +/ /g' &&
               docker system prune -f &&
               flag_notify rootless_demo_image; stopwatch_stop
             EOF
