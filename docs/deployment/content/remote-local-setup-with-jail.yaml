@@ -2789,7 +2789,7 @@ spec:
             new_pane "Merge the virtual-garden and the runtime-garden (KinD) kube configs | (long running)" Enter <<"EOF"
               flag_wait rootless_demo_run &&
               stopwatch_start &&
-              sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' docker exec demo sh -c; stopwatch_stop
+              sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' docker exec demo bash -l -c; stopwatch_stop
                 mkdir -p ~/.kube
 
                 inotifywait -m -e moved_to example/operator/virtual-garden --include '/kubeconfig$' 2>/dev/null \
