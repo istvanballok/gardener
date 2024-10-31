@@ -2753,23 +2753,22 @@ spec:
             new_pane "Merge the virtual-garden and the runtime-garden (KinD) kube configs | (long running)" Enter <<"EOF"
               flag_wait rootless_demo_run &&
               stopwatch_start &&
-              sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' docker exec -u root demo sh -c; stopwatch_stop
-                mkdir -p /home/demo/.kube
-                chown demo:demo /home/demo/.kube
+              sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' docker exec demo sh -c; stopwatch_stop
+                mkdir -p ~/.kube
 
-                inotifywait -m -e moved_to /home/demo/go/src/github.com/gardener/gardener/example/operator/virtual-garden --include '/kubeconfig$' 2>/dev/null \
+                inotifywait -m -e moved_to example/operator/virtual-garden --include '/kubeconfig$' 2>/dev/null \
                 | while read line; do
                     echo "Detected a change in the virtual garden kubeconfig" | ts
-                    touch ~/.kubeconfig_changed
+                    touch ~/.kube/.kubeconfig_changed
                   done &
 
-                inotifywait -m -e close_write /home/demo/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator --include '/kubeconfig$' 2>/dev/null \
+                inotifywait -m -e close_write example/gardener-local/kind/operator --include '/kubeconfig$' 2>/dev/null \
                 | while read line; do
                     echo "Detected a change in the runtime garden (KinD) kubeconfig" | ts
-                    touch ~/.kubeconfig_changed
+                    touch ~/.kube/.kubeconfig_changed
                   done &
 
-                inotifywait -m -e close_write ~ --include '/.kubeconfig_changed$' 2>&1 \
+                inotifywait -m -e close_write ~/.kube --include '/.kubeconfig_changed$' 2>&1 \
                 | grep --line-buffered -E 'Watches established.|CLOSE_WRITE' \
                 | while read line; do
                     echo "Merging the kubeconfigs" | ts
@@ -2779,21 +2778,35 @@ spec:
                        clusters: .[1:] | map(.clusters)  | add,
                        contexts: map(.contexts | arrays) | add | .[0:2],
                        "current-context": ((.[0]."current-context") ? // "garden")}
-                    ' <({ cat /home/demo/.kube/config 2>/dev/null || echo '{}'; } | yq -o json) \
-                      <(yq -o json /home/demo/go/src/github.com/gardener/gardener/example/operator/virtual-garden/kubeconfig \
+                    ' <({ cat ~/.kube/config 2>/dev/null || echo '{}'; } | yq -o json) \
+                      <(yq -o json example/operator/virtual-garden/kubeconfig \
                         | jq '
                             .contexts[0].context.namespace = "garden-local"
                           ') \
-                      <(yq -o json /home/demo/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator/kubeconfig.modified \
+                      <(yq -o json example/gardener-local/kind/operator/kubeconfig.modified \
                         | jq '
                             .contexts[0].name              = "runtime" |
                             .contexts[0].context.namespace = "garden"
                           ') \
-                    | yq -P \
-                    > ~/kube_config.tmp
-                    chown demo ~/kube_config.tmp
-                    mv ~/kube_config.tmp /home/demo/.kube/config
-                    yq -P -C /home/demo/.kube/config | cut -c 1-100
+                    | yq -P > ~/.kube/kube_config.tmp
+                    mv ~/.kube/kube_config.tmp ~/.kube/config
+
+                    yq -o json example/operator/virtual-garden/kubeconfig | jq '
+                            .contexts[0].context.namespace = "garden-local"
+                    ' | yq -P  > ~/.kube/kube_config.tmp
+                    mv ~/.kube/kube_config.tmp ~/.kube/garden.config
+
+                    yq -o json example/gardener-local/kind/operator/kubeconfig.modified | jq '
+                            .contexts[0].name              = "runtime" |
+                            .contexts[0].context.namespace = "garden"
+                    ' | yq -P  > ~/.kube/kube_config.tmp
+                    mv ~/.kube/kube_config.tmp ~/.kube/runtime.config
+
+                    for i in ~/.kube/*config; do
+                      echo $i
+                      yq -o json $i | jq 'walk(if type == "string" then .[0:50] end)' | yq -P -C
+                      echo
+                    done
                     echo
                   done
               DEMO_EOF
@@ -2848,6 +2861,13 @@ spec:
                     set -ex -o pipefail
                     while [ ! -f ~/.kube/config ]; do sleep 1; done
 
+                    echo "check the separate kube configs"
+                    export KUBECONFIG=~/.kube/garden.config
+                    k get seeds
+                    export KUBECONFIG=~/.kube/runtime.config
+                    k get pods
+
+                    unset KUBECONFIG
                     echo "check the runtime garden (KinD) cluster"
                     k --context runtime get pods -A | nl
 
