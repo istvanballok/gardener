@@ -683,7 +683,7 @@ spec:
               RUN echo diki                                                                                                    && \\
                        VERSION=$(curl -sL -H 'Accept: application/json' https://github.com/gardener/diki/releases/latest \
                                                                                              | jq '.tag_name' -r)              && \\
-                       wget -N "https://github.com/gardener/diki/releases/download/$VERSION/diki-linux-amd64"                  && \\
+                       wget -N "https://github.com/gardener/diki/releases/download/\$VERSION/diki-linux-amd64"                 && \\
                        cp diki-linux-amd64 /usr/local/bin/diki                                                                 && \\
                        chmod +x /usr/local/bin/diki
 
