@@ -1326,7 +1326,7 @@ spec:
                     done &
                 done
             EOF
-            new_pane "input size" Enter <<"EOF"
+            new_pane "input output size" Enter <<"EOF"
               cd script_recordings
               inotifywait -m -e create . \
               | while read line; do
