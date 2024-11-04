@@ -1241,28 +1241,38 @@ spec:
             EOF
 
             new_window "registry" "download" Enter <<"EOF"
-              if curl -s registry.remote-local-setup-registry.svc.cluster.local:5001; then
-                for i in $(curl -s registry.remote-local-setup-registry.svc.cluster.local:5001/v2/_catalog | jq '.repositories[]' -r); do
-                  curl -s registry.remote-local-setup-registry.svc.cluster.local:5001/v2/$i/tags/list | jq '"\(.name):\(.tags[])"' -r
+              {
+              docker images
+              REGISTRY=registry.remote-local-setup-registry.svc.cluster.local:5001
+              if curl -s $REGISTRY; then
+                for i in $(curl -s $REGISTRY/v2/_catalog | jq '.repositories[]' -r); do
+                  curl -s $REGISTRY/v2/$i/tags/list | jq '"\(.name):\(.tags[])"' -r
                 done | grep rootful | while read image; do
-                  docker pull registry.remote-local-setup-registry.svc.cluster.local:5001/$image &&
-                  docker tag registry.remote-local-setup-registry.svc.cluster.local:5001/$image $(echo $image | sed 's|rootful/||')
+                  echo $image
+                  docker pull $REGISTRY/$image &&
+                  docker tag $REGISTRY/$image $(echo $image | sed 's|rootful/||')
                 done
               fi
               flag_notify registry_rootful_download
               docker images
+              }
             EOF
             new_pane "upload" Enter <<"EOF"
+              {
+              docker images
+              REGISTRY=registry.remote-local-setup-registry.svc.cluster.local:5001
               flag_wait ubuntu_systemd_rootless_docker_docker_build &&
-              if curl -s registry.remote-local-setup-registry.svc.cluster.local:5001; then
+              if curl -s $REGISTRY; then
                 for image in $(docker images | tail -n +2 | awk '{print $1 ":" $2}' \
                     | grep -v -E "remote-local-setup-registry|gardener|ubuntu_systemd_rootless_docker"); do
+                  echo $image
                   docker pull $image || true
-                  docker tag $image registry.remote-local-setup-registry.svc.cluster.local:5001/rootful/$image &&
-                  docker push registry.remote-local-setup-registry.svc.cluster.local:5001/rootful/$image
+                  docker tag $image $REGISTRY/rootful/$image &&
+                  docker push $REGISTRY/rootful/$image
                 done
               fi
               docker images
+              }
             EOF
 
             new_window "recordings" "fzf" <<"EOF"
@@ -2183,26 +2193,34 @@ spec:
 
             tmux select-pane -T download;
             send_commands Enter <<"EOF"
-              if curl -s registry.remote-local-setup-registry.svc.cluster.local:5001; then
-                for i in $(curl -s registry.remote-local-setup-registry.svc.cluster.local:5001/v2/_catalog | jq '.repositories[]' -r); do
-                  curl -s registry.remote-local-setup-registry.svc.cluster.local:5001/v2/$i/tags/list | jq '"\(.name):\(.tags[])"' -r
+              {
+              REGISTRY=registry.remote-local-setup-registry.svc.cluster.local:5001
+              if curl -s $REGISTRY; then
+                for i in $(curl -s $REGISTRY/v2/_catalog | jq '.repositories[]' -r); do
+                  curl -s $REGISTRY/v2/$i/tags/list | jq '"\(.name):\(.tags[])"' -r
                 done | grep rootless | while read image; do
-                  docker pull registry.remote-local-setup-registry.svc.cluster.local:5001/$image &&
-                  docker tag registry.remote-local-setup-registry.svc.cluster.local:5001/$image $(echo $image | sed 's|rootful/||')
+                  echo $image
+                  docker pull $REGISTRY/$image &&
+                  docker tag $REGISTRY/$image $(echo $image | sed 's|rootful/||')
                 done
               fi
               flag_notify registry_rootless_download
+              }
             EOF
             new_pane "upload" Enter <<"EOF"
+              {
+              REGISTRY=registry.remote-local-setup-registry.svc.cluster.local:5001
               flag_wait rootless_kind_operator_up &&
-              if curl -s registry.remote-local-setup-registry.svc.cluster.local:5001; then
+              if curl -s $REGISTRY; then
                 for image in $(docker images | tail -n +2 | awk '{print $1 ":" $2}' \
                     | grep -v -E "remote-local-setup-registry|gardener|ubuntu_systemd_rootless_docker|demo_image|localhost|etcd"); do
+                  echo $image
                   docker pull $image || true
-                  docker tag $image registry.remote-local-setup-registry.svc.cluster.local:5001/rootless/$image &&
-                  docker push registry.remote-local-setup-registry.svc.cluster.local:5001/rootless/$image
+                  docker tag $image $REGISTRY/rootless/$image &&
+                  docker push $REGISTRY/rootless/$image
                 done
               fi
+              }
             EOF
 
             new_window "garden" "garden" Enter <<"EOF"
