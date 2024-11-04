@@ -1326,6 +1326,27 @@ spec:
                     done &
                 done
             EOF
+            new_pane "input size" Enter <<"EOF"
+              cd script_recordings
+              inotifywait -m -e create . \
+              | while read line; do
+                  kill %1
+                  echo $line
+                  echo "Checking the input and output size in $(ls -t | head -n 1)" | ts
+                  while true; do
+                    ls -alht $(ls -t | head -n 1)/input.log $(ls -t | head -n 1)/out.log | ts
+                    if [ $(stat -c %s $(ls -t | head -n 1)/input.log) -gt $(( 100 * 1024 )) ]; then
+                      echo "input size exceeded 100k" | ts | tee $(ls -t | head -n 1)/input_size_exceeded
+                      flag_notify overload_detected
+                    fi
+                    if [ $(stat -c %s $(ls -t | head -n 1)/out.log) -gt $(( 100 * 1024 * 1024 )) ]; then
+                      echo "output size exceeded 100M" | ts | tee $(ls -t | head -n 1)/output_size_exceeded
+                      flag_notify overload_detected
+                    fi
+                    sleep 10
+                  done &
+                done
+            EOF
 
             new_window "rootless docker" "Dockerfile ubuntu_systemd_rootless_docker" Enter <<"EOF"
               mkdir -p docker
