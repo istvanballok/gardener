@@ -1347,6 +1347,28 @@ spec:
                   done &
                 done
             EOF
+            new_pane "disk full" Enter <<"EOF"
+              cd script_recordings
+              inotifywait -m -e create . \
+              | while read line; do
+                  kill %1
+                  echo $line
+                  echo "Checking the disk usage" | ts
+                  while true; do
+                    df -h /root /home | ts
+                    # if the available space is less than 5 GB
+                    if [ $(df /root | tail -n +2 | awk '{print $4}') -lt $((5 * 1024 * 1024)) ]; then
+                      echo "/root disk full" | ts | tee $(ls -t | head -n 1)/disk_full
+                      flag_notify overload_detected
+                    fi
+                    if [ $(df /home | tail -n +2 | awk '{print $4}') -lt $((5 * 1024 * 1024)) ]; then
+                      echo "/home disk full" | ts | tee $(ls -t | head -n 1)/disk_full
+                      flag_notify overload_detected
+                    fi
+                    sleep 10
+                  done &
+                done
+            EOF
 
             new_window "rootless docker" "Dockerfile ubuntu_systemd_rootless_docker" Enter <<"EOF"
               mkdir -p docker
