@@ -12,6 +12,12 @@ spec:
       labels: {component: remote-local-setup-with-jail}
     spec:
       terminationGracePeriodSeconds: 1
+      tolerations:
+      - key: planter.gardener.cloud/type
+        operator: Exists
+        effect: NoSchedule
+      nodeSelector:
+        pool: demo-pods
       containers:
       - name: dev
         image: docker:26-dind
@@ -3651,6 +3657,12 @@ spec:
     spec:
       serviceAccountName: cell-exec
       terminationGracePeriodSeconds: 1
+      tolerations:
+      - key: planter.gardener.cloud/type
+        operator: Exists
+        effect: NoSchedule
+      nodeSelector:
+        pool: demo-pods
       containers:
       - name: dev
         image: alpine:3.20
