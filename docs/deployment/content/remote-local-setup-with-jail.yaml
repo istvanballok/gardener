@@ -1242,7 +1242,7 @@ spec:
 
             new_window "registry" "download" Enter <<"EOF"
               {
-              docker images
+              BEFORE=$(docker images)
               REGISTRY=registry.planter-system.svc.cluster.local:5001
               if curl -s $REGISTRY; then
                 for i in $(curl -s $REGISTRY/v2/_catalog | jq '.repositories[]' -r); do
@@ -1253,25 +1253,32 @@ spec:
                   docker tag $REGISTRY/$image $(echo $image | sed 's|rootful/||')
                 done
               fi
+              docker system prune -f
               flag_notify registry_rootful_download
-              docker images
+              AFTER=$(docker images; echo .)
+              diff -U 100 -u --color=always <(echo "$BEFORE") <(echo "$AFTER") | grep -v /dev/fd || true
               }
             EOF
             new_pane "upload" Enter <<"EOF"
               {
+              BEFORE=$(docker images)
               REGISTRY=registry.planter-system.svc.cluster.local:5001
               flag_wait ubuntu_systemd_rootless_docker_docker_build
               docker images
               if curl -s $REGISTRY; then
                 for image in $(docker images | tail -n +2 | awk '{print $1 ":" $2}' \
-                    | grep -v -E "planter-system|gardener|ubuntu_systemd_rootless_docker"); do
+                    | grep -v -E "planter-system|gardener"); do
                   echo $image
-                  docker pull $image || true
+                  if ! echo $image | grep -q ubuntu_systemd_rootless_docker; then
+                    docker pull $image || true
+                  fi
                   docker tag $image $REGISTRY/rootful/$image &&
-                  docker push $REGISTRY/rootful/$image
+                  docker push       $REGISTRY/rootful/$image
                 done
               fi
-              docker images
+              docker system prune -f
+              AFTER=$(docker images; echo .)
+              diff -U 100 -u --color=always <(echo "$BEFORE") <(echo "$AFTER") | grep -v /dev/fd || true
               }
             EOF
 
@@ -2197,36 +2204,39 @@ spec:
             tmux select-pane -T download;
             send_commands Enter <<"EOF"
               {
-              docker images
+              BEFORE=$(docker images)
               REGISTRY=registry.planter-system.svc.cluster.local:5001
               if curl -s $REGISTRY; then
                 for i in $(curl -s $REGISTRY/v2/_catalog | jq '.repositories[]' -r); do
                   curl -s $REGISTRY/v2/$i/tags/list | jq '"\(.name):\(.tags[])"' -r
-                done | grep rootless | while read image; do
+                done | grep rootless/ | while read image; do
                   echo $image
                   docker pull $REGISTRY/$image &&
                   docker tag $REGISTRY/$image $(echo $image | sed 's|rootless/||')
                 done
               fi
-              docker images
+              AFTER=$(docker images; echo .)
+              diff -U 100 -u --color=always <(echo "$BEFORE") <(echo "$AFTER") | grep -v /dev/fd || true
               flag_notify registry_rootless_download
               }
             EOF
             new_pane "upload" Enter <<"EOF"
               {
+              BEFORE=$(docker images)
               REGISTRY=registry.planter-system.svc.cluster.local:5001
               flag_wait rootless_kind_operator_up
               docker images
               if curl -s $REGISTRY; then
                 for image in $(docker images | tail -n +2 | awk '{print $1 ":" $2}' \
-                    | grep -v -E "planter-system|gardener|ubuntu_systemd_rootless_docker|demo_image|localhost|etcd"); do
+                    | grep -v -E "planter-system|skaffold"); do
                   echo $image
                   docker pull $image || true
                   docker tag $image $REGISTRY/rootless/$image &&
                   docker push $REGISTRY/rootless/$image
                 done
               fi
-              docker images
+              AFTER=$(docker images; echo .)
+              diff -U 100 -u --color=always <(echo "$BEFORE") <(echo "$AFTER") | grep -v /dev/fd || true
               }
             EOF
 
