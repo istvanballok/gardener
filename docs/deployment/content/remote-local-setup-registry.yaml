@@ -37,7 +37,7 @@ spec:
         - name: REGISTRY_HTTP_ADDR
           value: :5002
         - name: REGISTRY_PROXY_REMOTEURL
-          value: https://docker.io
+          value: https://registry-1.docker.io
         ports:
         - containerPort: 5002
           name: registry

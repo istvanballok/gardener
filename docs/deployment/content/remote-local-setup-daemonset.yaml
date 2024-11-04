@@ -45,7 +45,8 @@ spec:
 
             mkdir -p /etc/containerd/certs.d/docker.io
             sed 's/^  //' <<"EOF" > /etc/containerd/certs.d/docker.io/hosts.toml
-              server = "https://docker.io"
+              server = "https://registry-1.docker.io"
+              capabilities = ["pull", "resolve"]
 
               [host."http://$REGISTRY_SERVICE_IP:5002"]
                 capabilities = ["pull", "resolve"]
