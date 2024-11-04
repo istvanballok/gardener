@@ -47,7 +47,7 @@ spec:
           apk add -u tmux tmux-doc --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main
 
           if [ ! -f ~/inner.disk ]; then
-            truncate -s 60G ~/inner.disk # sparse file
+            truncate -s 70G ~/inner.disk # sparse file
             mkfs.ext4 ~/inner.disk
           fi
           mount ~/inner.disk /home
@@ -3611,7 +3611,7 @@ spec:
     metadata: {name: home}
     spec:
       accessModes: [ReadWriteOnce]
-      resources: {requests: {storage: 80Gi}}
+      resources: {requests: {storage: 100Gi}}
       volumeMode: Filesystem
 ---
 apiVersion: v1
