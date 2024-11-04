@@ -30,6 +30,22 @@ spec:
         volumeMounts:
         - mountPath: /var/lib/registry
           name: registry
+          subPath: cache
+      - name: docker-mirror
+        image: registry
+        env:
+        - name: REGISTRY_HTTP_ADDR
+          value: :5002
+        - name: REGISTRY_PROXY_REMOTEURL
+          value: https://docker.io
+        ports:
+        - containerPort: 5002
+          name: registry
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /var/lib/registry
+          name: registry
+          subPath: docker-mirror
   volumeClaimTemplates:
   - apiVersion: v1
     kind: PersistentVolumeClaim
@@ -51,5 +67,9 @@ spec:
     targetPort: 5001
     protocol: TCP
     name: registry
+  - port: 5002
+    targetPort: 5002
+    protocol: TCP
+    name: docker
   selector: {app: remote-local-setup-registry}
   type: ClusterIP
