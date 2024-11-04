@@ -2201,7 +2201,7 @@ spec:
                 done | grep rootless | while read image; do
                   echo $image
                   docker pull $REGISTRY/$image &&
-                  docker tag $REGISTRY/$image $(echo $image | sed 's|rootful/||')
+                  docker tag $REGISTRY/$image $(echo $image | sed 's|rootless/||')
                 done
               fi
               docker images
