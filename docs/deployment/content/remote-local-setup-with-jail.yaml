@@ -498,7 +498,7 @@ spec:
             fi
 
             if [[ $NAMESPACE == demo* ]] || [[ $NAMESPACE == test* ]]; then
-              if ! git am ~/gardener-patches/00*.patch; then
+              if ! git am -3 ~/gardener-patches/00*.patch; then
                 echo "Please check/rebase the patches as needed."
                 exit 1
               fi
@@ -515,7 +515,7 @@ spec:
             git am --abort || true
             git checkout $(yq '.images[] | select(.name == "etcd-druid").tag' ../gardener/imagevector/containers.yaml)
 
-            if ! git am ~/etcd-druid-patches/00*.patch; then
+            if ! git am -3 ~/etcd-druid-patches/00*.patch; then
               echo "Please check/rebase the patches as needed."
               sleep 1h
               exit 1
@@ -3432,24 +3432,67 @@ spec:
             rm -rf ~/etcd-druid-patches
             mkdir -p ~/etcd-druid-patches
             sed 's/^  //' <<"PATCH_EOF" > ~/etcd-druid-patches/0001-Change-the-ownership-only-if-required.patch
-              From 0f0a713cb2d5c547313512ef441beb8ef3221416 Mon Sep 17 00:00:00 2001
+              From 63cbfccdf38027d0cd1cad36987f383333ce4810 Mon Sep 17 00:00:00 2001
               From: dev <dev>
               Date: Mon, 7 Oct 2024 15:42:24 +0200
               Subject: [PATCH] Change the ownership only if required
 
               In a rootless docker environment, changing the ownership
               can only be done once, because the root user is actually not root.
-
               ---
-               controllers/etcdcopybackupstask/reconciler.go | 2 +-
-               pkg/component/etcd/statefulset/statefulset.go | 4 ++--
-               2 files changed, 3 insertions(+), 3 deletions(-)
+               internal/component/statefulset/builder.go             | 3 ++-
+               internal/component/statefulset/stsmatcher.go          | 4 ++--
+               internal/controller/etcdcopybackupstask/reconciler.go | 2 +-
+               3 files changed, 5 insertions(+), 4 deletions(-)
 
-              diff --git a/controllers/etcdcopybackupstask/reconciler.go b/controllers/etcdcopybackupstask/reconciler.go
-              index 0439cfdb..6f82aa42 100644
-              --- a/controllers/etcdcopybackupstask/reconciler.go
-              +++ b/controllers/etcdcopybackupstask/reconciler.go
-              @@ -377,7 +377,7 @@ func (r *Reconciler) createJobObject(ctx context.Context, task *druidv1alpha1.Et
+              diff --git a/internal/component/statefulset/builder.go b/internal/component/statefulset/builder.go
+              index 743cdaf2..78dae830 100644
+              --- a/internal/component/statefulset/builder.go
+              +++ b/internal/component/statefulset/builder.go
+              @@ -256,7 +256,7 @@ func (b *stsBuilder) getPodInitContainers() []corev1.Container {
+               		Image:           b.initContainerImage,
+               		ImagePullPolicy: corev1.PullIfNotPresent,
+               		Command:         []string{"sh", "-c", "--"},
+              -		Args:            []string{fmt.Sprintf("chown -R %d:%d %s", nonRootUser, nonRootUser, common.VolumeMountPathEtcdData)},
+              +		Args:            []string{fmt.Sprintf("[ $(stat -c '%%u' %[3]s) -eq %[1]d ] || chown -R %[1]d:%d %s", nonRootUser, nonRootUser, common.VolumeMountPathEtcdData)},
+               		VolumeMounts:    []corev1.VolumeMount{b.getEtcdDataVolumeMount()},
+               		SecurityContext: &corev1.SecurityContext{
+               			RunAsGroup:   ptr.To[int64](0),
+              @@ -274,6 +274,6 @@ func (b *stsBuilder) getPodInitContainers() []corev1.Container {
+               					ImagePullPolicy: corev1.PullIfNotPresent,
+               					Command:         []string{"sh", "-c", "--"},
+              -					Args:            []string{fmt.Sprintf("chown -R %d:%d /home/nonroot/%s", nonRootUser, nonRootUser, *b.etcd.Spec.Backup.Store.Container)},
+              +					Args:            []string{fmt.Sprintf("[ $(stat -c '%%u' /home/nonroot/%[3]s) -eq %[1]d ] || chown -R %[1]d:%d /home/nonroot/%s", nonRootUser, nonRootUser, *b.etcd.Spec.Backup.Store.Container)},
+               					VolumeMounts:    []corev1.VolumeMount{*etcdBackupVolumeMount},
+               					SecurityContext: &corev1.SecurityContext{
+               						RunAsGroup:   ptr.To[int64](0),
+              diff --git a/internal/component/statefulset/stsmatcher.go b/internal/component/statefulset/stsmatcher.go
+              index 010eabce..7bca2f37 100644
+              --- a/internal/component/statefulset/stsmatcher.go
+              +++ b/internal/component/statefulset/stsmatcher.go
+              @@ -173,7 +173,7 @@ func (s StatefulSetMatcher) matchPodInitContainers() gomegatypes.GomegaMatcher {
+               		"Image":           Equal(s.initContainerImage),
+               		"ImagePullPolicy": Equal(corev1.PullIfNotPresent),
+               		"Command":         HaveExactElements("sh", "-c", "--"),
+              -		"Args":            HaveExactElements("chown -R 65532:65532 /var/etcd/data"),
+              +		"Args":            HaveExactElements("[ $(stat -c '%u' /var/etcd/data) -eq 65532 ] || chown -R 65532:65532 /var/etcd/data"),
+               		"VolumeMounts":    ConsistOf(s.matchEtcdDataVolMount()),
+               		"SecurityContext": matchPodInitContainerSecurityContext(),
+               	})
+              @@ -184,7 +184,7 @@ func (s StatefulSetMatcher) matchPodInitContainers() gomegatypes.GomegaMatcher {
+               			"Image":           Equal(s.initContainerImage),
+               			"ImagePullPolicy": Equal(corev1.PullIfNotPresent),
+               			"Command":         HaveExactElements("sh", "-c", "--"),
+              -			"Args":            HaveExactElements(fmt.Sprintf("chown -R 65532:65532 /home/nonroot/%s", *s.etcd.Spec.Backup.Store.Container)),
+              +			"Args":            HaveExactElements(fmt.Sprintf("[ $(stat -c '%%u' /home/nonroot/%s) -eq 65532 ] || chown -R 65532:65532 /home/nonroot/%[1]s", *s.etcd.Spec.Backup.Store.Container)),
+               			"VolumeMounts":    ConsistOf(s.getEtcdBackupVolumeMountMatcher()),
+               			"SecurityContext": matchPodInitContainerSecurityContext(),
+               		})
+              diff --git a/internal/controller/etcdcopybackupstask/reconciler.go b/internal/controller/etcdcopybackupstask/reconciler.go
+              index 45219814..e8b9836e 100644
+              --- a/internal/controller/etcdcopybackupstask/reconciler.go
+              +++ b/internal/controller/etcdcopybackupstask/reconciler.go
+              @@ -362,7 +362,7 @@ func (r *Reconciler) createJobObject(ctx context.Context, task *druidv1alpha1.Et
                					Name:         "change-backup-bucket-permissions",
                					Image:        *initContainerImage,
                					Command:      []string{"sh", "-c", "--"},
@@ -3457,29 +3500,7 @@ spec:
               +					Args:         []string{fmt.Sprintf("[ $(stat -c '%%u' /home/nonroot) -eq 65532 ] || %s%s%s%s", "chown -R 65532:65532 /home/nonroot/", *targetStore.Container, " /home/nonroot/", *sourceStore.Container)},
                					VolumeMounts: volumeMounts,
                					SecurityContext: &corev1.SecurityContext{
-               						RunAsGroup:   pointer.Int64(0),
-              diff --git a/pkg/component/etcd/statefulset/statefulset.go b/pkg/component/etcd/statefulset/statefulset.go
-              index b66ec17e..a473ad97 100644
-              --- a/pkg/component/etcd/statefulset/statefulset.go
-              +++ b/pkg/component/etcd/statefulset/statefulset.go
-              @@ -641,7 +641,7 @@ func (c *component) createOrPatch(ctx context.Context, sts *appsv1.StatefulSet,
-               					Image:           c.values.InitContainerImage,
-               					ImagePullPolicy: corev1.PullIfNotPresent,
-               					Command:         []string{"sh", "-c", "--"},
-              -					Args:            []string{"chown -R 65532:65532 /var/etcd/data"},
-              +					Args:            []string{"[ $(stat -c '%u' /var/etcd/data) -eq 65532 ] || chown -R 65532:65532 /var/etcd/data"},
-               					VolumeMounts:    getEtcdVolumeMounts(c.values),
-               					SecurityContext: &corev1.SecurityContext{
-               						RunAsGroup:   pointer.Int64(0),
-              @@ -660,7 +660,7 @@ func (c *component) createOrPatch(ctx context.Context, sts *appsv1.StatefulSet,
-               						Image:           c.values.InitContainerImage,
-               						ImagePullPolicy: corev1.PullIfNotPresent,
-               						Command:         []string{"sh", "-c", "--"},
-              -						Args:            []string{fmt.Sprintf("chown -R 65532:65532 /home/nonroot/%s", *c.values.BackupStore.Container)},
-              +						Args:            []string{fmt.Sprintf("[ $(stat -c '%%u' /home/nonroot) -eq 65532 ] || chown -R 65532:65532 /home/nonroot/%s", *c.values.BackupStore.Container)},
-               						VolumeMounts:    getBackupRestoreVolumeMounts(c),
-               						SecurityContext: &corev1.SecurityContext{
-               							RunAsGroup:   pointer.Int64(0),
+               						RunAsGroup:   ptr.To[int64](0),
               --
               2.45.2
             PATCH_EOF
