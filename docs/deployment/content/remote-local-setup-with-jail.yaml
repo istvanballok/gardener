@@ -3121,7 +3121,7 @@ spec:
             PATCH_EOF
 
             sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0002-Only-set-sysctl-if-it-is-not-already-set.patch
-              From 232f2963c8285d1a8193b96929ad09883d849e3a Mon Sep 17 00:00:00 2001
+              From 69a124f150d07862c907ba6e46d3721c5b399e56 Mon Sep 17 00:00:00 2001
               From: dev <dev>
               Date: Fri, 4 Oct 2024 16:06:47 +0200
               Subject: [PATCH] Only set sysctl if it is not already set
@@ -3131,22 +3131,22 @@ spec:
                1 file changed, 5 insertions(+), 1 deletion(-)
 
               diff --git a/hack/kind-up.sh b/hack/kind-up.sh
-              index 33d5d6193..c8e4b2543 100755
+              index 15500e960..3c463d11a 100755
               --- a/hack/kind-up.sh
               +++ b/hack/kind-up.sh
-              @@ -338,7 +338,11 @@ fi
+              @@ -361,7 +361,11 @@ fi
+
                # workaround https://kind.sigs.k8s.io/docs/user/known-issues/#pod-errors-due-to-too-many-open-files
-               kubectl get nodes -o name |\
-                 cut -d/ -f2 |\
-              -  xargs -I {} docker exec {} sh -c "sysctl fs.inotify.max_user_instances=8192"
-              +  xargs -I {} docker exec {} sh -c "
+               for node in $nodes; do
+              -  docker exec "$node" sh -c "sysctl fs.inotify.max_user_instances=8192"
+              +  docker exec "$node" sh -c "
               +    current_value=\$(sysctl -n fs.inotify.max_user_instances)
               +    if [ \"\$current_value\" -ne 8192 ]; then
               +      sysctl -w fs.inotify.max_user_instances=8192
               +    fi"
+               done
 
-               value=$(kubectl get cm -n kube-system kubeadm-config -oyaml | yq e '.data.ClusterConfiguration' | yq e '.apiServer.extraVolumes[0].hostPath')
-               if [[ -n "$value" && "$value" != "null" ]]; then
+               authorization_webhook_config_file=$(kubectl -n kube-system get configmap kubeadm-config -o yaml | yq '.data.ClusterConfiguration' | yq '.apiServer.extraVolumes[0].hostPath')
               --
               2.45.2
             PATCH_EOF
