@@ -1554,7 +1554,6 @@ spec:
                 su -l demo -c -l
                   set -e
                   cd ../etcd-druid
-                  echo ".git" > .dockerignore
                   retry docker pull golang:1.22.4
                   retry docker pull gcr.io/distroless/static-debian11:nonroot
                   retry nice time docker buildx build --platform=$(docker info --format '{{.OSType}}/{{.Architecture}}') --target builder -t etcd-druid-builder --progress plain .
