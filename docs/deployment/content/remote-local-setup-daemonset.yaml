@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: remote-local-setup-sysctl
+  name: planter-system
 ---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: remote-local-setup-sysctl-daemonset
-  namespace: remote-local-setup-sysctl
+  name: remote-local-setup-daemonset
+  namespace: planter-system
 spec:
   selector:
     matchLabels:
@@ -19,7 +19,7 @@ spec:
     spec:
       hostPID: true
       containers:
-      - name: remote-local-setup-sysctl
+      - name: node-setup
         image: alpine
         command:
         - /bin/sh
