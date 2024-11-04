@@ -1369,6 +1369,24 @@ spec:
                   done &
                 done
             EOF
+            new_pane "thrashing" Enter <<"EOF"
+              # TODO good thresholds
+              cd script_recordings
+              inotifywait -m -e create . \
+              | while read line; do
+                  kill %1
+                  echo $line
+                  echo "Checking the thrashing" | ts
+                  while true; do
+                    MAJOR_PAGE_FAULTS=$(sar -B 1 1 | tail -n 1 | awk '{print $5}')
+                    echo "major page faults: $MAJOR_PAGE_FAULTS/s" | ts
+                    if (( $(echo "$MAJOR_PAGE_FAULTS > 1000" | bc -l) )); then
+                      echo "thrashing detected" | ts | tee $(ls -t | head -n 1)/thrashing_detected
+                      flag_notify overload_detected
+                    fi
+                  done &
+                done
+            EOF
 
             new_window "rootless docker" "Dockerfile ubuntu_systemd_rootless_docker" Enter <<"EOF"
               mkdir -p docker
