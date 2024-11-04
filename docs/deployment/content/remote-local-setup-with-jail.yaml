@@ -1453,7 +1453,10 @@ spec:
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
                 machinectl shell demo@ /bin/bash -c
                   mkdir -p ~/.config/docker
-                  echo '{"insecure-registries" : ["registry.planter-system.svc.cluster.local:5001"]}' > ~/.config/docker/daemon.json
+                  echo '{"insecure-registries" : [
+                            "registry.planter-system.svc.cluster.local:5001",
+                            "garden.local.gardener.cloud:5001"
+                          ]}' > ~/.config/docker/daemon.json
                   dockerd-rootless-setuptool.sh install
                 DEMO_EOF
               SYSD
