@@ -17,7 +17,7 @@ spec:
       labels:
         component: remote-local-setup-with-jail
     spec:
-      hostNetwork: true
+      hostPID: true
       containers:
       - name: remote-local-setup-sysctl
         image: alpine
@@ -25,10 +25,26 @@ spec:
         - /bin/sh
         - -c
         - |
-          set -ex -o pipefail
-          sysctl -w net.core.wmem_default=$(( 2 * 1024 * 1024 ))
-          sysctl -w net.core.rmem_default=$(( 16 * 1024 * 1024 ))
-          tail /proc/sys/net/core/*mem*
+          set -ex
+          apk add bind-tools
+          REGISTRY_SERVICE_IP=$(dig +short registry.planter-system.svc.cluster.local)
+          echo $REGISTRY_SERVICE_IP
+          sed 's/^  //' <<NSENTER_EOF | xargs -0 nsenter -t 1 -n -m /bin/sh -c
+            set -ex
+            sysctl -w net.core.wmem_default=$(( 2 * 1024 * 1024 ))
+            sysctl -w net.core.rmem_default=$(( 16 * 1024 * 1024 ))
+            tail /proc/sys/net/core/*mem*
+
+            mkdir -p /etc/containerd/certs.d/registry.planter-system.svc.cluster.local:5001
+            sed 's/^  //' <<"EOF" > /etc/containerd/certs.d/registry.planter-system.svc.cluster.local:5001/hosts.toml
+              server = "http://$REGISTRY_SERVICE_IP:5001"
+              skip_verify = true
+              [host."http://$REGISTRY_SERVICE_IP:5001"]
+                capabilities = ["pull", "resolve"]
+                skip_verify = true
+            EOF
+            systemctl restart containerd.service
+          NSENTER_EOF
           sleep inf &
           wait
         securityContext:
