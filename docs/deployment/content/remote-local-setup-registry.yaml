@@ -17,6 +17,12 @@ spec:
     metadata:
       labels: {app: remote-local-setup-registry}
     spec:
+      tolerations:
+      - key: planter.gardener.cloud/type
+        operator: Exists
+        effect: NoSchedule
+      nodeSelector:
+        pool: demo-pods
       containers:
       - name: registry
         image: registry
