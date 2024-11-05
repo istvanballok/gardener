@@ -496,6 +496,7 @@ spec:
             git reset --hard
             if [[ $NAMESPACE == demo* ]]; then
               git checkout $(git tag | sort -V | tail -n 1)
+              git checkout v1.107.0 # TODO remove the freeze
             elif [[ $NAMESPACE == test* ]]; then
               git checkout master
               git reset --hard origin/master
