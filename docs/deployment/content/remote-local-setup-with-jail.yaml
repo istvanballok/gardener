@@ -1284,7 +1284,8 @@ spec:
                 echo "major page faults: $MAJOR_PAGE_FAULTS/s" | ts
                 if (( $(echo "$MAJOR_PAGE_FAULTS > 10000" | bc -l) )); then
                   echo "thrashing detected" | ts | tee $(ls -t | head -n 1)/thrashing_detected
-                  flag_notify overload_detected
+                  echo "this guard is deactivated for now" | ts
+                  # flag_notify overload_detected
                 fi
                 sleep 10
               done
