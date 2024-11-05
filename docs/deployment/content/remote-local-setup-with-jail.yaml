@@ -360,7 +360,7 @@ spec:
               echo "DATE:   $(date)"
               echo "UPTIME: $(date -u -d @$(($(date +%s) - $(cat /rls_start))) +"%T")"
               {
-                echo "STARTED AT | DURATION | SESSION | WINDOW | PANE "
+                echo "STARTED AFTER | DURATION | SESSION | WINDOW | PANE "
                 cat /tmp/timing/* | sort -n | awk -v rls_start=$(cat /rls_start) '
                   /RUNNING/ {$3=systime() - rls_start - $1}
                   {$1=strftime("%H:%M:%S", $1, 1)
@@ -1106,7 +1106,7 @@ spec:
             EOF
             new_pane "currently running" Enter <<"EOF"
               while true; do
-                stopwatch_tasks | tail -n +3 | grep -E "STARTED AT|RUNNING" | grep -v "long running" > /tmp/stopwatch_tasks_current
+                stopwatch_tasks | tail -n +3 | grep -E "STARTED AFTER|RUNNING" | grep -v "long running" > /tmp/stopwatch_tasks_current
                 clear
                 cat /tmp/stopwatch_tasks_current
                 sleep $(echo "2 - $(date +%s.%3N) % 2 + 1" | bc)
@@ -1114,7 +1114,7 @@ spec:
             EOF
             new_pane "long running" Enter <<"EOF"
               while true; do
-                stopwatch_tasks | tail -n +3 | grep -E "STARTED AT|long running" > /tmp/stopwatch_tasks_long
+                stopwatch_tasks | tail -n +3 | grep -E "STARTED AFTER|long running" > /tmp/stopwatch_tasks_long
                 clear
                 cat /tmp/stopwatch_tasks_long
                 sleep $(echo "2 - $(date +%s.%3N) % 2 + 1" | bc)
