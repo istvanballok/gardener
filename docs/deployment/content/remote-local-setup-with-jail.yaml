@@ -533,7 +533,11 @@ spec:
           echo '{"insecure-registries" : [
                     "registry.planter-system.svc.cluster.local:5001",
                     "registry.planter-system.svc.cluster.local:5002"
-                    ]}' > /etc/docker/daemon.json
+                 ],
+                 "registry-mirrors" : [
+                   "http://registry.planter-system.svc.cluster.local:5002"
+                 ]
+                }' > /etc/docker/daemon.json
 
           sysctl -w net.ipv6.conf.eth0.disable_ipv6=1
           # https://docs.docker.com/reference/cli/dockerd/
@@ -1423,7 +1427,11 @@ spec:
                             "registry.planter-system.svc.cluster.local:5001",
                             "registry.planter-system.svc.cluster.local:5002",
                             "garden.local.gardener.cloud:5001"
-                          ]}' > ~/.config/docker/daemon.json
+                          ],
+                         "registry-mirrors" : [
+                           "http://registry.planter-system.svc.cluster.local:5002"
+                         ]
+                        }' > ~/.config/docker/daemon.json
                   dockerd-rootless-setuptool.sh install
                 DEMO_EOF
               SYSD
