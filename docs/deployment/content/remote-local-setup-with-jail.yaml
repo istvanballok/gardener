@@ -20,7 +20,7 @@ spec:
         pool: demo-pods
       containers:
       - name: dev
-        image: docker:26-dind
+        image: registry.planter-system.svc.cluster.local:5002/library/docker:26-dind
         command:
         - /bin/sh
         - -c
@@ -530,7 +530,10 @@ spec:
           DEMO_EOF
 
           mkdir -p /etc/docker
-          echo '{"insecure-registries" : ["registry.planter-system.svc.cluster.local:5001"]}' > /etc/docker/daemon.json
+          echo '{"insecure-registries" : [
+                    "registry.planter-system.svc.cluster.local:5001",
+                    "registry.planter-system.svc.cluster.local:5002"
+                    ]}' > /etc/docker/daemon.json
 
           sysctl -w net.ipv6.conf.eth0.disable_ipv6=1
           # https://docs.docker.com/reference/cli/dockerd/
@@ -1418,6 +1421,7 @@ spec:
                   mkdir -p ~/.config/docker
                   echo '{"insecure-registries" : [
                             "registry.planter-system.svc.cluster.local:5001",
+                            "registry.planter-system.svc.cluster.local:5002",
                             "garden.local.gardener.cloud:5001"
                           ]}' > ~/.config/docker/daemon.json
                   dockerd-rootless-setuptool.sh install
@@ -3670,7 +3674,7 @@ spec:
         pool: demo-pods
       containers:
       - name: dev
-        image: alpine:3.20
+        image: registry.planter-system.svc.cluster.local:5002/library/alpine:3.20
         stdin: true
         tty: true
         command:

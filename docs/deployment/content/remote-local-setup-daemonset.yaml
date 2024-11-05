@@ -50,15 +50,51 @@ spec:
             tail /proc/sys/net/core/*mem*
 
             mkdir -p /etc/containerd/certs.d/docker.io
-            sed 's/^  //' <<"EOF" > /etc/containerd/certs.d/docker.io/hosts.toml
+            mkdir -p /etc/containerd/certs.d/registry.planter-system.svc.cluster.local:5001
+            mkdir -p /etc/containerd/certs.d/registry.planter-system.svc.cluster.local:5002
+            cd /etc/containerd/certs.d
+
+            sed 's/^  //' <<"EOF" > docker.io/hosts.toml.tmp
               server = "https://registry-1.docker.io"
               capabilities = ["pull", "resolve"]
 
-              [host."http://$REGISTRY_SERVICE_IP:5002"]
+              [host."http://$REGISTRY_SERVICE_IP:5001"] # registry with manually pushed images
+                capabilities = ["pull", "resolve"]
+                skip_verify = true
+
+              [host."http://$REGISTRY_SERVICE_IP:5002"] # pull through cache for docker.io
                 capabilities = ["pull", "resolve"]
                 skip_verify = true
             EOF
-            systemctl restart containerd.service
+
+            sed 's/^  //' <<"EOF" > registry.planter-system.svc.cluster.local:5001/hosts.toml.tmp
+              server = "http://$REGISTRY_SERVICE_IP:5001"
+              capabilities = ["pull", "resolve"]
+
+              [host."http://$REGISTRY_SERVICE_IP:5001"] # registry with manually pushed images
+                capabilities = ["pull", "resolve"]
+                skip_verify = true
+            EOF
+
+            sed 's/^  //' <<"EOF" > registry.planter-system.svc.cluster.local:5002/hosts.toml.tmp
+              server = "http://$REGISTRY_SERVICE_IP:5001"
+              capabilities = ["pull", "resolve"]
+
+              [host."http://$REGISTRY_SERVICE_IP:5002"] # pull through cache for docker.io
+                capabilities = ["pull", "resolve"]
+                skip_verify = true
+            EOF
+
+            if diff docker.io/hosts.toml.tmp docker.io/hosts.toml &&
+               diff registry.planter-system.svc.cluster.local:5001/hosts.toml.tmp registry.planter-system.svc.cluster.local:5001/hosts.toml &&
+               diff registry.planter-system.svc.cluster.local:5002/hosts.toml.tmp registry.planter-system.svc.cluster.local:5002/hosts.toml; then
+              rm */*.tmp
+            else
+              mv docker.io/hosts.toml.tmp docker.io/hosts.toml
+              mv registry.planter-system.svc.cluster.local:5001/hosts.toml.tmp registry.planter-system.svc.cluster.local:5001/hosts.toml
+              mv registry.planter-system.svc.cluster.local:5002/hosts.toml.tmp registry.planter-system.svc.cluster.local:5002/hosts.toml
+              systemctl restart containerd.service
+            fi
           NSENTER_EOF
           sleep inf &
           wait
