@@ -54,6 +54,7 @@ spec:
             mkdir -p /etc/containerd/certs.d/registry.planter-system.svc.cluster.local:5002
             cd /etc/containerd/certs.d
 
+            # transparent mirror configuration for docker.io
             sed 's/^  //' <<"EOF" > docker.io/hosts.toml.tmp
               server = "https://registry-1.docker.io"
               capabilities = ["pull", "resolve"]
@@ -67,6 +68,7 @@ spec:
                 skip_verify = true
             EOF
 
+            # registry with manually pushed images
             sed 's/^  //' <<"EOF" > registry.planter-system.svc.cluster.local:5001/hosts.toml.tmp
               server = "http://$REGISTRY_SERVICE_IP:5001"
               capabilities = ["pull", "resolve"]
@@ -76,9 +78,14 @@ spec:
                 skip_verify = true
             EOF
 
+            # pull through cache for docker.io
             sed 's/^  //' <<"EOF" > registry.planter-system.svc.cluster.local:5002/hosts.toml.tmp
               server = "http://$REGISTRY_SERVICE_IP:5001"
               capabilities = ["pull", "resolve"]
+
+              [host."http://$REGISTRY_SERVICE_IP:5001"] # registry with manually pushed images
+                capabilities = ["pull", "resolve"]
+                skip_verify = true
 
               [host."http://$REGISTRY_SERVICE_IP:5002"] # pull through cache for docker.io
                 capabilities = ["pull", "resolve"]
