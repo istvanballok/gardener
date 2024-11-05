@@ -1204,7 +1204,14 @@ spec:
               cd script_recordings
               inotifywait -m -e create . \
               | while read line; do
-                  kill %1
+                  set -m
+                  trap 'jobs; kill $(jobs -p); wait; jobs' SIGINT
+                  if [ -n "$(jobs -p)" ]; then
+                    jobs
+                    kill $(jobs -p)
+                    wait
+                    jobs
+                  fi
                   echo $line
                   echo "Waiting for the magic keyword to appear in $(ls -t | head -n 1)" | ts
                   tail -f -n +2 $(ls -t | head -n 1)/input.log \
@@ -1221,7 +1228,14 @@ spec:
               cd script_recordings
               inotifywait -m -e create . \
               | while read line; do
-                  kill %1
+                  set -m
+                  trap 'jobs; kill $(jobs -p); wait; jobs' SIGINT
+                  if [ -n "$(jobs -p)" ]; then
+                    jobs
+                    kill $(jobs -p)
+                    wait
+                    jobs
+                  fi
                   echo $line
                   echo "Checking the input and output size in $(ls -t | head -n 1)" | ts
                   while true; do
@@ -1230,8 +1244,8 @@ spec:
                       echo "input size exceeded 100k" | ts | tee $(ls -t | head -n 1)/input_size_exceeded
                       flag_notify overload_detected
                     fi
-                    if [ $(stat -c %s $(ls -t | head -n 1)/out.log) -gt $(( 100 * 1024 * 1024 )) ]; then
-                      echo "output size exceeded 100M" | ts | tee $(ls -t | head -n 1)/output_size_exceeded
+                    if [ $(stat -c %s $(ls -t | head -n 1)/out.log) -gt $(( 50 * 1024 * 1024 )) ]; then
+                      echo "output size exceeded 50M" | ts | tee $(ls -t | head -n 1)/output_size_exceeded
                       flag_notify overload_detected
                     fi
                     sleep 10
@@ -1240,43 +1254,33 @@ spec:
             EOF
             new_pane "disk full" Enter <<"EOF"
               cd script_recordings
-              inotifywait -m -e create . \
-              | while read line; do
-                  kill %1
-                  echo $line
-                  echo "Checking the disk usage" | ts
-                  while true; do
-                    df -h /root /home | ts
-                    # if the available space is less than 5 GB
-                    if [ $(df /root | tail -n +2 | awk '{print $4}') -lt $((5 * 1024 * 1024)) ]; then
-                      echo "/root disk full" | ts | tee $(ls -t | head -n 1)/disk_full
-                      flag_notify overload_detected
-                    fi
-                    if [ $(df /home | tail -n +2 | awk '{print $4}') -lt $((5 * 1024 * 1024)) ]; then
-                      echo "/home disk full" | ts | tee $(ls -t | head -n 1)/disk_full
-                      flag_notify overload_detected
-                    fi
-                    sleep 10
-                  done &
-                done
+              echo "disk full detection" | ts
+              while true; do
+                df -h /root /home | ts
+                if [ $(df /root | tail -n +2 | awk '{print $4}') -lt $((5 * 1024 * 1024)) ]; then
+                  echo "/root disk has less than 5GB free capacity" | ts | tee $(ls -t | head -n 1)/disk_full
+                  flag_notify overload_detected
+                fi
+                if [ $(df /home | tail -n +2 | awk '{print $4}') -lt $((5 * 1024 * 1024)) ]; then
+                  echo "/home disk has less than 5GB free capacity" | ts | tee $(ls -t | head -n 1)/disk_full
+                  flag_notify overload_detected
+                fi
+                sleep 10
+              done
             EOF
             new_pane "thrashing" Enter <<"EOF"
-              # TODO good thresholds
+              # TODO good threshold
               cd script_recordings
-              inotifywait -m -e create . \
-              | while read line; do
-                  kill %1
-                  echo $line
-                  echo "Checking the thrashing" | ts
-                  while true; do
-                    MAJOR_PAGE_FAULTS=$(sar -B 1 1 | tail -n 1 | awk '{print $5}')
-                    echo "major page faults: $MAJOR_PAGE_FAULTS/s" | ts
-                    if (( $(echo "$MAJOR_PAGE_FAULTS > 1000" | bc -l) )); then
-                      echo "thrashing detected" | ts | tee $(ls -t | head -n 1)/thrashing_detected
-                      flag_notify overload_detected
-                    fi
-                  done &
-                done
+              echo "thrashing detection" | ts
+              while true; do
+                MAJOR_PAGE_FAULTS=$(sar -B 60 1 | tail -n 1 | awk '{print $5}')
+                echo "major page faults: $MAJOR_PAGE_FAULTS/s" | ts
+                if (( $(echo "$MAJOR_PAGE_FAULTS > 10000" | bc -l) )); then
+                  echo "thrashing detected" | ts | tee $(ls -t | head -n 1)/thrashing_detected
+                  flag_notify overload_detected
+                fi
+                sleep 10
+              done
             EOF
 
             new_window "rootless docker" "Dockerfile ubuntu_systemd_rootless_docker" Enter <<"EOF"
