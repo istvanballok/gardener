@@ -96,16 +96,38 @@ spec:
                 skip_verify = true
             EOF
 
-            if diff docker.io/hosts.toml.tmp docker.io/hosts.toml &&
-               diff registry.planter-system.svc.cluster.local:5001/hosts.toml.tmp registry.planter-system.svc.cluster.local:5001/hosts.toml &&
-               diff registry.planter-system.svc.cluster.local:5002/hosts.toml.tmp registry.planter-system.svc.cluster.local:5002/hosts.toml; then
-              rm */*.tmp
-            else
+            if ! grep -F '[plugins."io.containerd.grpc.v1.cri".registry]' /etc/containerd/config.toml; then
+              awk '
+                /^\[/ {
+                  flag=0
+                }
+                /^\[plugins."io.containerd.grpc.v1.cri".registry.mirrors/ {
+                  flag=1
+                }
+                !flag' /etc/containerd/config.toml > /etc/containerd/config.toml.tmp
+
+              diff -u /etc/containerd/config.toml /etc/containerd/config.toml.tmp || true
+              mv /etc/containerd/config.toml.tmp /etc/containerd/config.toml
+
+              cat <<"EOF" >> /etc/containerd/config.toml
+            [plugins."io.containerd.grpc.v1.cri".registry]
+              config_path = "/etc/containerd/certs.d"
+            EOF
+              needs_restart=1
+            fi
+
+            if [ -n "$needs_restart" ] ||
+               ! diff docker.io/hosts.toml.tmp docker.io/hosts.toml ||
+               ! diff registry.planter-system.svc.cluster.local:5001/hosts.toml.tmp registry.planter-system.svc.cluster.local:5001/hosts.toml ||
+               ! diff registry.planter-system.svc.cluster.local:5002/hosts.toml.tmp registry.planter-system.svc.cluster.local:5002/hosts.toml; then
               mv docker.io/hosts.toml.tmp docker.io/hosts.toml
               mv registry.planter-system.svc.cluster.local:5001/hosts.toml.tmp registry.planter-system.svc.cluster.local:5001/hosts.toml
               mv registry.planter-system.svc.cluster.local:5002/hosts.toml.tmp registry.planter-system.svc.cluster.local:5002/hosts.toml
               systemctl restart containerd.service
+            else
+              rm */*.tmp
             fi
+
           NSENTER_EOF
           sleep inf &
           wait
