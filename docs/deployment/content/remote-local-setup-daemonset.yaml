@@ -65,11 +65,9 @@ spec:
 
               [host."http://$REGISTRY_SERVICE_IP:5001"] # registry with manually pushed images
                 capabilities = ["pull", "resolve"]
-                skip_verify = true
 
               [host."http://$REGISTRY_SERVICE_IP:5002"] # pull through cache for docker.io
                 capabilities = ["pull", "resolve"]
-                skip_verify = true
             EOF
 
             # registry with manually pushed images
@@ -79,7 +77,6 @@ spec:
 
               [host."http://$REGISTRY_SERVICE_IP:5001"] # registry with manually pushed images
                 capabilities = ["pull", "resolve"]
-                skip_verify = true
             EOF
 
             # pull through cache for docker.io
@@ -89,11 +86,9 @@ spec:
 
               [host."http://$REGISTRY_SERVICE_IP:5001"] # registry with manually pushed images
                 capabilities = ["pull", "resolve"]
-                skip_verify = true
 
               [host."http://$REGISTRY_SERVICE_IP:5002"] # pull through cache for docker.io
                 capabilities = ["pull", "resolve"]
-                skip_verify = true
             EOF
 
             if ! grep -F '[plugins."io.containerd.grpc.v1.cri".registry]' /etc/containerd/config.toml; then
