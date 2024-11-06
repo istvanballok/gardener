@@ -2501,7 +2501,7 @@ spec:
             EOF
             new_pane "configure diki" Enter <<"EOF"
               if ! is_state_tested; then
-                time flag_wait rootless_shoot_ready &&
+                time flag_wait rootless_shoot_ha_ready &&
                 stopwatch_start &&
                 g target --shoot local &&
                 eval $(gardenctl kubectl-env bash) &&
