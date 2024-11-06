@@ -2556,7 +2556,7 @@ spec:
                             uid: "health-check"
                   output:
                     minStatus: Passed
-                DIKI_EOF
+              DIKI_EOF
               fi
             EOF
             new_pane "run diki" Enter <<"EOF"
