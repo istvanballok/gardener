@@ -398,7 +398,7 @@ spec:
                 cat /tmp/timing/* 2> /dev/null | sort -n | sed 's/ | /|/g' | awk -F "|" -v rls_start=$(cat /rls_start) -v labels="$LABELS" '
                   /RUNNING/ { running="true"
                               $2=systime() - rls_start - $1 }
-                  { printf("rls_task{session=\"%s\", window=\"%s\", pane=\"%s\", running=\"%s\", %s} %s\n", $3, $4, $5, running, labels, $2)
+                  { printf("rls_task_seconds{session=\"%s\", window=\"%s\", pane=\"%s\", running=\"%s\", %s} %s\n", $3, $4, $5, running, labels, $2)
                     running="false"}
                 '
             }
