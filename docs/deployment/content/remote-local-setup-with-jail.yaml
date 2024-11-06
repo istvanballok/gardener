@@ -1,3 +1,14 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: remote-local-setup-with-jail
+  labels: {release: monitoring}
+spec:
+  selector:
+    matchLabels: {component: remote-local-setup-with-jail}
+  podMetricsEndpoints:
+  - port: metrics
+---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -21,6 +32,10 @@ spec:
       containers:
       - name: dev
         image: registry.planter-system.svc.cluster.local:5002/library/docker:26-dind
+        ports:
+        - containerPort: 9100
+          name: metrics
+          protocol: TCP
         command:
         - /bin/sh
         - -c
@@ -29,6 +44,8 @@ spec:
           exec 2>&1
 
           date +%s > /rls_start
+          restart_counter=$(cat /restart_counter 2>/dev/null || echo -1)
+          echo $((restart_counter + 1)) > /restart_counter
 
           cd
           rm -f /root/elapsed*
@@ -368,6 +385,22 @@ spec:
                    print}
                 '
               } | column -t -s "|" | nl
+            }
+            function stopwatch_metrics {
+              mkdir -p /tmp/timing
+              chown -R demo:demo /tmp/timing
+              LABELS="restart_counter=\"$(cat /restart_counter)\""
+              LABELS="$LABELS, ready=\"$([ -f /tmp/sync/rootless_demo_ready ] && echo "true" || echo "false")\""
+              sed 's/^    //' <<METRICS
+                rls_uptime      {$LABELS} $(($(date +%s) - $(cat /rls_start)))
+                rls_start_time  {$LABELS} $(cat /rls_start)
+            METRICS
+                cat /tmp/timing/* 2> /dev/null | sort -n | sed 's/ | /|/g' | awk -F "|" -v rls_start=$(cat /rls_start) -v labels="$LABELS" '
+                  /RUNNING/ { running="true"
+                              $2=systime() - rls_start - $1 }
+                  { printf("rls_task{session=\"%s\", window=\"%s\", pane=\"%s\", running=\"%s\", %s} %s\n", $3, $4, $5, running, labels, $2)
+                    running="false"}
+                '
             }
             function flag_notify {
               if [ "$(whoami)" == "root" ]; then
@@ -1180,9 +1213,19 @@ spec:
               }
             EOF
 
-            new_window "recordings" "fzf" <<"EOF"
+            new_window "recordings" "current" <<"EOF"
               mkdir -p ~/script_recordings
               cd ~/script_recordings
+              find . -name input.log -size +0 | sed -E 's|./(.*)/input.log|\1|' | fzf --preview '
+                ls -lht {}/*
+                echo
+                tail -n +2 {}/input.log | strings | sed -E "s/\[[^Mm]+(M|m)//g" | grep -v -E "^$|;rgb:"
+              ' | xargs -o -I {} \
+                scriptreplay -m 1 --log-timing {}/timing.log --log-out {}/out.log
+            EOF
+            new_pane "archived" <<"EOF"
+              mkdir -p ~/archived_script_recordings
+              cd ~/archived_script_recordings
               find . -name input.log -size +0 | sed -E 's|./(.*)/input.log|\1|' | fzf --preview '
                 ls -lht {}/*
                 echo
@@ -1289,6 +1332,35 @@ spec:
                 fi
                 sleep 10
               done
+            EOF
+
+            new_window "metrics" "metrics" Enter <<"EOF"
+              mkdir -p /tmp/metrics
+              mkdir -p ~/archived_script_recordings
+              mv ~/script_recordings/* ~/archived_script_recordings
+              cd ~/script_recordings
+              while true; do
+                FOLDER=$(ls -t | head -n 1)
+                stopwatch_metrics > /tmp/metrics/metrics.prom
+                if [ -n "$FOLDER" ]; then
+                  LABELS="start=\"$FOLDER\""
+                  LABELS="$LABELS, restart_counter=\"$(cat /restart_counter)\""
+                sed 's/^  //' <<METRICS >> /tmp/metrics/metrics.prom
+                  rls_input_bytes  {$LABELS} $(tail -n +2 $FOLDER/input.log | wc -c)
+                  rls_output_bytes {$LABELS} $(tail -n +2 $FOLDER/out.log   | wc -c)
+                  overload_detected{$LABELS} $([ ! -f /tmp/sync/overload_detected ]; echo $?)
+              METRICS
+                fi
+                sleep 1m
+              done
+            EOF
+            new_pane "exporter" Enter <<"EOF"
+              docker run -it -p 9100:9100 -v /tmp/metrics:/metrics prom/node-exporter \
+                --collector.disable-defaults --web.disable-exporter-metrics \
+                --collector.textfile --collector.textfile.directory=/metrics
+            EOF
+            new_pane "curl" <<"EOF"
+              curl localhost:9100/metrics
             EOF
 
             new_window "rootless docker" "Dockerfile ubuntu_systemd_rootless_docker" Enter <<"EOF"
