@@ -89,6 +89,10 @@ spec:
           # They were extracted from this main script to overcome the 32 page (32*4K=128K) argument length limit of the exec syscall
           eval "$1"
 
+          # \$2 contains the tmux scripts (see below)
+          # They were extracted from this main script to overcome the 32 page (32*4K=128K) argument length limit of the exec syscall
+          eval "$2"
+
           echo "A privileged pod sees the cgroup of the host:"
           cat /proc/self/cgroup
           find /sys/fs/cgroup/ -type d | wc -l
@@ -1138,10 +1142,6 @@ spec:
 
             cd -
           DEMO_EOF
-
-          # \$2 contains the tmux scripts (see below)
-          # They were extracted from this main script to overcome the 32 page (32*4K=128K) argument length limit of the exec syscall
-          eval "$2"
 
           chmod +x ~/prepare_tmux.sh /home/demo/prepare_tmux.sh
           chown demo:demo /home/demo/prepare_tmux.sh
@@ -3365,6 +3365,7 @@ spec:
                   retry docker push localhost:5001/$i
                 done &&
                 for i in $(curl -s localhost:5001/v2/_catalog | jq '.repositories[]' -r | grep -v -E 'gardener|skaffold'); do
+                  echo $i
                   curl -s localhost:5001/v2/$i/tags/list | jq .
                 done &&
                 flag_notify rootless_image_preload_ready
