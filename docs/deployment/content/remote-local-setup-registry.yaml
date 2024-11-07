@@ -58,7 +58,7 @@ spec:
     metadata: {name: registry}
     spec:
       accessModes: [ReadWriteOnce]
-      resources: {requests: {storage: 20Gi}}
+      resources: {requests: {storage: 100Gi}}
       volumeMode: Filesystem
 ---
 apiVersion: v1
