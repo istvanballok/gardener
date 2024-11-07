@@ -337,12 +337,12 @@ spec:
               cd ~
             fi
             function retry {
-              i=1
+              retry_delay_seconds=1
               while ! "$@"; do
                 echo
-                echo "Retrying in $i seconds..." | ts
-                sleep $i
-                (( i = 2*i ))
+                echo "Retrying in $retry_delay_seconds seconds..." | ts
+                sleep $retry_delay_seconds
+                (( retry_delay_seconds = 2*retry_delay_seconds ))
               done
             }
             function stopwatch_start {
