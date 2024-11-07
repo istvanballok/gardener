@@ -1138,6 +1138,578 @@ spec:
             cd -
           DEMO_EOF
 
+          # \$2 contains the tmux scripts (see below)
+          # They were extracted from this main script to overcome the 32 page (32*4K=128K) argument length limit of the exec syscall
+          eval "$2"
+
+          chmod +x ~/prepare_tmux.sh /home/demo/prepare_tmux.sh
+          chown demo:demo /home/demo/prepare_tmux.sh
+          time ~/prepare_tmux.sh
+
+          end=$(date +%s)
+          diff=$(( end - $(cat /rls_start) ))
+          elapsed=$(date -u -d @${diff} +"%T")
+          echo $elapsed > /root/elapsed_until_tmux
+          echo "Elapsed time until the tmux session is prepared: ${elapsed}"
+          { touch /tmp/alive
+            sleep $(( $(date -d '6 days 0:00' -u +%s) - $(date -u +%s) + RANDOM % 3600 )) &&
+            echo "Restarting after 5.x days of uptime to prevent issues with the registry cache expiration while offline" &&
+            rm /tmp/alive
+          } &
+          {
+            sleep 2h
+            if [ ! -f /tmp/sync/rootless_demo_ready ]; then
+              echo "The demo is not ready after 2 hours, trigger a restart"
+              rm /tmp/alive
+            fi
+          } &
+          touch /tmp/ready
+          wait
+          UNSHARE_CGROUP_EOF
+          wait
+        - rls.sh
+        - |
+          # The length of the arguments of the exec syscall is limited by the Kernel to 32 pages, i.e. 32*4K=128K
+          # This uncompressed RLS script has reached that 128K limit, so it is split into two parts:
+          # The git patches are extracted to the first argument of the '/bin/sh -c "commands" "name" "arg1" ...' call,
+          # and are evaluated by the main script at runtime.
+
+          sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
+            set -x
+
+            rm -rf ~/gardener-patches
+            mkdir -p ~/gardener-patches
+            sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0001-Avoid-using-the-same-port-with-rootless-docker.patch
+              From f74bcb8325105ff82d856378c31e554de8af3c32 Mon Sep 17 00:00:00 2001
+              From: dev <dev>
+              Date: Fri, 4 Oct 2024 16:03:51 +0200
+              Subject: [PATCH] Avoid using the same port with rootless docker
+
+              To mitigate
+              https://github.com/moby/moby/issues/47812
+              ---
+               .../kind/cluster/templates/_extra_port_mappings.tpl             | 2 +-
+               1 file changed, 1 insertion(+), 1 deletion(-)
+
+              diff --git a/example/gardener-local/kind/cluster/templates/_extra_port_mappings.tpl b/example/gardener-local/kind/cluster/templates/_extra_port_mappings.tpl
+              index 8e9e07ae9..ed5e4692a 100644
+              --- a/example/gardener-local/kind/cluster/templates/_extra_port_mappings.tpl
+              +++ b/example/gardener-local/kind/cluster/templates/_extra_port_mappings.tpl
+              @@ -10,7 +10,7 @@
+               {{- range $i, $listenAddress := (required ".Values.gardener.seed.istio.listenAddresses is required" .Values.gardener.seed.istio.listenAddresses) }}
+               - containerPort: {{ add 30443 $i }}
+               {{- if $.Values.gardener.controlPlane.deployed }}
+              -  hostPort: 443
+              +  hostPort: {{ add 443 $i 1 }}
+               {{- else }}
+                 # TODO (plkokanov): when using skaffold to deploy, 172.18.255.2 is not used as listenAddress (unlike the local
+                 #  deployment) because secondary IPs cannot be easily added to inside the `prow` containers. Additionally, there is no
+              --
+              2.45.2
+            PATCH_EOF
+
+            sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0002-Only-set-sysctl-if-it-is-not-already-set.patch
+              From 69a124f150d07862c907ba6e46d3721c5b399e56 Mon Sep 17 00:00:00 2001
+              From: dev <dev>
+              Date: Fri, 4 Oct 2024 16:06:47 +0200
+              Subject: [PATCH] Only set sysctl if it is not already set
+
+              ---
+               hack/kind-up.sh | 6 +++++-
+               1 file changed, 5 insertions(+), 1 deletion(-)
+
+              diff --git a/hack/kind-up.sh b/hack/kind-up.sh
+              index 15500e960..3c463d11a 100755
+              --- a/hack/kind-up.sh
+              +++ b/hack/kind-up.sh
+              @@ -361,7 +361,11 @@ fi
+
+               # workaround https://kind.sigs.k8s.io/docs/user/known-issues/#pod-errors-due-to-too-many-open-files
+               for node in $nodes; do
+              -  docker exec "$node" sh -c "sysctl fs.inotify.max_user_instances=8192"
+              +  docker exec "$node" sh -c "
+              +    current_value=\$(sysctl -n fs.inotify.max_user_instances)
+              +    if [ \"\$current_value\" -ne 8192 ]; then
+              +      sysctl -w fs.inotify.max_user_instances=8192
+              +    fi"
+               done
+
+               authorization_webhook_config_file=$(kubectl -n kube-system get configmap kubeadm-config -o yaml | yq '.data.ClusterConfiguration' | yq '.apiServer.extraVolumes[0].hostPath')
+              --
+              2.45.2
+            PATCH_EOF
+
+            sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0003-tmpfs.patch
+              From 1515887793170b8602a0ad1ef9af5bbbef733f11 Mon Sep 17 00:00:00 2001
+              From: dev <dev>
+              Date: Thu, 10 Oct 2024 16:00:32 +0200
+              Subject: [PATCH] tmpfs
+
+              ---
+               .../machine-provider/local/create_machine.go         | 12 ++++++++++++
+               1 file changed, 12 insertions(+)
+
+              diff --git a/pkg/provider-local/machine-provider/local/create_machine.go b/pkg/provider-local/machine-provider/local/create_machine.go
+              index a89db8866..510774ebf 100644
+              --- a/pkg/provider-local/machine-provider/local/create_machine.go
+              +++ b/pkg/provider-local/machine-provider/local/create_machine.go
+              @@ -109,6 +109,10 @@ func (d *localDriver) applyPod(
+               						Name:      "userdata",
+               						MountPath: "/etc/machine",
+               					},
+              +					{
+              +						Name:      "tmpfs",
+              +						MountPath: "/tmp",
+              +					},
+               					{
+               						Name:      "containerd",
+               						MountPath: "/var/lib/containerd",
+              @@ -143,6 +147,14 @@ func (d *localDriver) applyPod(
+               					},
+               				},
+               			},
+              +			{
+              +				Name: "tmpfs",
+              +				VolumeSource: corev1.VolumeSource{
+              +					EmptyDir: &corev1.EmptyDirVolumeSource{
+              +						Medium: corev1.StorageMediumMemory,
+              +					},
+              +				},
+              +			},
+               			{
+               				Name: "containerd",
+               				VolumeSource: corev1.VolumeSource{
+              --
+              2.45.2
+            PATCH_EOF
+
+            sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0004-dev-kmsg-need-not-be-mounted-in-the-node-problem-det.patch
+              From 81af7aac0db6585dd2b85eee6498fda690d6f106 Mon Sep 17 00:00:00 2001
+              From: dev <dev>
+              Date: Fri, 11 Oct 2024 10:55:45 +0200
+              Subject: [PATCH] /dev/kmsg need not be mounted in the node-problem-detector
+
+              /dev/kmsg is mounted by default in privileged containers
+              so we do not need to mount it explicitly
+
+              in a rootless environment, mounting it is not allowed anyways
+              so this broke the rootless setup
+              ---
+               .../nodeproblemdetector/node_problem_detector.go    | 13 -------------
+               .../node_problem_detector_test.go                   |  6 ------
+               2 files changed, 19 deletions(-)
+
+              diff --git a/pkg/component/nodemanagement/nodeproblemdetector/node_problem_detector.go b/pkg/component/nodemanagement/nodeproblemdetector/node_problem_detector.go
+              index cde247b7a..839726b76 100644
+              --- a/pkg/component/nodemanagement/nodeproblemdetector/node_problem_detector.go
+              +++ b/pkg/component/nodemanagement/nodeproblemdetector/node_problem_detector.go
+              @@ -231,11 +231,6 @@ func (c *nodeProblemDetector) computeResourcesData() (map[string][]byte, error)
+               										MountPath: "/etc/localtime",
+               										ReadOnly:  true,
+               									},
+              -									{
+              -										Name:      "kmsg",
+              -										MountPath: "/dev/kmsg",
+              -										ReadOnly:  true,
+              -									},
+               								},
+               								Ports: []corev1.ContainerPort{
+               									{
+              @@ -282,14 +277,6 @@ func (c *nodeProblemDetector) computeResourcesData() (map[string][]byte, error)
+               									},
+               								},
+               							},
+              -							{
+              -								Name: "kmsg",
+              -								VolumeSource: corev1.VolumeSource{
+              -									HostPath: &corev1.HostPathVolumeSource{
+              -										Path: "/dev/kmsg",
+              -									},
+              -								},
+              -							},
+               						},
+               					},
+               				},
+              diff --git a/pkg/component/nodemanagement/nodeproblemdetector/node_problem_detector_test.go b/pkg/component/nodemanagement/nodeproblemdetector/node_problem_detector_test.go
+              index 537666b4c..de2fb4c8d 100644
+              --- a/pkg/component/nodemanagement/nodeproblemdetector/node_problem_detector_test.go
+              +++ b/pkg/component/nodemanagement/nodeproblemdetector/node_problem_detector_test.go
+              @@ -228,9 +228,6 @@ spec:
+                       - mountPath: /etc/localtime
+                         name: localtime
+                         readOnly: true
+              -        - mountPath: /dev/kmsg
+              -          name: kmsg
+              -          readOnly: true
+                     dnsPolicy: Default
+                     priorityClassName: gardener-shoot-system-900
+                     securityContext:
+              @@ -251,9 +248,6 @@ spec:
+                         path: /etc/localtime
+                         type: ` + string(hostPathFileOrCreate) + `
+                       name: localtime
+              -      - hostPath:
+              -          path: /dev/kmsg
+              -        name: kmsg
+                 updateStrategy: {}
+               status:
+                 currentNumberScheduled: 0
+              --
+              2.45.2
+            PATCH_EOF
+
+            sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0005-support-shoots-on-the-managed-seed.patch
+              From e722b0d9e3f1b8d01e8e476617e52b48195c8836 Mon Sep 17 00:00:00 2001
+              From: dev <dev>
+              Date: Fri, 11 Oct 2024 14:50:38 +0200
+              Subject: [PATCH] support shoots on the managed seed
+
+              ---
+               .../machine-provider/local/create_machine.go           | 10 ++++++++++
+               1 file changed, 10 insertions(+)
+
+              diff --git a/pkg/provider-local/machine-provider/local/create_machine.go b/pkg/provider-local/machine-provider/local/create_machine.go
+              index 510774ebf..83ecf9956 100644
+              --- a/pkg/provider-local/machine-provider/local/create_machine.go
+              +++ b/pkg/provider-local/machine-provider/local/create_machine.go
+              @@ -113,6 +113,10 @@ func (d *localDriver) applyPod(
+               						Name:      "tmpfs",
+               						MountPath: "/tmp",
+               					},
+              +					{
+              +						Name:      "kubelet",
+              +						MountPath: "/var/lib/kubelet",
+              +					},
+               					{
+               						Name:      "containerd",
+               						MountPath: "/var/lib/containerd",
+              @@ -155,6 +159,12 @@ func (d *localDriver) applyPod(
+               					},
+               				},
+               			},
+              +			{
+              +				Name: "kubelet",
+              +				VolumeSource: corev1.VolumeSource{
+              +					EmptyDir: &corev1.EmptyDirVolumeSource{},
+              +				},
+              +			},
+               			{
+               				Name: "containerd",
+               				VolumeSource: corev1.VolumeSource{
+              --
+              2.45.2
+            PATCH_EOF
+
+            sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0006-support-nested-machines.patch
+              From 118ce28338eb15389374921371b76d9dcca3928a Mon Sep 17 00:00:00 2001
+              From: dev <dev>
+              Date: Thu, 24 Oct 2024 10:03:25 +0200
+              Subject: [PATCH] support nested machines
+
+              ---
+               .../machine-provider/local/create_machine.go         | 12 ++++++++++--
+               1 file changed, 10 insertions(+), 2 deletions(-)
+
+              diff --git a/pkg/provider-local/machine-provider/local/create_machine.go b/pkg/provider-local/machine-provider/local/create_machine.go
+              index 0c2aec352f..ff84e66f31 100644
+              --- a/pkg/provider-local/machine-provider/local/create_machine.go
+              +++ b/pkg/provider-local/machine-provider/local/create_machine.go
+              @@ -90,8 +90,18 @@ func (d *localDriver) applyPod(
+               	pod.Spec = corev1.PodSpec{
+               		Containers: []corev1.Container{
+               			{
+              -				Name:            "node",
+              -				Image:           providerSpec.Image,
+              +				Name:  "node",
+              +				Image: providerSpec.Image,
+              +				Command: []string{
+              +					"/bin/bash",
+              +					"-c",
+              +					`
+              +					umount /dev/kmsg
+              +					touch /dev/kmsg
+              +					mount --bind /sys/fs/cgroup/$(cat /proc/self/cgroup | cut -d: -f3) /sys/fs/cgroup
+              +					exec unshare -C /usr/local/bin/entrypoint /sbin/init
+              +					`,
+              +				},
+               				ImagePullPolicy: corev1.PullIfNotPresent,
+               				SecurityContext: &corev1.SecurityContext{
+               					Privileged: pointer.Bool(true),
+              --
+              2.44.0
+            PATCH_EOF
+
+            sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0007-HA-virtual-garden.patch
+              From 05e808832a3e5e478ef20fe9dff48496fc742d19 Mon Sep 17 00:00:00 2001
+              From: dev <dev>
+              Date: Fri, 25 Oct 2024 10:14:35 +0200
+              Subject: [PATCH] HA virtual garden
+
+              ---
+               example/operator/20-garden.yaml | 4 ++--
+               1 file changed, 2 insertions(+), 2 deletions(-)
+
+              diff --git a/example/operator/20-garden.yaml b/example/operator/20-garden.yaml
+              index 87cb7b50f..b18300b3c 100644
+              --- a/example/operator/20-garden.yaml
+              +++ b/example/operator/20-garden.yaml
+              @@ -50,8 +50,8 @@ spec:
+                 #         name: defaultIssuerPrivateKey
+                 #       server: https://acme-staging-v02.api.letsencrypt.org/directory # for productive purposes use e.g. https://acme-v02.api.letsencrypt.org/directory
+                 virtualCluster:
+              -  # controlPlane:
+              -  #   highAvailability: {}
+              +    controlPlane:
+              +      highAvailability: {}
+                   dns:
+                     domains:
+                     - virtual-garden.local.gardener.cloud
+              --
+              2.45.2
+            PATCH_EOF
+
+            # TODO to use the managed seed by default, it should be HA so that it can host HA control planes
+            #
+            # sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0008-soil-hosts-only-the-managedseed-shoot.patch
+            #   From 40c4ac96d6d512ca4050157582a2c60e0ac9d456 Mon Sep 17 00:00:00 2001
+            #   From: dev <dev>
+            #   Date: Fri, 25 Oct 2024 10:27:17 +0200
+            #   Subject: [PATCH] soil hosts only the managedseed shoot
+            #
+            #   ---
+            #    example/gardener-local/gardenlet/operator/gardenlet.yaml   | 5 +++++
+            #    example/provider-local/managedseeds/shoot-managedseed.yaml | 5 +++++
+            #    2 files changed, 10 insertions(+)
+            #
+            #   diff --git a/example/gardener-local/gardenlet/operator/gardenlet.yaml b/example/gardener-local/gardenlet/operator/gardenlet.yaml
+            #   index ed693b176..fdfccc857 100644
+            #   --- a/example/gardener-local/gardenlet/operator/gardenlet.yaml
+            #   +++ b/example/gardener-local/gardenlet/operator/gardenlet.yaml
+            #   @@ -15,6 +15,11 @@ spec:
+            #          gardenClusterAddress: https://api.virtual-garden.local.gardener.cloud
+            #        seedConfig:
+            #   +      metadata:
+            #   +        labels:
+            #   +          role: soil
+            #          spec:
+            #   +        taints:
+            #   +          - key: seed.gardener.cloud/protected
+            #            backup:
+            #              provider: local
+            #              region: local
+            #   diff --git a/example/provider-local/managedseeds/shoot-managedseed.yaml b/example/provider-local/managedseeds/shoot-managedseed.yaml
+            #   index ac2c2da88..e85fdf85d 100644
+            #   --- a/example/provider-local/managedseeds/shoot-managedseed.yaml
+            #   +++ b/example/provider-local/managedseeds/shoot-managedseed.yaml
+            #   @@ -6,6 +6,11 @@ metadata:
+            #      annotations:
+            #        shoot.gardener.cloud/cloud-config-execution-max-delay-seconds: "0"
+            #    spec:
+            #   +  tolerations:
+            #   +    - key: seed.gardener.cloud/protected
+            #   +  seedSelector:
+            #   +    matchLabels:
+            #   +      role: soil
+            #      cloudProfile:
+            #        name: local
+            #      secretBindingName: local
+            #   --
+            #   2.45.2
+            # PATCH_EOF
+
+            rm -rf ~/etcd-druid-patches
+            mkdir -p ~/etcd-druid-patches
+            sed 's/^  //' <<"PATCH_EOF" > ~/etcd-druid-patches/0001-Change-the-ownership-only-if-required.patch
+              From 63cbfccdf38027d0cd1cad36987f383333ce4810 Mon Sep 17 00:00:00 2001
+              From: dev <dev>
+              Date: Mon, 7 Oct 2024 15:42:24 +0200
+              Subject: [PATCH] Change the ownership only if required
+
+              In a rootless docker environment, changing the ownership
+              can only be done once, because the root user is actually not root.
+              ---
+               internal/component/statefulset/builder.go             | 3 ++-
+               internal/component/statefulset/stsmatcher.go          | 4 ++--
+               internal/controller/etcdcopybackupstask/reconciler.go | 2 +-
+               3 files changed, 5 insertions(+), 4 deletions(-)
+
+              diff --git a/internal/component/statefulset/builder.go b/internal/component/statefulset/builder.go
+              index 743cdaf2..78dae830 100644
+              --- a/internal/component/statefulset/builder.go
+              +++ b/internal/component/statefulset/builder.go
+              @@ -256,7 +256,7 @@ func (b *stsBuilder) getPodInitContainers() []corev1.Container {
+               		Image:           b.initContainerImage,
+               		ImagePullPolicy: corev1.PullIfNotPresent,
+               		Command:         []string{"sh", "-c", "--"},
+              -		Args:            []string{fmt.Sprintf("chown -R %d:%d %s", nonRootUser, nonRootUser, common.VolumeMountPathEtcdData)},
+              +		Args:            []string{fmt.Sprintf("[ $(stat -c '%%u' %[3]s) -eq %[1]d ] || chown -R %[1]d:%d %s", nonRootUser, nonRootUser, common.VolumeMountPathEtcdData)},
+               		VolumeMounts:    []corev1.VolumeMount{b.getEtcdDataVolumeMount()},
+               		SecurityContext: &corev1.SecurityContext{
+               			RunAsGroup:   ptr.To[int64](0),
+              @@ -274,6 +274,6 @@ func (b *stsBuilder) getPodInitContainers() []corev1.Container {
+               					ImagePullPolicy: corev1.PullIfNotPresent,
+               					Command:         []string{"sh", "-c", "--"},
+              -					Args:            []string{fmt.Sprintf("chown -R %d:%d /home/nonroot/%s", nonRootUser, nonRootUser, *b.etcd.Spec.Backup.Store.Container)},
+              +					Args:            []string{fmt.Sprintf("[ $(stat -c '%%u' /home/nonroot/%[3]s) -eq %[1]d ] || chown -R %[1]d:%d /home/nonroot/%s", nonRootUser, nonRootUser, *b.etcd.Spec.Backup.Store.Container)},
+               					VolumeMounts:    []corev1.VolumeMount{*etcdBackupVolumeMount},
+               					SecurityContext: &corev1.SecurityContext{
+               						RunAsGroup:   ptr.To[int64](0),
+              diff --git a/internal/component/statefulset/stsmatcher.go b/internal/component/statefulset/stsmatcher.go
+              index 010eabce..7bca2f37 100644
+              --- a/internal/component/statefulset/stsmatcher.go
+              +++ b/internal/component/statefulset/stsmatcher.go
+              @@ -173,7 +173,7 @@ func (s StatefulSetMatcher) matchPodInitContainers() gomegatypes.GomegaMatcher {
+               		"Image":           Equal(s.initContainerImage),
+               		"ImagePullPolicy": Equal(corev1.PullIfNotPresent),
+               		"Command":         HaveExactElements("sh", "-c", "--"),
+              -		"Args":            HaveExactElements("chown -R 65532:65532 /var/etcd/data"),
+              +		"Args":            HaveExactElements("[ $(stat -c '%u' /var/etcd/data) -eq 65532 ] || chown -R 65532:65532 /var/etcd/data"),
+               		"VolumeMounts":    ConsistOf(s.matchEtcdDataVolMount()),
+               		"SecurityContext": matchPodInitContainerSecurityContext(),
+               	})
+              @@ -184,7 +184,7 @@ func (s StatefulSetMatcher) matchPodInitContainers() gomegatypes.GomegaMatcher {
+               			"Image":           Equal(s.initContainerImage),
+               			"ImagePullPolicy": Equal(corev1.PullIfNotPresent),
+               			"Command":         HaveExactElements("sh", "-c", "--"),
+              -			"Args":            HaveExactElements(fmt.Sprintf("chown -R 65532:65532 /home/nonroot/%s", *s.etcd.Spec.Backup.Store.Container)),
+              +			"Args":            HaveExactElements(fmt.Sprintf("[ $(stat -c '%%u' /home/nonroot/%s) -eq 65532 ] || chown -R 65532:65532 /home/nonroot/%[1]s", *s.etcd.Spec.Backup.Store.Container)),
+               			"VolumeMounts":    ConsistOf(s.getEtcdBackupVolumeMountMatcher()),
+               			"SecurityContext": matchPodInitContainerSecurityContext(),
+               		})
+              diff --git a/internal/controller/etcdcopybackupstask/reconciler.go b/internal/controller/etcdcopybackupstask/reconciler.go
+              index 45219814..e8b9836e 100644
+              --- a/internal/controller/etcdcopybackupstask/reconciler.go
+              +++ b/internal/controller/etcdcopybackupstask/reconciler.go
+              @@ -362,7 +362,7 @@ func (r *Reconciler) createJobObject(ctx context.Context, task *druidv1alpha1.Et
+               					Name:         "change-backup-bucket-permissions",
+               					Image:        *initContainerImage,
+               					Command:      []string{"sh", "-c", "--"},
+              -					Args:         []string{fmt.Sprintf("%s%s%s%s", "chown -R 65532:65532 /home/nonroot/", *targetStore.Container, " /home/nonroot/", *sourceStore.Container)},
+              +					Args:         []string{fmt.Sprintf("[ $(stat -c '%%u' /home/nonroot) -eq 65532 ] || %s%s%s%s", "chown -R 65532:65532 /home/nonroot/", *targetStore.Container, " /home/nonroot/", *sourceStore.Container)},
+               					VolumeMounts: volumeMounts,
+               					SecurityContext: &corev1.SecurityContext{
+               						RunAsGroup:   ptr.To[int64](0),
+              --
+              2.45.2
+            PATCH_EOF
+          DEMO_EOF
+
+          sed 's/^  //' <<"EOF" > /dev/null # ~/welcome.md
+            # Welcome to the online Gardener Demo environment
+
+            [Gardener][] is an open source project contributed by SAP and others that
+            provides a Kubernetes-based solution to manage Kubernetes clusters on various
+            cloud providers in a uniform way.
+
+            This online demo environment allows you to explore the features and capabilities
+            of Gardener interactively in a [tmux][] terminal session in your browser without
+            the need to install anything on your local machine.
+
+            The demo environment is based the [local setup][] documentation of Gardener that
+            allows you to deploy Gardener on your own machine. It is slightly restricted
+            compared to a local setup to avoid abusing this environment but it should not
+            limit the exploration of the features in any way.
+
+            The interaction with the terminal session is captured for security purposes so
+            please refrain from typing in any sensitive information. The environment is
+            sealed off from the Internet to avoid using it as a proxy for malicious
+            activities.
+
+            Please follow the step by step instructions on the side to explore the features
+            of Gardener interactively.
+
+            For example, you could start with creating your first "shoot", a Kubernetes
+            cluster managed by Gardener with:
+
+                k apply -f example/provider-local/shoot.yaml
+
+            [Gardener]:    https://gardener.cloud/
+            [tmux]:        https://github.com/tmux/tmux/wiki
+            [local setup]: https://github.com/gardener/gardener/blob/master/
+                            docs/deployment/getting_started_locally.md
+          EOF
+
+          sed 's/^  //' <<"EOF" > /dev/null # ~/demo.md
+            # Welcome to the online Gardener Demo environment
+
+            [Gardener][] is an open source project contributed by SAP and others that
+            provides a Kubernetes-based solution to manage Kubernetes clusters on various
+            cloud providers in a uniform way.
+
+            This online demo environment allows you to explore the features and capabilities
+            of Gardener interactively in a [tmux][] terminal session in your browser without
+            the need to install anything on your local machine.
+
+            The demo environment is based the [local setup][] documentation of Gardener that
+            allows you to deploy Gardener on your own machine. It is slightly restricted
+            compared to a local setup to avoid abusing this environment but it should not
+            limit the exploration of the features in any way.
+
+            The interaction with the terminal session is captured for security purposes so
+            please refrain from typing in any sensitive information. The environment is
+            sealed off from the Internet to avoid using it as a proxy for malicious
+            activities.
+
+            Please follow the step by step instructions on the side to explore the features
+            of Gardener interactively.
+
+            ## Kubernetes contexts
+
+            The demo environment is based on [KinD][] (Kubernetes in Docker): a KinD cluster
+            acts as the "runtime" Garden cluster where the Gardener operator manages the so
+            called virtual "Garden" cluster, the Gardener API. Both clusters are available
+            as the "runtime" and "garden" contexts in the default kubeconfig under
+            '~/.kube/config'. You can choose a context with `k --context` or switch to a
+            context with `ktx`.
+
+            The Gardener API is itself a Kubernetes cluster with various custom resources
+            like Shoots and Seeds. End users can create Shoots (Kubernetes clusters): the
+            control plane is then managed by Gardener on a Seed cluster. The worker nodes of
+            the Shoot cluster are created in the IaaS account that is configured by the end
+            user. In this "remote" local setup that has no IaaS dependencies, the "runtime"
+            KinD cluster acts as the top level seed cluster, and the shoot worker nodes are
+            simulated by pods in the seed cluster, next to the control plane of the shoot
+            cluster.
+
+            So the KinD cluster is the runtime Garden cluster and it also acts as a seed
+            cluster. This might be slightly confusing because in real installations these
+            roles can be separated into dedicated clusters.
+
+            Gardener managed shoots can also be upgraded to a seed cluster, such that they
+            can host shoot control planes on their own. This allows for a recursive setup
+            where a top level, non Gardener managed seed cluster (the soil cluster) manages
+            a small set of shoots that are distributed across multiple IaaS providers and
+            geographical regions. These Gardener managed shoots are then registered as seeds
+            and the end user created shoots' control planes are hosted on those, close to
+            the IaaS and region that is chosen by the end user. This demo environment
+            demonstrates this recursive setup with a managed seed whose control plane is
+            hosted on the runtime / soil KinD cluster and a shoot whose control plane is
+            hosted on that managed seed shoot cluster. You can target a shoot cluster and
+            its control plane with `gardenctl`.
+
+            ## Tmux
+
+            The demo environment is prepared in a tmux session. You can use the mouse to
+            select panes and windows. Please check the [tmux][] documentation for keyboard
+            shortcuts, like `CTRL+b c` to create a new window for efficient interactive
+            exploration.
+
+            ## Preloaded Images
+
+            The demo environment does not have Internet access, but you can use a few
+            preloaded images like alpine and nginx via a local container registry
+            (`localhost:5001/alpine:latest` and `localhost:5001/nginx:latest`) when
+            deploying some test workload.
+
+            Enjoy exploring Gardener!
+
+            [Gardener]:    https://gardener.cloud/
+            [tmux]:        https://github.com/tmux/tmux/wiki
+            [KinD]:        https://kind.sigs.k8s.io/
+            [local setup]: https://github.com/gardener/gardener/blob/master/
+                            docs/deployment/getting_started_locally.md
+          EOF
+        - |
           sed 's/^  //' <<"SCRIPT_EOF" > ~/prepare_tmux.sh
             #!/bin/bash
 
@@ -3218,574 +3790,6 @@ spec:
             tmux select-window -t 0
             tmux select-pane -t 0
           SCRIPT_EOF
-
-          chmod +x ~/prepare_tmux.sh /home/demo/prepare_tmux.sh
-          chown demo:demo /home/demo/prepare_tmux.sh
-          time ~/prepare_tmux.sh
-
-          end=$(date +%s)
-          diff=$(( end - $(cat /rls_start) ))
-          elapsed=$(date -u -d @${diff} +"%T")
-          echo $elapsed > /root/elapsed_until_tmux
-          echo "Elapsed time until the tmux session is prepared: ${elapsed}"
-          { touch /tmp/alive
-            sleep $(( $(date -d '6 days 0:00' -u +%s) - $(date -u +%s) + RANDOM % 3600 )) &&
-            echo "Restarting after 5.x days of uptime to prevent issues with the registry cache expiration while offline" &&
-            rm /tmp/alive
-          } &
-          {
-            sleep 2h
-            if [ ! -f /tmp/sync/rootless_demo_ready ]; then
-              echo "The demo is not ready after 2 hours, trigger a restart"
-              rm /tmp/alive
-            fi
-          } &
-          touch /tmp/ready
-          wait
-          UNSHARE_CGROUP_EOF
-          wait
-        - rls.sh
-        - |
-          # The length of the arguments of the exec syscall is limited by the Kernel to 32 pages, i.e. 32*4K=128K
-          # This uncompressed RLS script has reached that 128K limit, so it is split into two parts:
-          # The git patches are extracted to the first argument of the '/bin/sh -c "commands" "name" "arg1" ...' call,
-          # and are evaluated by the main script at runtime.
-
-          sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' su -l demo -c -l
-            set -x
-
-            rm -rf ~/gardener-patches
-            mkdir -p ~/gardener-patches
-            sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0001-Avoid-using-the-same-port-with-rootless-docker.patch
-              From f74bcb8325105ff82d856378c31e554de8af3c32 Mon Sep 17 00:00:00 2001
-              From: dev <dev>
-              Date: Fri, 4 Oct 2024 16:03:51 +0200
-              Subject: [PATCH] Avoid using the same port with rootless docker
-
-              To mitigate
-              https://github.com/moby/moby/issues/47812
-              ---
-               .../kind/cluster/templates/_extra_port_mappings.tpl             | 2 +-
-               1 file changed, 1 insertion(+), 1 deletion(-)
-
-              diff --git a/example/gardener-local/kind/cluster/templates/_extra_port_mappings.tpl b/example/gardener-local/kind/cluster/templates/_extra_port_mappings.tpl
-              index 8e9e07ae9..ed5e4692a 100644
-              --- a/example/gardener-local/kind/cluster/templates/_extra_port_mappings.tpl
-              +++ b/example/gardener-local/kind/cluster/templates/_extra_port_mappings.tpl
-              @@ -10,7 +10,7 @@
-               {{- range $i, $listenAddress := (required ".Values.gardener.seed.istio.listenAddresses is required" .Values.gardener.seed.istio.listenAddresses) }}
-               - containerPort: {{ add 30443 $i }}
-               {{- if $.Values.gardener.controlPlane.deployed }}
-              -  hostPort: 443
-              +  hostPort: {{ add 443 $i 1 }}
-               {{- else }}
-                 # TODO (plkokanov): when using skaffold to deploy, 172.18.255.2 is not used as listenAddress (unlike the local
-                 #  deployment) because secondary IPs cannot be easily added to inside the `prow` containers. Additionally, there is no
-              --
-              2.45.2
-            PATCH_EOF
-
-            sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0002-Only-set-sysctl-if-it-is-not-already-set.patch
-              From 69a124f150d07862c907ba6e46d3721c5b399e56 Mon Sep 17 00:00:00 2001
-              From: dev <dev>
-              Date: Fri, 4 Oct 2024 16:06:47 +0200
-              Subject: [PATCH] Only set sysctl if it is not already set
-
-              ---
-               hack/kind-up.sh | 6 +++++-
-               1 file changed, 5 insertions(+), 1 deletion(-)
-
-              diff --git a/hack/kind-up.sh b/hack/kind-up.sh
-              index 15500e960..3c463d11a 100755
-              --- a/hack/kind-up.sh
-              +++ b/hack/kind-up.sh
-              @@ -361,7 +361,11 @@ fi
-
-               # workaround https://kind.sigs.k8s.io/docs/user/known-issues/#pod-errors-due-to-too-many-open-files
-               for node in $nodes; do
-              -  docker exec "$node" sh -c "sysctl fs.inotify.max_user_instances=8192"
-              +  docker exec "$node" sh -c "
-              +    current_value=\$(sysctl -n fs.inotify.max_user_instances)
-              +    if [ \"\$current_value\" -ne 8192 ]; then
-              +      sysctl -w fs.inotify.max_user_instances=8192
-              +    fi"
-               done
-
-               authorization_webhook_config_file=$(kubectl -n kube-system get configmap kubeadm-config -o yaml | yq '.data.ClusterConfiguration' | yq '.apiServer.extraVolumes[0].hostPath')
-              --
-              2.45.2
-            PATCH_EOF
-
-            sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0003-tmpfs.patch
-              From 1515887793170b8602a0ad1ef9af5bbbef733f11 Mon Sep 17 00:00:00 2001
-              From: dev <dev>
-              Date: Thu, 10 Oct 2024 16:00:32 +0200
-              Subject: [PATCH] tmpfs
-
-              ---
-               .../machine-provider/local/create_machine.go         | 12 ++++++++++++
-               1 file changed, 12 insertions(+)
-
-              diff --git a/pkg/provider-local/machine-provider/local/create_machine.go b/pkg/provider-local/machine-provider/local/create_machine.go
-              index a89db8866..510774ebf 100644
-              --- a/pkg/provider-local/machine-provider/local/create_machine.go
-              +++ b/pkg/provider-local/machine-provider/local/create_machine.go
-              @@ -109,6 +109,10 @@ func (d *localDriver) applyPod(
-               						Name:      "userdata",
-               						MountPath: "/etc/machine",
-               					},
-              +					{
-              +						Name:      "tmpfs",
-              +						MountPath: "/tmp",
-              +					},
-               					{
-               						Name:      "containerd",
-               						MountPath: "/var/lib/containerd",
-              @@ -143,6 +147,14 @@ func (d *localDriver) applyPod(
-               					},
-               				},
-               			},
-              +			{
-              +				Name: "tmpfs",
-              +				VolumeSource: corev1.VolumeSource{
-              +					EmptyDir: &corev1.EmptyDirVolumeSource{
-              +						Medium: corev1.StorageMediumMemory,
-              +					},
-              +				},
-              +			},
-               			{
-               				Name: "containerd",
-               				VolumeSource: corev1.VolumeSource{
-              --
-              2.45.2
-            PATCH_EOF
-
-            sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0004-dev-kmsg-need-not-be-mounted-in-the-node-problem-det.patch
-              From 81af7aac0db6585dd2b85eee6498fda690d6f106 Mon Sep 17 00:00:00 2001
-              From: dev <dev>
-              Date: Fri, 11 Oct 2024 10:55:45 +0200
-              Subject: [PATCH] /dev/kmsg need not be mounted in the node-problem-detector
-
-              /dev/kmsg is mounted by default in privileged containers
-              so we do not need to mount it explicitly
-
-              in a rootless environment, mounting it is not allowed anyways
-              so this broke the rootless setup
-              ---
-               .../nodeproblemdetector/node_problem_detector.go    | 13 -------------
-               .../node_problem_detector_test.go                   |  6 ------
-               2 files changed, 19 deletions(-)
-
-              diff --git a/pkg/component/nodemanagement/nodeproblemdetector/node_problem_detector.go b/pkg/component/nodemanagement/nodeproblemdetector/node_problem_detector.go
-              index cde247b7a..839726b76 100644
-              --- a/pkg/component/nodemanagement/nodeproblemdetector/node_problem_detector.go
-              +++ b/pkg/component/nodemanagement/nodeproblemdetector/node_problem_detector.go
-              @@ -231,11 +231,6 @@ func (c *nodeProblemDetector) computeResourcesData() (map[string][]byte, error)
-               										MountPath: "/etc/localtime",
-               										ReadOnly:  true,
-               									},
-              -									{
-              -										Name:      "kmsg",
-              -										MountPath: "/dev/kmsg",
-              -										ReadOnly:  true,
-              -									},
-               								},
-               								Ports: []corev1.ContainerPort{
-               									{
-              @@ -282,14 +277,6 @@ func (c *nodeProblemDetector) computeResourcesData() (map[string][]byte, error)
-               									},
-               								},
-               							},
-              -							{
-              -								Name: "kmsg",
-              -								VolumeSource: corev1.VolumeSource{
-              -									HostPath: &corev1.HostPathVolumeSource{
-              -										Path: "/dev/kmsg",
-              -									},
-              -								},
-              -							},
-               						},
-               					},
-               				},
-              diff --git a/pkg/component/nodemanagement/nodeproblemdetector/node_problem_detector_test.go b/pkg/component/nodemanagement/nodeproblemdetector/node_problem_detector_test.go
-              index 537666b4c..de2fb4c8d 100644
-              --- a/pkg/component/nodemanagement/nodeproblemdetector/node_problem_detector_test.go
-              +++ b/pkg/component/nodemanagement/nodeproblemdetector/node_problem_detector_test.go
-              @@ -228,9 +228,6 @@ spec:
-                       - mountPath: /etc/localtime
-                         name: localtime
-                         readOnly: true
-              -        - mountPath: /dev/kmsg
-              -          name: kmsg
-              -          readOnly: true
-                     dnsPolicy: Default
-                     priorityClassName: gardener-shoot-system-900
-                     securityContext:
-              @@ -251,9 +248,6 @@ spec:
-                         path: /etc/localtime
-                         type: ` + string(hostPathFileOrCreate) + `
-                       name: localtime
-              -      - hostPath:
-              -          path: /dev/kmsg
-              -        name: kmsg
-                 updateStrategy: {}
-               status:
-                 currentNumberScheduled: 0
-              --
-              2.45.2
-            PATCH_EOF
-
-            sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0005-support-shoots-on-the-managed-seed.patch
-              From e722b0d9e3f1b8d01e8e476617e52b48195c8836 Mon Sep 17 00:00:00 2001
-              From: dev <dev>
-              Date: Fri, 11 Oct 2024 14:50:38 +0200
-              Subject: [PATCH] support shoots on the managed seed
-
-              ---
-               .../machine-provider/local/create_machine.go           | 10 ++++++++++
-               1 file changed, 10 insertions(+)
-
-              diff --git a/pkg/provider-local/machine-provider/local/create_machine.go b/pkg/provider-local/machine-provider/local/create_machine.go
-              index 510774ebf..83ecf9956 100644
-              --- a/pkg/provider-local/machine-provider/local/create_machine.go
-              +++ b/pkg/provider-local/machine-provider/local/create_machine.go
-              @@ -113,6 +113,10 @@ func (d *localDriver) applyPod(
-               						Name:      "tmpfs",
-               						MountPath: "/tmp",
-               					},
-              +					{
-              +						Name:      "kubelet",
-              +						MountPath: "/var/lib/kubelet",
-              +					},
-               					{
-               						Name:      "containerd",
-               						MountPath: "/var/lib/containerd",
-              @@ -155,6 +159,12 @@ func (d *localDriver) applyPod(
-               					},
-               				},
-               			},
-              +			{
-              +				Name: "kubelet",
-              +				VolumeSource: corev1.VolumeSource{
-              +					EmptyDir: &corev1.EmptyDirVolumeSource{},
-              +				},
-              +			},
-               			{
-               				Name: "containerd",
-               				VolumeSource: corev1.VolumeSource{
-              --
-              2.45.2
-            PATCH_EOF
-
-            sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0006-support-nested-machines.patch
-              From 118ce28338eb15389374921371b76d9dcca3928a Mon Sep 17 00:00:00 2001
-              From: dev <dev>
-              Date: Thu, 24 Oct 2024 10:03:25 +0200
-              Subject: [PATCH] support nested machines
-
-              ---
-               .../machine-provider/local/create_machine.go         | 12 ++++++++++--
-               1 file changed, 10 insertions(+), 2 deletions(-)
-
-              diff --git a/pkg/provider-local/machine-provider/local/create_machine.go b/pkg/provider-local/machine-provider/local/create_machine.go
-              index 0c2aec352f..ff84e66f31 100644
-              --- a/pkg/provider-local/machine-provider/local/create_machine.go
-              +++ b/pkg/provider-local/machine-provider/local/create_machine.go
-              @@ -90,8 +90,18 @@ func (d *localDriver) applyPod(
-               	pod.Spec = corev1.PodSpec{
-               		Containers: []corev1.Container{
-               			{
-              -				Name:            "node",
-              -				Image:           providerSpec.Image,
-              +				Name:  "node",
-              +				Image: providerSpec.Image,
-              +				Command: []string{
-              +					"/bin/bash",
-              +					"-c",
-              +					`
-              +					umount /dev/kmsg
-              +					touch /dev/kmsg
-              +					mount --bind /sys/fs/cgroup/$(cat /proc/self/cgroup | cut -d: -f3) /sys/fs/cgroup
-              +					exec unshare -C /usr/local/bin/entrypoint /sbin/init
-              +					`,
-              +				},
-               				ImagePullPolicy: corev1.PullIfNotPresent,
-               				SecurityContext: &corev1.SecurityContext{
-               					Privileged: pointer.Bool(true),
-              --
-              2.44.0
-            PATCH_EOF
-
-            sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0007-HA-virtual-garden.patch
-              From 05e808832a3e5e478ef20fe9dff48496fc742d19 Mon Sep 17 00:00:00 2001
-              From: dev <dev>
-              Date: Fri, 25 Oct 2024 10:14:35 +0200
-              Subject: [PATCH] HA virtual garden
-
-              ---
-               example/operator/20-garden.yaml | 4 ++--
-               1 file changed, 2 insertions(+), 2 deletions(-)
-
-              diff --git a/example/operator/20-garden.yaml b/example/operator/20-garden.yaml
-              index 87cb7b50f..b18300b3c 100644
-              --- a/example/operator/20-garden.yaml
-              +++ b/example/operator/20-garden.yaml
-              @@ -50,8 +50,8 @@ spec:
-                 #         name: defaultIssuerPrivateKey
-                 #       server: https://acme-staging-v02.api.letsencrypt.org/directory # for productive purposes use e.g. https://acme-v02.api.letsencrypt.org/directory
-                 virtualCluster:
-              -  # controlPlane:
-              -  #   highAvailability: {}
-              +    controlPlane:
-              +      highAvailability: {}
-                   dns:
-                     domains:
-                     - virtual-garden.local.gardener.cloud
-              --
-              2.45.2
-            PATCH_EOF
-
-            # TODO to use the managed seed by default, it should be HA so that it can host HA control planes
-            #
-            # sed 's/^  //' <<"PATCH_EOF" > ~/gardener-patches/0008-soil-hosts-only-the-managedseed-shoot.patch
-            #   From 40c4ac96d6d512ca4050157582a2c60e0ac9d456 Mon Sep 17 00:00:00 2001
-            #   From: dev <dev>
-            #   Date: Fri, 25 Oct 2024 10:27:17 +0200
-            #   Subject: [PATCH] soil hosts only the managedseed shoot
-            #
-            #   ---
-            #    example/gardener-local/gardenlet/operator/gardenlet.yaml   | 5 +++++
-            #    example/provider-local/managedseeds/shoot-managedseed.yaml | 5 +++++
-            #    2 files changed, 10 insertions(+)
-            #
-            #   diff --git a/example/gardener-local/gardenlet/operator/gardenlet.yaml b/example/gardener-local/gardenlet/operator/gardenlet.yaml
-            #   index ed693b176..fdfccc857 100644
-            #   --- a/example/gardener-local/gardenlet/operator/gardenlet.yaml
-            #   +++ b/example/gardener-local/gardenlet/operator/gardenlet.yaml
-            #   @@ -15,6 +15,11 @@ spec:
-            #          gardenClusterAddress: https://api.virtual-garden.local.gardener.cloud
-            #        seedConfig:
-            #   +      metadata:
-            #   +        labels:
-            #   +          role: soil
-            #          spec:
-            #   +        taints:
-            #   +          - key: seed.gardener.cloud/protected
-            #            backup:
-            #              provider: local
-            #              region: local
-            #   diff --git a/example/provider-local/managedseeds/shoot-managedseed.yaml b/example/provider-local/managedseeds/shoot-managedseed.yaml
-            #   index ac2c2da88..e85fdf85d 100644
-            #   --- a/example/provider-local/managedseeds/shoot-managedseed.yaml
-            #   +++ b/example/provider-local/managedseeds/shoot-managedseed.yaml
-            #   @@ -6,6 +6,11 @@ metadata:
-            #      annotations:
-            #        shoot.gardener.cloud/cloud-config-execution-max-delay-seconds: "0"
-            #    spec:
-            #   +  tolerations:
-            #   +    - key: seed.gardener.cloud/protected
-            #   +  seedSelector:
-            #   +    matchLabels:
-            #   +      role: soil
-            #      cloudProfile:
-            #        name: local
-            #      secretBindingName: local
-            #   --
-            #   2.45.2
-            # PATCH_EOF
-
-            rm -rf ~/etcd-druid-patches
-            mkdir -p ~/etcd-druid-patches
-            sed 's/^  //' <<"PATCH_EOF" > ~/etcd-druid-patches/0001-Change-the-ownership-only-if-required.patch
-              From 63cbfccdf38027d0cd1cad36987f383333ce4810 Mon Sep 17 00:00:00 2001
-              From: dev <dev>
-              Date: Mon, 7 Oct 2024 15:42:24 +0200
-              Subject: [PATCH] Change the ownership only if required
-
-              In a rootless docker environment, changing the ownership
-              can only be done once, because the root user is actually not root.
-              ---
-               internal/component/statefulset/builder.go             | 3 ++-
-               internal/component/statefulset/stsmatcher.go          | 4 ++--
-               internal/controller/etcdcopybackupstask/reconciler.go | 2 +-
-               3 files changed, 5 insertions(+), 4 deletions(-)
-
-              diff --git a/internal/component/statefulset/builder.go b/internal/component/statefulset/builder.go
-              index 743cdaf2..78dae830 100644
-              --- a/internal/component/statefulset/builder.go
-              +++ b/internal/component/statefulset/builder.go
-              @@ -256,7 +256,7 @@ func (b *stsBuilder) getPodInitContainers() []corev1.Container {
-               		Image:           b.initContainerImage,
-               		ImagePullPolicy: corev1.PullIfNotPresent,
-               		Command:         []string{"sh", "-c", "--"},
-              -		Args:            []string{fmt.Sprintf("chown -R %d:%d %s", nonRootUser, nonRootUser, common.VolumeMountPathEtcdData)},
-              +		Args:            []string{fmt.Sprintf("[ $(stat -c '%%u' %[3]s) -eq %[1]d ] || chown -R %[1]d:%d %s", nonRootUser, nonRootUser, common.VolumeMountPathEtcdData)},
-               		VolumeMounts:    []corev1.VolumeMount{b.getEtcdDataVolumeMount()},
-               		SecurityContext: &corev1.SecurityContext{
-               			RunAsGroup:   ptr.To[int64](0),
-              @@ -274,6 +274,6 @@ func (b *stsBuilder) getPodInitContainers() []corev1.Container {
-               					ImagePullPolicy: corev1.PullIfNotPresent,
-               					Command:         []string{"sh", "-c", "--"},
-              -					Args:            []string{fmt.Sprintf("chown -R %d:%d /home/nonroot/%s", nonRootUser, nonRootUser, *b.etcd.Spec.Backup.Store.Container)},
-              +					Args:            []string{fmt.Sprintf("[ $(stat -c '%%u' /home/nonroot/%[3]s) -eq %[1]d ] || chown -R %[1]d:%d /home/nonroot/%s", nonRootUser, nonRootUser, *b.etcd.Spec.Backup.Store.Container)},
-               					VolumeMounts:    []corev1.VolumeMount{*etcdBackupVolumeMount},
-               					SecurityContext: &corev1.SecurityContext{
-               						RunAsGroup:   ptr.To[int64](0),
-              diff --git a/internal/component/statefulset/stsmatcher.go b/internal/component/statefulset/stsmatcher.go
-              index 010eabce..7bca2f37 100644
-              --- a/internal/component/statefulset/stsmatcher.go
-              +++ b/internal/component/statefulset/stsmatcher.go
-              @@ -173,7 +173,7 @@ func (s StatefulSetMatcher) matchPodInitContainers() gomegatypes.GomegaMatcher {
-               		"Image":           Equal(s.initContainerImage),
-               		"ImagePullPolicy": Equal(corev1.PullIfNotPresent),
-               		"Command":         HaveExactElements("sh", "-c", "--"),
-              -		"Args":            HaveExactElements("chown -R 65532:65532 /var/etcd/data"),
-              +		"Args":            HaveExactElements("[ $(stat -c '%u' /var/etcd/data) -eq 65532 ] || chown -R 65532:65532 /var/etcd/data"),
-               		"VolumeMounts":    ConsistOf(s.matchEtcdDataVolMount()),
-               		"SecurityContext": matchPodInitContainerSecurityContext(),
-               	})
-              @@ -184,7 +184,7 @@ func (s StatefulSetMatcher) matchPodInitContainers() gomegatypes.GomegaMatcher {
-               			"Image":           Equal(s.initContainerImage),
-               			"ImagePullPolicy": Equal(corev1.PullIfNotPresent),
-               			"Command":         HaveExactElements("sh", "-c", "--"),
-              -			"Args":            HaveExactElements(fmt.Sprintf("chown -R 65532:65532 /home/nonroot/%s", *s.etcd.Spec.Backup.Store.Container)),
-              +			"Args":            HaveExactElements(fmt.Sprintf("[ $(stat -c '%%u' /home/nonroot/%s) -eq 65532 ] || chown -R 65532:65532 /home/nonroot/%[1]s", *s.etcd.Spec.Backup.Store.Container)),
-               			"VolumeMounts":    ConsistOf(s.getEtcdBackupVolumeMountMatcher()),
-               			"SecurityContext": matchPodInitContainerSecurityContext(),
-               		})
-              diff --git a/internal/controller/etcdcopybackupstask/reconciler.go b/internal/controller/etcdcopybackupstask/reconciler.go
-              index 45219814..e8b9836e 100644
-              --- a/internal/controller/etcdcopybackupstask/reconciler.go
-              +++ b/internal/controller/etcdcopybackupstask/reconciler.go
-              @@ -362,7 +362,7 @@ func (r *Reconciler) createJobObject(ctx context.Context, task *druidv1alpha1.Et
-               					Name:         "change-backup-bucket-permissions",
-               					Image:        *initContainerImage,
-               					Command:      []string{"sh", "-c", "--"},
-              -					Args:         []string{fmt.Sprintf("%s%s%s%s", "chown -R 65532:65532 /home/nonroot/", *targetStore.Container, " /home/nonroot/", *sourceStore.Container)},
-              +					Args:         []string{fmt.Sprintf("[ $(stat -c '%%u' /home/nonroot) -eq 65532 ] || %s%s%s%s", "chown -R 65532:65532 /home/nonroot/", *targetStore.Container, " /home/nonroot/", *sourceStore.Container)},
-               					VolumeMounts: volumeMounts,
-               					SecurityContext: &corev1.SecurityContext{
-               						RunAsGroup:   ptr.To[int64](0),
-              --
-              2.45.2
-            PATCH_EOF
-          DEMO_EOF
-
-          sed 's/^  //' <<"EOF" > /dev/null # ~/welcome.md
-            # Welcome to the online Gardener Demo environment
-
-            [Gardener][] is an open source project contributed by SAP and others that
-            provides a Kubernetes-based solution to manage Kubernetes clusters on various
-            cloud providers in a uniform way.
-
-            This online demo environment allows you to explore the features and capabilities
-            of Gardener interactively in a [tmux][] terminal session in your browser without
-            the need to install anything on your local machine.
-
-            The demo environment is based the [local setup][] documentation of Gardener that
-            allows you to deploy Gardener on your own machine. It is slightly restricted
-            compared to a local setup to avoid abusing this environment but it should not
-            limit the exploration of the features in any way.
-
-            The interaction with the terminal session is captured for security purposes so
-            please refrain from typing in any sensitive information. The environment is
-            sealed off from the Internet to avoid using it as a proxy for malicious
-            activities.
-
-            Please follow the step by step instructions on the side to explore the features
-            of Gardener interactively.
-
-            For example, you could start with creating your first "shoot", a Kubernetes
-            cluster managed by Gardener with:
-
-                k apply -f example/provider-local/shoot.yaml
-
-            [Gardener]:    https://gardener.cloud/
-            [tmux]:        https://github.com/tmux/tmux/wiki
-            [local setup]: https://github.com/gardener/gardener/blob/master/
-                            docs/deployment/getting_started_locally.md
-          EOF
-
-          sed 's/^  //' <<"EOF" > /dev/null # ~/demo.md
-            # Welcome to the online Gardener Demo environment
-
-            [Gardener][] is an open source project contributed by SAP and others that
-            provides a Kubernetes-based solution to manage Kubernetes clusters on various
-            cloud providers in a uniform way.
-
-            This online demo environment allows you to explore the features and capabilities
-            of Gardener interactively in a [tmux][] terminal session in your browser without
-            the need to install anything on your local machine.
-
-            The demo environment is based the [local setup][] documentation of Gardener that
-            allows you to deploy Gardener on your own machine. It is slightly restricted
-            compared to a local setup to avoid abusing this environment but it should not
-            limit the exploration of the features in any way.
-
-            The interaction with the terminal session is captured for security purposes so
-            please refrain from typing in any sensitive information. The environment is
-            sealed off from the Internet to avoid using it as a proxy for malicious
-            activities.
-
-            Please follow the step by step instructions on the side to explore the features
-            of Gardener interactively.
-
-            ## Kubernetes contexts
-
-            The demo environment is based on [KinD][] (Kubernetes in Docker): a KinD cluster
-            acts as the "runtime" Garden cluster where the Gardener operator manages the so
-            called virtual "Garden" cluster, the Gardener API. Both clusters are available
-            as the "runtime" and "garden" contexts in the default kubeconfig under
-            '~/.kube/config'. You can choose a context with `k --context` or switch to a
-            context with `ktx`.
-
-            The Gardener API is itself a Kubernetes cluster with various custom resources
-            like Shoots and Seeds. End users can create Shoots (Kubernetes clusters): the
-            control plane is then managed by Gardener on a Seed cluster. The worker nodes of
-            the Shoot cluster are created in the IaaS account that is configured by the end
-            user. In this "remote" local setup that has no IaaS dependencies, the "runtime"
-            KinD cluster acts as the top level seed cluster, and the shoot worker nodes are
-            simulated by pods in the seed cluster, next to the control plane of the shoot
-            cluster.
-
-            So the KinD cluster is the runtime Garden cluster and it also acts as a seed
-            cluster. This might be slightly confusing because in real installations these
-            roles can be separated into dedicated clusters.
-
-            Gardener managed shoots can also be upgraded to a seed cluster, such that they
-            can host shoot control planes on their own. This allows for a recursive setup
-            where a top level, non Gardener managed seed cluster (the soil cluster) manages
-            a small set of shoots that are distributed across multiple IaaS providers and
-            geographical regions. These Gardener managed shoots are then registered as seeds
-            and the end user created shoots' control planes are hosted on those, close to
-            the IaaS and region that is chosen by the end user. This demo environment
-            demonstrates this recursive setup with a managed seed whose control plane is
-            hosted on the runtime / soil KinD cluster and a shoot whose control plane is
-            hosted on that managed seed shoot cluster. You can target a shoot cluster and
-            its control plane with `gardenctl`.
-
-            ## Tmux
-
-            The demo environment is prepared in a tmux session. You can use the mouse to
-            select panes and windows. Please check the [tmux][] documentation for keyboard
-            shortcuts, like `CTRL+b c` to create a new window for efficient interactive
-            exploration.
-
-            ## Preloaded Images
-
-            The demo environment does not have Internet access, but you can use a few
-            preloaded images like alpine and nginx via a local container registry
-            (`localhost:5001/alpine:latest` and `localhost:5001/nginx:latest`) when
-            deploying some test workload.
-
-            Enjoy exploring Gardener!
-
-            [Gardener]:    https://gardener.cloud/
-            [tmux]:        https://github.com/tmux/tmux/wiki
-            [KinD]:        https://kind.sigs.k8s.io/
-            [local setup]: https://github.com/gardener/gardener/blob/master/
-                            docs/deployment/getting_started_locally.md
-          EOF
         startupProbe:
           exec: {command: [cat, /tmp/ready]}
           failureThreshold: 720 # 2h
