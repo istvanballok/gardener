@@ -566,6 +566,7 @@ spec:
             cd diki
             git fetch
             git reset --hard
+            git checkout e6d4bc4931b8d498aaea3cd18c8171690d9afa73 # TODO freeze the version
 
             # apply patches
             yq < imagevector/images.yaml '.images[0].repository = "localhost:5001/gardener/diki-ops"' > /tmp/images.yaml
