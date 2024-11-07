@@ -583,14 +583,20 @@ spec:
           cp /home/demo/go/src/github.com/gardener/diki/bin/diki-linux-amd64 /usr/local/bin/diki
 
           mkdir -p /etc/docker
-          echo '{"insecure-registries" : [
-                    "registry.planter-system.svc.cluster.local:5001",
-                    "registry.planter-system.svc.cluster.local:5002"
-                 ],
-                 "registry-mirrors" : [
-                   "http://registry.planter-system.svc.cluster.local:5002"
-                 ]
-                }' > /etc/docker/daemon.json
+          sed 's/^  //' <<"EOF" > /etc/docker/daemon.json
+            {
+              "insecure-registries" : [
+                "registry.planter-system.svc.cluster.local:5001",
+                "registry.planter-system.svc.cluster.local:5002"
+              ],
+              "registry-mirrors" : [
+                "http://registry.planter-system.svc.cluster.local:5002"
+              ],
+              "features": {
+                "containerd-snapshotter": true
+              }
+            }
+          EOF
 
           sysctl -w net.ipv6.conf.eth0.disable_ipv6=1
           # https://docs.docker.com/reference/cli/dockerd/
@@ -1762,7 +1768,7 @@ spec:
               done
             EOF
 
-            new_window "registry" "download" Enter <<"EOF"
+            new_window "registry" "download" <<"EOF"
               {
               BEFORE=$(docker images)
               REGISTRY=registry.planter-system.svc.cluster.local:5001
@@ -1781,7 +1787,7 @@ spec:
               diff -U 100 -u --color=always <(echo "$BEFORE") <(echo "$AFTER") | grep -v /dev/fd || true
               }
             EOF
-            new_pane "upload" Enter <<"EOF"
+            new_pane "upload" <<"EOF"
               {
               BEFORE=$(docker images)
               REGISTRY=registry.planter-system.svc.cluster.local:5001
@@ -1955,6 +1961,39 @@ spec:
               curl localhost:9100/metrics
             EOF
 
+            new_window "docker cache" "build cache with containerd storage and default driver" <<"EOF"
+              sed 's/^  //' <<"DOC"
+                mkdir -p /tmp/docker
+                cd /tmp/docker
+                sed 's/^  //' <<"DOCKER_EOF" > /tmp/docker/Dockerfile
+                  FROM alpine
+                  RUN sleep 3 && apk update
+                  RUN sleep 3 && apk add curl
+                  RUN sleep 3 && apk add jq
+                DOCKER_EOF
+                TAG=my_image
+                CACHE_FLAGS="
+                  --cache-to   type=registry,ref=registry.planter-system.svc.cluster.local:5001/cache/$TAG,mode=max
+                  --cache-from type=registry,ref=registry.planter-system.svc.cluster.local:5001/cache/$TAG
+                  --sbom=false --provenance=false"
+                docker pull alpine:latest
+                time docker build -t $TAG $CACHE_FLAGS .
+                # containerd.io/distribution.source.ref exists
+                docker images | grep $TAG
+                docker system prune -f
+                time docker build -t $TAG $CACHE_FLAGS .
+                # containerd.io/distribution.source.ref still exists
+                docker rmi $TAG
+                docker system prune -f
+                time docker build -t $TAG $CACHE_FLAGS .
+                # containerd.io/distribution.source.ref still exists
+                time docker build -t $TAG $CACHE_FLAGS .
+                # the annotation does not exist because it used the local cache
+                # not relevant because we always call docker system prune -f to remove previous images
+                docker images | grep $TAG
+              DOC
+            EOF
+
             new_window "rootless docker" "Dockerfile ubuntu_systemd_rootless_docker" Enter <<"EOF"
               mkdir -p docker
               cd docker
@@ -2036,7 +2075,13 @@ spec:
               cd docker
               flag_wait registry_rootful_download &&
               stopwatch_start &&
-              retry docker pull ubuntu:24.04 &&
+              for i in $(awk '/^FROM/ {print $2}' Dockerfile); do
+                retry docker pull $i
+              done &&
+              CACHE_FLAGS="
+                --cache-to   type=registry,ref=registry.planter-system.svc.cluster.local:5001/cache/ubuntu_systemd_rootless_docker,mode=max
+                --cache-from type=registry,ref=registry.planter-system.svc.cluster.local:5001/cache/ubuntu_systemd_rootless_docker
+                --sbom=false --provenance=false" &&
               retry docker build -t ubuntu_systemd_rootless_docker --progress plain . |& sed -E 's/ +/ /g' &&
               docker system prune -f &&
               flag_notify ubuntu_systemd_rootless_docker_docker_build; stopwatch_stop
@@ -2088,15 +2133,20 @@ spec:
                 sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
                 machinectl shell demo@ /bin/bash -c
                   mkdir -p ~/.config/docker
-                  echo '{"insecure-registries" : [
-                            "registry.planter-system.svc.cluster.local:5001",
-                            "registry.planter-system.svc.cluster.local:5002",
-                            "garden.local.gardener.cloud:5001"
-                          ],
-                         "registry-mirrors" : [
-                           "http://registry.planter-system.svc.cluster.local:5002"
-                         ]
-                        }' > ~/.config/docker/daemon.json
+                  sed 's/^  //' <<"DOCKER_EOF" > ~/.config/docker/daemon.json
+                    {"insecure-registries" : [
+                        "registry.planter-system.svc.cluster.local:5001",
+                        "registry.planter-system.svc.cluster.local:5002",
+                        "garden.local.gardener.cloud:5001"
+                      ],
+                     "registry-mirrors" : [
+                       "http://registry.planter-system.svc.cluster.local:5002"
+                     ],
+                     "features": {
+                       "containerd-snapshotter": true
+                     }
+                    }
+                  DOCKER_EOF
                   dockerd-rootless-setuptool.sh install
                 DEMO_EOF
               SYSD
@@ -2198,17 +2248,27 @@ spec:
                 su -l demo -c -l
                   set -e
                   cd ../etcd-druid
-                  retry docker pull golang:1.22.4
-                  retry docker pull gcr.io/distroless/static-debian11:nonroot
-                  retry nice time docker buildx build --platform=$(docker info --format '{{.OSType}}/{{.Architecture}}') --target builder -t etcd-druid-builder --progress plain .
-                  retry nice time make VERSION=$(cat VERSION) REGISTRY=localhost:5001 docker-build |& cat
-                  retry nice time make VERSION=$(cat VERSION) REGISTRY=localhost:5001 docker-push  |& grep -v -E 'Preparing|Waiting'
+                  for i in $(awk '/^FROM/ {print $2}' Dockerfile); do
+                    retry docker pull $i
+                  done &&
+                  CACHE_FLAGS="
+                    --cache-to   type=registry,ref=registry.planter-system.svc.cluster.local:5001/cache/etcd-druid-builder,mode=max
+                    --cache-from type=registry,ref=registry.planter-system.svc.cluster.local:5001/cache/etcd-druid-builder
+                    --sbom=false --provenance=false"
+                  retry nice time docker buildx build --platform=$(docker info --format '{{.OSType}}/{{.Architecture}}') --progress plain --target builder \
+                    -t etcd-druid-builder $CACHE_FLAGS .
+                  CACHE_FLAGS="
+                    --cache-to   type=registry,ref=registry.planter-system.svc.cluster.local:5001/cache/etcd-druid,mode=max
+                    --cache-from type=registry,ref=registry.planter-system.svc.cluster.local:5001/cache/etcd-druid
+                    --sbom=false --provenance=false"
+                  retry nice time docker buildx build --platform=$(docker info --format '{{.OSType}}/{{.Architecture}}') --progress plain \
+                    -t localhost:5001/gardener/etcd-druid:$(cat VERSION) $CACHE_FLAGS --push .
                   docker system prune -f
                   flag_notify rootless_etcd_druid_patched
                 DEMO_EOF
               NETWORK_EOF
             EOF
-            new_pane "buid and push the patched diki-ops image" Enter <<"EOF"
+            new_pane "build and push the patched diki-ops image" Enter <<"EOF"
               flag_wait rootless_kind_operator_up_ready &&
               stopwatch_start &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
@@ -3567,8 +3627,14 @@ spec:
               flag_wait rootless_virtual_garden_ha &&
               stopwatch_start &&
               cd cell &&
-              retry docker pull alpine:3.20 &&
-              retry time docker build -t demo_image --progress plain . |& sed -E 's/ +/ /g' &&
+              for i in $(awk '/^FROM/ {print $2}' Dockerfile); do
+                retry docker pull $i
+              done &&
+              CACHE_FLAGS="
+                --cache-to   type=registry,ref=registry.planter-system.svc.cluster.local:5001/cache/demo,mode=max
+                --cache-from type=registry,ref=registry.planter-system.svc.cluster.local:5001/cache/demo
+                --sbom=false --provenance=false" &&
+              retry time docker build -t demo_image --progress plain $CACHE_FLAGS . |& sed -E 's/ +/ /g' &&
               docker system prune -f &&
               flag_notify rootless_demo_image; stopwatch_stop
             EOF
