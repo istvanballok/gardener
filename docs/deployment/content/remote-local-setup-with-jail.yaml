@@ -3079,7 +3079,7 @@ spec:
             EOF
             new_pane "regular shoot on managed seed" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              is_state_tested || {
+              {
                 time flag_wait rootless_managedseed_seed_ready &&
                 stopwatch_start &&
                 k apply -f <(yq '.metadata.name="local-ms"               |
@@ -3097,7 +3097,7 @@ spec:
             EOF
             new_pane "delete regular shoot on managed seed" <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
-              is_state_tested || {
+              {
                 time flag_wait managedseed_nested_shoot_ready &&
                 stopwatch_start &&
                 k annotate    shoot local-ms -n garden-local 'confirmation.gardener.cloud/deletion=true' &&
