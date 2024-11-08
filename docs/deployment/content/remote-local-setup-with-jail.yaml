@@ -2636,11 +2636,11 @@ spec:
                   flag_wait managedseed_nested_shoot_ready
                   flag_wait registry_mitigation
                 fi
-                stopwatch_start
               } &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' ubuntu_systemd_rootless_docker) -n bash -l -c
                 set -e
+                stopwatch_start
                 {
                   iptables -I FORWARD -o eth0 -j REJECT
                   iptables -I FORWARD -o eth0 -j REJECT -p tcp --reject-with tcp-reset
