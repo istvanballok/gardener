@@ -3128,6 +3128,7 @@ spec:
             new_pane "run diki" Enter <<"EOF"
               if ! is_state_tested; then
                 flag_wait rootless_shoot_diki_config_ready &&
+                stopwatch_start &&
                 diki run \
                   --config=/tmp/diki.yaml \
                   --provider=gardener \
@@ -3138,6 +3139,7 @@ spec:
                 echo "Report summary:" &&
                 jq -r '.providers[].rulesets[].rules[].checks[].status' < /tmp/disa-k8s-stigs-report.json | sort | uniq -c &&
                 flag_notify rootless_shoot_diki_ready
+                stopwatch_stop
               fi
             EOF
             new_pane "Delete" Enter <<"EOF"
