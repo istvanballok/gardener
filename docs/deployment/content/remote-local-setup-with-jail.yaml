@@ -2091,6 +2091,25 @@ spec:
                      --cpus=13 --memory=52g \
                      --name ubuntu_systemd_rootless_docker ubuntu_systemd_rootless_docker; stopwatch_stop
             EOF
+            new_pane "docker run ubuntu_systemd_rootless_docker 2 | (long running)" Enter <<"EOF"
+              rm -rf          /home/demo/.docker-rootless-socket2
+              mkdir -p        /home/demo/.docker-rootless2        \
+                              /home/demo/.docker-rootless-socket2 \
+                              /home/demo/cache2
+              chown demo:demo /home/demo/.docker-rootless2        \
+                              /home/demo/.docker-rootless-socket2 \
+                              /home/demo/cache2
+              flag_wait ubuntu_systemd_rootless_docker_docker_build &&
+              flag_wait ubuntu_systemd_rootless_docker_rootless_docker_service &&
+              stopwatch_start &&
+              docker run -it --privileged --rm \
+                     -v /home/demo/cache2:/home/demo/cache \
+                     -v /home/demo/.docker-rootless-socket2:/run/user/2000 \
+                     -v /home/demo/.docker-rootless2:/home/demo/.local \
+                     --tmpfs /tmp --tmpfs /run --tmpfs /run/lock \
+                     --cpus=13 --memory=52g \
+                     --name ubuntu_systemd_rootless_docker2 ubuntu_systemd_rootless_docker; stopwatch_stop
+            EOF
             new_pane "install rootless docker in ubuntu_systemd_rootless_docker" Enter <<"EOF"
               flag_wait ubuntu_systemd_rootless_docker_docker_build &&
               while ! docker exec ubuntu_systemd_rootless_docker systemctl status | grep -E 'State: running' >/dev/null; do
