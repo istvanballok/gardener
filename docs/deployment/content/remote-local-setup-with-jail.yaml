@@ -2206,6 +2206,7 @@ spec:
                 su -l demo -c -l
                   set -e
                   cd ../etcd-druid
+                  echo ".git" > .dockerignore
                   for i in $(awk '/^FROM/ {print $2}' Dockerfile); do
                     retry docker pull $i
                   done &&
