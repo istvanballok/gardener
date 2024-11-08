@@ -2566,6 +2566,7 @@ spec:
                                 echo "Pulling the image $suffix/$image"
                                 docker pull localhost:5000/$image
                                 docker rmi localhost:5000/$image >/dev/null
+                                docker system prune -f
                               done
                           kill $PORT_FORWARD_PID
                           wait
