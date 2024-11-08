@@ -1911,7 +1911,7 @@ spec:
               done
             EOF
             new_pane "exporter" Enter <<"EOF"
-              docker run -it -p 9100:9100 -v /tmp/metrics:/metrics --name node-exporter \
+              docker run --rm -it -p 9100:9100 -v /tmp/metrics:/metrics --name node-exporter \
                 prom/node-exporter \
                 --collector.disable-defaults --web.disable-exporter-metrics \
                 --collector.textfile --collector.textfile.directory=/metrics
