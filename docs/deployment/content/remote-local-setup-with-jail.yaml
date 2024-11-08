@@ -2246,7 +2246,7 @@ spec:
                   set -e
                   trap 'jobs -p | xargs kill' INT
                   BEFORE=\$(netstat -ntlp)
-                  socat TCP-LISTEN:6443,fork,reuseaddr,bind=$DOCKER_IP   TCP:127.0.0.1:$PORT   &
+                  socat TCP4-LISTEN:6443,fork,reuseaddr                  TCP:127.0.0.1:$PORT   &
                   socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.1  TCP:172.18.255.1:444  &
                   socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.10 TCP:172.18.255.10:445 &
                   socat TCP-LISTEN:443,fork,reuseaddr,bind=172.18.255.11 TCP:172.18.255.11:446 &
