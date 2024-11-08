@@ -26,6 +26,23 @@ spec:
       containers:
       - name: registry
         image: registry
+        command:
+        - /bin/sh
+        - -c
+        - |
+          set -ex
+          apk add coreutils
+          (
+            RESTART_AT=$(( $(date -d '1 day 0:00' -u +%s) + RANDOM % 3600))
+            echo "Restart within 1 hour after the next UTC midnight for garbage collection on: $(date -u --date="@$RESTART_AT")"
+            sleep $(( RESTART_AT - $(date -u +%s) ))
+            echo "Restarting..."
+            kill 1
+          ) &
+          if [ -d /var/lib/registry/docker ]; then
+            registry garbage-collect -m /etc/docker/registry/config.yml
+          fi
+          registry serve /etc/docker/registry/config.yml
         env:
         - name: REGISTRY_HTTP_ADDR
           value: :5001
@@ -39,6 +56,23 @@ spec:
           subPath: cache
       - name: docker-mirror
         image: registry
+        command:
+        - /bin/sh
+        - -c
+        - |
+          set -ex
+          apk add coreutils
+          (
+            RESTART_AT=$(( $(date -d '1 day 0:00' -u +%s) + RANDOM % 3600))
+            echo "Restart within 1 hour after the next UTC midnight for garbage collection on: $(date -u --date="@$RESTART_AT")"
+            sleep $(( RESTART_AT - $(date -u +%s) ))
+            echo "Restarting..."
+            kill 1
+          ) &
+          if [ -d /var/lib/registry/docker ]; then
+            registry garbage-collect -m /etc/docker/registry/config.yml
+          fi
+          registry serve /etc/docker/registry/config.yml
         env:
         - name: REGISTRY_HTTP_ADDR
           value: :5002
