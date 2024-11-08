@@ -3034,11 +3034,11 @@ spec:
               flag_wait rootless_virtual_garden_ha &&
               if ! is_state_tested; then
                 stopwatch_start &&
-                k apply -f <(yq '.spec.provider.workersSettings.sshAccess.enabled                   = false
-                              | .spec.kubernetes.kubeAPIServer.admissionPlugins[0].name             = "PodSecurity"
-                              | .spec.kubernetes.kubeAPIServer.admissionPlugins[0].config          |= { .apiVersion = "pod-security.admission.config.k8s.io/v1", .kind = "PodSecurityConfiguration" }
-                              | .spec.kubernetes.kubeAPIServer.admissionPlugins[0].config.defaults |= { .enforce = "baseline", .audit = "baseline", .warn = "baseline" }
-                              | .spec.kubernetes.kubeAPIServer.admissionPlugins[0].disabled         = false
+                k apply -f <(yq '.spec.provider.workersSettings.sshAccess.enabled                    = false
+                               | .spec.kubernetes.kubeAPIServer.admissionPlugins[0].name             = "PodSecurity"
+                               | .spec.kubernetes.kubeAPIServer.admissionPlugins[0].config          |= { .apiVersion = "pod-security.admission.config.k8s.io/v1", .kind = "PodSecurityConfiguration" }
+                               | .spec.kubernetes.kubeAPIServer.admissionPlugins[0].config.defaults |= { .enforce = "baseline", .audit = "baseline", .warn = "baseline" }
+                               | .spec.kubernetes.kubeAPIServer.admissionPlugins[0].disabled         = false
                              ' example/provider-local/shoot.yaml) &&
                 time (k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Processing shoot local --timeout=-1s
                       k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot local --timeout=-1s
@@ -3052,12 +3052,12 @@ spec:
               if ! is_state_tested; then
                 time flag_wait rootless_shoot_ready &&
                 stopwatch_start &&
-                k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type          = "zone"
-                              | .spec.provider.workersSettings.sshAccess.enabled                    = false
-                              | .spec.kubernetes.kubeAPIServer.admissionPlugins[0].name             = "PodSecurity"
-                              | .spec.kubernetes.kubeAPIServer.admissionPlugins[0].config          |= { .apiVersion = "pod-security.admission.config.k8s.io/v1", .kind = "PodSecurityConfiguration" }
-                              | .spec.kubernetes.kubeAPIServer.admissionPlugins[0].config.defaults |= { .enforce = "baseline", .audit = "baseline", .warn = "baseline" }
-                              | .spec.kubernetes.kubeAPIServer.admissionPlugins[0].disabled         = false
+                k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type           = "zone"
+                               | .spec.provider.workersSettings.sshAccess.enabled                    = false
+                               | .spec.kubernetes.kubeAPIServer.admissionPlugins[0].name             = "PodSecurity"
+                               | .spec.kubernetes.kubeAPIServer.admissionPlugins[0].config          |= { .apiVersion = "pod-security.admission.config.k8s.io/v1", .kind = "PodSecurityConfiguration" }
+                               | .spec.kubernetes.kubeAPIServer.admissionPlugins[0].config.defaults |= { .enforce = "baseline", .audit = "baseline", .warn = "baseline" }
+                               | .spec.kubernetes.kubeAPIServer.admissionPlugins[0].disabled         = false
                              ' example/provider-local/shoot.yaml) &&
                 time (k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Processing shoot local --timeout=-1s
                       k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot local --timeout=-1s
