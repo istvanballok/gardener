@@ -2631,7 +2631,7 @@ spec:
                       sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
                       su -l demo -c -l
                         set -e
-                        ip route del $ROOTLESS_DOCKER_IP || true
+                        ip route del $ROOTLESS_DOCKER_IP 2> /dev/null || true
                         ip route add $ROOTLESS_DOCKER_IP via \$(ip route | awk '/default/ {print \$3}')
                         export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket2/docker.sock
                         ! docker images -q | grep .
@@ -2653,7 +2653,7 @@ spec:
                                 echo "Pulling the image \$suffix/\$image"
                                 docker pull localhost:5000/\$image  >/dev/null
                                 docker rmi  localhost:5000/\$image  >/dev/null
-                              done | nl
+                              done | stdbuf -o0 nl
                           kill \$PORT_FORWARD_PID
                           wait
                         done | ts
@@ -4071,37 +4071,37 @@ spec:
       resources: {requests: {storage: 4Gi}}
       volumeMode: Filesystem
 ---
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: cell-attach
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: cell-attach
-rules:
-- apiGroups: [""]
-  resources: ["pods"]
-  resourceNames: ["cell-exec-0"]
-  verbs: ["get", "list", "watch"]
-- apiGroups: [""]
-  resources: ["pods/attach"]
-  resourceNames: ["cell-exec-0"]
-  verbs: ["create"]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: cell-attach
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: cell-attach
-subjects:
-- kind: ServiceAccount
-  name: cell-attach
----
+# apiVersion: v1
+# kind: ServiceAccount
+# metadata:
+#   name: cell-attach
+# ---
+# apiVersion: rbac.authorization.k8s.io/v1
+# kind: Role
+# metadata:
+#   name: cell-attach
+# rules:
+# - apiGroups: [""]
+#   resources: ["pods"]
+#   resourceNames: ["cell-exec-0"]
+#   verbs: ["get", "list", "watch"]
+# - apiGroups: [""]
+#   resources: ["pods/attach"]
+#   resourceNames: ["cell-exec-0"]
+#   verbs: ["create"]
+# ---
+# apiVersion: rbac.authorization.k8s.io/v1
+# kind: RoleBinding
+# metadata:
+#   name: cell-attach
+# roleRef:
+#   apiGroup: rbac.authorization.k8s.io
+#   kind: Role
+#   name: cell-attach
+# subjects:
+# - kind: ServiceAccount
+#   name: cell-attach
+# ---
 # apiVersion: apps/v1
 # kind: StatefulSet
 # metadata:
