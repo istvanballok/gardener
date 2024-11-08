@@ -2636,8 +2636,8 @@ spec:
                         export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket2/docker.sock
                         docker images
                         ! docker images -q | grep .
-                        k --kubeconfig /home/demo/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator/kubeconfig.for_rootless \
-                          -n registry get deployments -o json | jq -r '
+                        export KUBECONFIG=/home/demo/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator/kubeconfig.for_rootless
+                        k -n registry get deployments -o json | jq -r '
                           .items[] |
                           select(.metadata.name | startswith("registry-")) |
                           [.metadata.name, (.metadata.name | sub("^registry-"; "")), .spec.template.spec.containers[0].ports[0].containerPort] |
