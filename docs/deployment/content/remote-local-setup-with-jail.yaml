@@ -2601,10 +2601,8 @@ spec:
               }
             EOF
             new_pane "take the demo environment OFFLINE" Enter <<"EOF"
-              flag_wait ubuntu_systemd_rootless_docker_rootless_docker_service &&
-              sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
-              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' ubuntu_systemd_rootless_docker) -n bash -l -c
-                set -e
+              {
+                flag_wait ubuntu_systemd_rootless_docker_rootless_docker_service
                 flag_wait rootless_demo_image
                 flag_wait rootless_managedseed_seed_ready
                 if ! is_state_tested; then
@@ -2615,6 +2613,10 @@ spec:
                   flag_wait registry_mitigation
                 fi
                 stopwatch_start
+              } &&
+              sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
+              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' ubuntu_systemd_rootless_docker) -n bash -l -c
+                set -e
                 {
                   iptables -I FORWARD -o eth0 -j REJECT
                   iptables -I FORWARD -o eth0 -j REJECT -p tcp --reject-with tcp-reset
