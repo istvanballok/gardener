@@ -2918,7 +2918,7 @@ spec:
             EOF
             new_pane "sar -h      -- Network activity in the demo   TODO check high network activity" Enter <<"EOF"
               while true; do
-                nsenter -t $(pgrep -f '^/proc/self/exe --state-dir=/run/user/2000/dockerd-rootless') -n bash -c "
+                nsenter -t $(pgrep -f '^/proc/self/exe --state-dir=/run/user/2000/dockerd-rootless' | sort -n | head -n 1) -n bash -c "
                   S_COLORS=always sar -h -n DEV 10 10              | grep -v -E --line-buffered 'Linux|^$'
                 "
                 echo
@@ -2927,7 +2927,7 @@ spec:
             EOF
             new_pane "ifconfig    -- Network activity in the demo   TODO check high network activity" Enter <<"EOF"
               while true; do
-                nsenter -t $(pgrep -f '^/proc/self/exe --state-dir=/run/user/2000/dockerd-rootless') -n bash -c "
+                nsenter -t $(pgrep -f '^/proc/self/exe --state-dir=/run/user/2000/dockerd-rootless' | sort -n | head -n 1) -n bash -c "
                   ifconfig | grep -E 'Link encap|bytes' | grep --color -E '^[^ ]+|\([^)]+\)|$'
                 "
                 echo
