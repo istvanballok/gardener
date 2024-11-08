@@ -2614,9 +2614,9 @@ spec:
                   ROOTLESS_DOCKER_IP=$(docker exec ubuntu_systemd_rootless_docker ip addr show eth0 \
                                        | awk '/inet /{print $2}' | cut -d '/' -f 1)
                   grep -v gardener-operator-local-control-plane /etc/hosts > /etc/hosts.tmp
-                  cat /etc/hosts.tmp > /etc/hosts
+                  echo "$ROOTLESS_DOCKER_IP gardener-operator-local-control-plane" > /etc/hosts
+                  cat /etc/hosts.tmp                                              >> /etc/hosts
                   rm /etc/hosts.tmp
-                  echo "$ROOTLESS_DOCKER_IP gardener-operator-local-control-plane" >> /etc/hosts
                   for phase in online offline; do
                     echo "phase: $phase"
                     echo
