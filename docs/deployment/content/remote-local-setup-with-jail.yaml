@@ -419,9 +419,20 @@ spec:
                 su -l demo -c -l "flag_wait $1"
                 return $?
               fi
-              mkdir -p /tmp/sync
-              [ -f /tmp/sync/$1 ] || inotifywait -qq /tmp/sync --include /$1$
-              sleep 1
+              (
+                mkdir -p /tmp/sync
+                FIFO=$(mktemp -u)
+                mkfifo $FIFO
+                inotifywait /tmp/sync --include /$1$ >/dev/null 2>$FIFO &
+                pid=$!
+                head -2 $FIFO >/dev/null
+                if [ -f /tmp/sync/$1 ]; then
+                  kill $pid
+                fi
+                wait $pid 2>/dev/null
+                rm $FIFO
+                sleep 1
+              )
             }
             function flag_delete {
               if [ "$(whoami)" == "root" ]; then
@@ -839,9 +850,20 @@ spec:
                   touch /tmp/sync/$1
                 }
                 function flag_wait {
-                  mkdir -p /tmp/sync
-                  [ -f /tmp/sync/$1 ] || inotifywait -qq /tmp/sync --include /$1$
-                  sleep 1
+                  (
+                    mkdir -p /tmp/sync
+                    FIFO=$(mktemp -u)
+                    mkfifo $FIFO
+                    inotifywait /tmp/sync --include /$1$ >/dev/null 2>$FIFO &
+                    pid=$!
+                    head -2 $FIFO >/dev/null
+                    if [ -f /tmp/sync/$1 ]; then
+                      kill $pid
+                    fi
+                    wait $pid 2>/dev/null
+                    rm $FIFO
+                    sleep 1
+                  )
                 }
                 function flag_delete {
                   mkdir -p /tmp/sync
