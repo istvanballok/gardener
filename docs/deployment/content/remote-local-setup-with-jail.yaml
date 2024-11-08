@@ -2626,11 +2626,13 @@ spec:
                       iptables -I FORWARD -o eth0 -j REJECT -p tcp --reject-with tcp-reset
                     fi
 
-                    sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
+                    sed 's/^  //' <<NETWORK_EOF | xargs -d '\0' \
                     nsenter -t $(pgrep -f '^/proc/self/exe --state-dir=/run/user/2000/dockerd-rootless' | sort -n | tail -n +2) -n bash -c
                       sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
                       su -l demo -c -l
                         set -e
+                        ip route del $ROOTLESS_DOCKER_IP || true
+                        ip route add $ROOTLESS_DOCKER_IP via \$(ip route | awk '/default/ {print \$3}')
                         export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket2/docker.sock
                         docker images
                         docker images -q | grep . # fail if there are images
@@ -2641,20 +2643,20 @@ spec:
                           [.metadata.name, (.metadata.name | sub("^registry-"; "")), .spec.template.spec.containers[0].ports[0].containerPort] |
                           join(" ")
                         ' | while read name suffix port; do
-                          echo "Processing the registry mirror $suffix"
-                          k -n registry port-forward deployment/$name 5000:$port &
-                          PORT_FORWARD_PID=$!
+                          echo "Processing the registry mirror \$suffix"
+                          k -n registry port-forward deployment/\$name 5000:\$port &
+                          PORT_FORWARD_PID=\$!
                           until curl localhost:5000 >/dev/null 2>&1; do sleep 1; done
-                          find dev/local-registry/$suffix -type d | sed -n -E '
+                          find dev/local-registry/\$suffix -type d | sed -n -E '
                             s|.*/docker/registry/v2/repositories/(.*)/_manifests/tags/([^/]*)$|\1:\2|p
                           ' | while read image; do
                                 echo
-                                echo "Pulling the image $suffix/$image"
-                                docker pull localhost:5000/$image
-                                docker rmi localhost:5000/$image >/dev/null
+                                echo "Pulling the image \$suffix/\$image"
+                                docker pull localhost:5000/\$image
+                                docker rmi localhost:5000/\$image >/dev/null
                                 docker system prune -f
                               done
-                          kill $PORT_FORWARD_PID
+                          kill \$PORT_FORWARD_PID
                           wait
                         done
 
