@@ -2548,7 +2548,8 @@ spec:
                       sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
                       su -l demo -c -l
                         set -e
-
+                        docker images | grep -v -E 'etcd-druid|demo_image|kindest/node|golang|static-debian11|REPOSITORY' | awk '{print $1 ":" $2}' | xargs docker rmi || true
+                        docker system prune -f
                         k -n registry get deployments -o json | jq -r '
                           .items[] |
                           select(.metadata.name | startswith("registry-")) |
