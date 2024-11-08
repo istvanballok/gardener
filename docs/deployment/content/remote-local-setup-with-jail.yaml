@@ -2618,8 +2618,8 @@ spec:
                   cat /etc/hosts.tmp                                              >> /etc/hosts
                   rm /etc/hosts.tmp
                   for phase in online offline; do
-                    echo "phase: $phase"
                     echo
+                    echo "phase: $phase"
                     if [ "$phase" = "offline" ]; then
                       echo "Blocking network traffic from the registry mirrors to the Internet"
                       iptables -I FORWARD -o eth0 -j REJECT
@@ -2634,7 +2634,6 @@ spec:
                         ip route del $ROOTLESS_DOCKER_IP || true
                         ip route add $ROOTLESS_DOCKER_IP via \$(ip route | awk '/default/ {print \$3}')
                         export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket2/docker.sock
-                        docker images
                         ! docker images -q | grep .
                         export KUBECONFIG=/home/demo/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator/kubeconfig.for_rootless
                         k -n registry get deployments -o json | jq -r '
@@ -2643,25 +2642,26 @@ spec:
                           [.metadata.name, (.metadata.name | sub("^registry-"; "")), .spec.template.spec.containers[0].ports[0].containerPort] |
                           join(" ")
                         ' | while read name suffix port; do
+                          echo
                           echo "Processing the registry mirror \$suffix"
-                          k -n registry port-forward deployment/\$name 5000:\$port &
+                          k -n registry port-forward deployment/\$name 5000:\$port >/dev/null &
                           PORT_FORWARD_PID=\$!
                           until curl localhost:5000 >/dev/null 2>&1; do sleep 1; done
                           find dev/local-registry/\$suffix -type d | sed -n -E '
                             s|.*/docker/registry/v2/repositories/(.*)/_manifests/tags/([^/]*)$|\1:\2|p
                           ' | while read image; do
-                                echo
                                 echo "Pulling the image \$suffix/\$image"
-                                docker pull localhost:5000/\$image
-                                docker rmi localhost:5000/\$image >/dev/null
-                              done
+                                docker pull localhost:5000/\$image  >/dev/null
+                                docker rmi  localhost:5000/\$image  >/dev/null
+                              done | nl
                           kill \$PORT_FORWARD_PID
                           wait
-                        done
+                        done | ts
 
                 DEMO_EOF
               NETWORK_EOF
                     if [ "$phase" = "offline" ]; then
+                      echo
                       echo "Restoring network traffic to the Internet"
                       iptables -D FORWARD -o eth0 -j REJECT
                       iptables -D FORWARD -o eth0 -j REJECT -p tcp --reject-with tcp-reset
