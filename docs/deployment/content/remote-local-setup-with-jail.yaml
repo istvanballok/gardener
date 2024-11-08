@@ -2150,6 +2150,46 @@ spec:
                 DEMO_EOF
               SYSD
             EOF
+            new_pane "install rootless docker in ubuntu_systemd_rootless_docker2" Enter <<"EOF"
+              flag_wait ubuntu_systemd_rootless_docker_docker_build &&
+              while ! docker exec ubuntu_systemd_rootless_docker2 systemctl status | grep -E 'State: running' >/dev/null; do
+                sleep 1;
+                if docker exec ubuntu_systemd_rootless_docker2 systemctl status | grep -E 'State: degraded' >/dev/null; then
+                  echo "Restarting failed services"
+                  docker exec ubuntu_systemd_rootless_docker2 bash -c '
+                    systemctl list-units --state=failed --no-pager --no-legend --plain | awk "{print \$1}" | xargs -r systemctl start
+                  '
+                fi
+              done &&
+              stopwatch_start &&
+              sed 's/^  //' <<"SYSD" | xargs -d '\0' \
+              docker exec ubuntu_systemd_rootless_docker2 bash -c && flag_notify ubuntu_systemd_rootless_docker_rootless_docker_service2; stopwatch_stop
+                sysctl -w net.ipv4.ping_group_range="0 2147483647"
+                sysctl -w net.ipv4.ip_unprivileged_port_start=0
+                setcap cap_net_bind_service=ep $(which rootlesskit)
+                echo "127.0.0.1 garden.local.gardener.cloud" >> /etc/hosts
+                loginctl enable-linger demo
+                sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
+                machinectl shell demo@ /bin/bash -c
+                  mkdir -p ~/.config/docker
+                  sed 's/^  //' <<"DOCKER_EOF" > ~/.config/docker/daemon.json
+                    {"insecure-registries" : [
+                        "registry.planter-system.svc.cluster.local:5001",
+                        "registry.planter-system.svc.cluster.local:5002",
+                        "garden.local.gardener.cloud:5001"
+                      ],
+                     "registry-mirrors" : [
+                       "http://registry.planter-system.svc.cluster.local:5002"
+                     ],
+                     "features": {
+                       "containerd-snapshotter": true
+                     }
+                    }
+                  DOCKER_EOF
+                  dockerd-rootless-setuptool.sh install
+                DEMO_EOF
+              SYSD
+            EOF
 
             new_window "make kind-operator" "make kind-operator-down" Enter <<"EOF"
               rm -rf /home/demo/go/src/github.com/gardener/gardener/dev/local-backupbuckets &&
