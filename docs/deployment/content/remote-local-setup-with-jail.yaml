@@ -2631,9 +2631,10 @@ spec:
                       sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
                       su -l demo -c -l
                         set -e
-                        docker images | grep -v -E 'etcd-druid|demo_image|kindest/node|golang|static-debian11|REPOSITORY' | awk '{print $1 ":" $2}' | xargs docker rmi || true
-                        docker system prune -f
                         k -n registry get deployments -o json | jq -r '
+                        export DOCKER_HOST=unix:///run/user/2000/docker.sock2
+                        docker images
+                        docker images -q | grep . # fail if there are images
                           .items[] |
                           select(.metadata.name | startswith("registry-")) |
                           [.metadata.name, (.metadata.name | sub("^registry-"; "")), .spec.template.spec.containers[0].ports[0].containerPort] |
