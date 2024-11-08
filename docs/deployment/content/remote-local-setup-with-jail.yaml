@@ -2631,10 +2631,11 @@ spec:
                       sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
                       su -l demo -c -l
                         set -e
-                        k -n registry get deployments -o json | jq -r '
                         export DOCKER_HOST=unix:///run/user/2000/docker.sock2
                         docker images
                         docker images -q | grep . # fail if there are images
+                        k --kubeconfig /home/demo/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator/kubeconfig \
+                          -n registry get deployments -o json | jq -r '
                           .items[] |
                           select(.metadata.name | startswith("registry-")) |
                           [.metadata.name, (.metadata.name | sub("^registry-"; "")), .spec.template.spec.containers[0].ports[0].containerPort] |
