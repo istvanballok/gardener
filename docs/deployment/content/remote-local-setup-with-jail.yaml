@@ -2688,11 +2688,11 @@ spec:
                 flag_wait ubuntu_systemd_rootless_docker_rootless_docker_service
                 flag_wait rootless_demo_image
                 flag_wait rootless_managedseed_seed_ready
+                flag_wait managedseed_nested_shoot_ready
                 if ! is_state_tested; then
                   flag_wait rootless_image_preload_ready
                   flag_wait rootless_shoot_ha_ready_deleted
                   flag_wait managedseed_nested_workerless_shoot_deleted
-                  flag_wait managedseed_nested_shoot_ready
                   flag_wait registry_mitigation
                 fi
               } &&
