@@ -31,6 +31,7 @@ spec:
         - -c
         - |
           set -ex
+          trap 'trap - TERM INT EXIT; jobs -p | xargs -r kill; wait' TERM INT EXIT
           apk add coreutils
           (
             RESTART_AT=$(( $(date -d '1 day 0:00' -u +%s) + RANDOM % 3600))
@@ -42,7 +43,8 @@ spec:
           if [ -d /var/lib/registry/docker ]; then
             registry garbage-collect -m /etc/docker/registry/config.yml
           fi
-          registry serve /etc/docker/registry/config.yml
+          registry serve /etc/docker/registry/config.yml &
+          wait
         env:
         - name: REGISTRY_HTTP_ADDR
           value: :5001
@@ -61,6 +63,7 @@ spec:
         - -c
         - |
           set -ex
+          trap 'trap - TERM INT EXIT; jobs -p | xargs -r kill; wait' TERM INT EXIT
           apk add coreutils
           (
             RESTART_AT=$(( $(date -d '1 day 0:00' -u +%s) + RANDOM % 3600))
@@ -72,7 +75,8 @@ spec:
           if [ -d /var/lib/registry/docker ]; then
             registry garbage-collect -m /etc/docker/registry/config.yml
           fi
-          registry serve /etc/docker/registry/config.yml
+          registry serve /etc/docker/registry/config.yml &
+          wait
         env:
         - name: REGISTRY_HTTP_ADDR
           value: :5002
