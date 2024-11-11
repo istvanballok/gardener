@@ -1156,6 +1156,8 @@ spec:
                   cat ~/welcome.md
                 EOF
 
+                tmux set mouse off
+
                 echo "The tmux session is prepared. To attach to it, run 'tmux a'."
                 while [ ! -f /tmp/demo_tested ]; do sleep 1; done
                 touch /tmp/ready
