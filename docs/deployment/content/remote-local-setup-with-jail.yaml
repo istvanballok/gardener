@@ -3874,7 +3874,10 @@ spec:
               stopwatch_start &&
               flag_notify rootless_demo_ready &&
               stopwatch_stop &&
-              echo docker exec -it demo tmux -u a -t gardener-demo
+              (
+                source /usr/local/bin/tmux_functions.sh
+                echo "docker exec -it demo tmux -u a -t gardener-demo" | send_commands &
+              )
             EOF
 
             tmux select-window -t 0
