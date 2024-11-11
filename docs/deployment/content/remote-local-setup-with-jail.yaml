@@ -616,22 +616,24 @@ spec:
           chmod +x /usr/local/bin/is_tmux_window_shown.sh
 
           sed 's/^  //' <<"SCRIPT_EOF" > /usr/local/bin/tmux_functions.sh
+            #!/bin/bash
+
             function wait_for_prompt {
               # wait for the character '#' or '>' to appear in the last non empty line of the tmux pane indicating that the bash prompt is ready
-              while ! tmux capture-pane -p | grep -v ^$ | tail -n 1 | grep -E '(\$|#|>)$' >/dev/null; do sleep .3; done
+              while ! tmux capture-pane -p "${TMUX_ARGS[@]}" | grep -v ^$ | tail -n 1 | grep -E '(\$|#|>)$' >/dev/null; do sleep .3; done
             }
 
             function wait_for_line {
               # wait for a line to appear in the last non empty line of the tmux pane indicating that the input was echoed back by bash
-              while ! tmux capture-pane -p | grep -v ^$ | tail -n 1 | grep -F -- "$1" >/dev/null; do sleep .3; done
+              while ! tmux capture-pane -p "${TMUX_ARGS[@]}" | grep -v ^$ | tail -n 1 | grep -F -- "$1" >/dev/null; do sleep .3; done
             }
 
             function send_line {
               # tmux send does not send the last character if it's a semicolon. It either needs to be escaped or duplicated.
               if [[ "$1" == *';' ]]; then
-                tmux send -- "$1;"
+                tmux send "${TMUX_ARGS[@]}" -- "$1;"
               else
-                tmux send -- "$1"
+                tmux send "${TMUX_ARGS[@]}" -- "$1"
               fi
             }
 
@@ -643,7 +645,7 @@ spec:
               wait_for_line "$line"
               while IFS= read -r line; do
                 line=$(echo "$line" | sed 's/^  //')
-                tmux send Enter
+                tmux send "${TMUX_ARGS[@]}" -- Enter
                 wait_for_prompt
                 send_line "$line"
                 wait_for_line "$line"
@@ -3852,8 +3854,11 @@ spec:
               flag_notify rootless_demo_ready &&
               stopwatch_stop &&
               (
-                source /usr/local/bin/tmux_functions.sh
-                echo "docker exec -it demo tmux -u a -t gardener-demo" | send_commands &
+              source /usr/local/bin/tmux_functions.sh
+              export TMUX_ARGS=(-t $TMUX_PANE)
+              send_commands <<"TMUX_EOF" &
+                docker exec -it demo tmux -u a -t gardener-demo
+              TMUX_EOF
               )
             EOF
 
