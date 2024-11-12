@@ -575,24 +575,7 @@ spec:
               sleep 1h
               exit 1
             fi
-
-            cd ~/go/src/github.com/gardener
-            [ -d diki/.git ] || git clone -q https://github.com/gardener/diki.git
-            cd diki
-            git fetch
-            git reset --hard
-            git checkout af73180a496909ec85c2d3e4d26c4dd837a4c401 # TODO freeze the version
-            git fetch origin pull/351/head:improve-rule-242382
-            git merge --no-edit improve-rule-242382
-
-            # apply patches
-            yq < imagevector/images.yaml '.images[0].repository = "localhost:5001/gardener/diki-ops"' > /tmp/images.yaml
-            mv /tmp/images.yaml imagevector/images.yaml
-
-            make build-linux-amd64
           DEMO_EOF
-
-          cp /home/demo/go/src/github.com/gardener/diki/bin/diki-linux-amd64 /usr/local/bin/diki
 
           mkdir -p /etc/docker
           sed 's/^  //' <<"EOF" > /etc/docker/daemon.json
@@ -710,7 +693,6 @@ spec:
             cp /usr/local/bin/tmux_functions.sh scripts
             cp /usr/local/bin/is_tmux_window_shown.sh scripts
             mkdir -p bin
-            cp ~/go/src/github.com/gardener/diki/bin/diki-linux-amd64 bin/diki
 
             sed 's/^  //' <<DOCKERFILE > ~/go/src/github.com/gardener/gardener/cell/Dockerfile
               FROM alpine:3.20
@@ -1168,7 +1150,6 @@ spec:
               RUN chmod +x ~/prepare-cell.sh
 
               COPY --chown=demo:demo gardener /home/demo/go/src/github.com/gardener/gardener
-              COPY bin/diki /usr/local/bin/diki
             DOCKERFILE
 
             cd -
@@ -2311,25 +2292,9 @@ spec:
                 DEMO_EOF
               NETWORK_EOF
             EOF
-            new_pane "build and push the patched diki-ops image" Enter <<"EOF"
-              flag_wait rootless_kind_operator_up_ready &&
-              stopwatch_start &&
-              sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
-              nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' ubuntu_systemd_rootless_docker) -n bash -c; stopwatch_stop
-                sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
-                su -l demo -c -l
-                  set -e
-                  cd ../diki
-                  retry nice docker build -t localhost:5001/gardener/diki-ops:$(cat VERSION) --progress plain .
-                  retry nice docker push localhost:5001/gardener/diki-ops:$(cat VERSION)
-                  flag_notify rootless_diki_ops_patched
-                DEMO_EOF
-              NETWORK_EOF
-            EOF
 
             new_window "make operator-(seed)-up" "make operator-up" Enter <<"EOF"
               flag_wait rootless_etcd_druid_patched &&
-              flag_wait rootless_diki_ops_patched &&
               stopwatch_start &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' ubuntu_systemd_rootless_docker) -n bash -c; stopwatch_stop
@@ -3158,7 +3123,7 @@ spec:
                 stopwatch_start &&
                 g target --shoot local &&
                 eval $(gardenctl kubectl-env bash) &&
-                sed 's/^  //' <<DIKI_EOF > /tmp/diki.yaml && flag_notify rootless_shoot_diki_config_ready; stopwatch_stop
+                sed 's/^  //' <<DIKI_EOF > /tmp/disa-k8s-stigs-shoot.yaml && flag_notify rootless_shoot_diki_config_ready; stopwatch_stop
                   providers:
                   - id: gardener
                     name: Gardener
@@ -3207,6 +3172,18 @@ spec:
                           acceptedTokens:
                           - user: "health-check"
                             uid: "health-check"
+                      - ruleID: "242403"
+                        skip:
+                          enabled: true
+                          justification: "Gardener uses default Audit Log Policy"
+                      - ruleID: "242463"
+                        skip:
+                          enabled: true
+                          justification: "Gardener uses default Audit Log Policy"
+                      - ruleID: "242442"
+                        skip:
+                          enabled: true
+                          justification: "Gardener Demo environment has an use case for having images with different versions"
                   output:
                     minStatus: Passed
               DIKI_EOF
@@ -3217,7 +3194,7 @@ spec:
                 flag_wait rootless_shoot_diki_config_ready &&
                 stopwatch_start &&
                 diki run \
-                  --config=/tmp/diki.yaml \
+                  --config=/tmp/disa-k8s-stigs-shoot.yaml \
                   --provider=gardener \
                   --ruleset-id=disa-kubernetes-stig \
                   --ruleset-version=v2r1 \
