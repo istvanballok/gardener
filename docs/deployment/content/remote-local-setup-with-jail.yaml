@@ -3086,12 +3086,7 @@ spec:
               flag_wait rootless_virtual_garden_ha &&
               if ! is_state_tested; then
                 stopwatch_start &&
-                k apply -f <(yq '.spec.provider.workersSettings.sshAccess.enabled                    = false
-                               | .spec.kubernetes.kubeAPIServer.admissionPlugins[0].name             = "PodSecurity"
-                               | .spec.kubernetes.kubeAPIServer.admissionPlugins[0].config          |= { .apiVersion = "pod-security.admission.config.k8s.io/v1", .kind = "PodSecurityConfiguration" }
-                               | .spec.kubernetes.kubeAPIServer.admissionPlugins[0].config.defaults |= { .enforce = "baseline", .audit = "baseline", .warn = "baseline" }
-                               | .spec.kubernetes.kubeAPIServer.admissionPlugins[0].disabled         = false
-                             ' example/provider-local/shoot.yaml) &&
+                k apply -f example/provider-local/shoot.yaml &&
                 time (k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Processing shoot local --timeout=-1s
                       k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot local --timeout=-1s
                       k wait -n garden-local --for=condition=SystemComponentsHealthy                   shoot local --timeout=-1s) &&
@@ -3104,13 +3099,7 @@ spec:
               if ! is_state_tested; then
                 time flag_wait rootless_shoot_ready &&
                 stopwatch_start &&
-                k apply -f <(yq '.spec.controlPlane.highAvailability.failureTolerance.type           = "zone"
-                               | .spec.provider.workersSettings.sshAccess.enabled                    = false
-                               | .spec.kubernetes.kubeAPIServer.admissionPlugins[0].name             = "PodSecurity"
-                               | .spec.kubernetes.kubeAPIServer.admissionPlugins[0].config          |= { .apiVersion = "pod-security.admission.config.k8s.io/v1", .kind = "PodSecurityConfiguration" }
-                               | .spec.kubernetes.kubeAPIServer.admissionPlugins[0].config.defaults |= { .enforce = "baseline", .audit = "baseline", .warn = "baseline" }
-                               | .spec.kubernetes.kubeAPIServer.admissionPlugins[0].disabled         = false
-                             ' example/provider-local/shoot.yaml) &&
+                k -n garden-local patch shoot local --type merge -p '{"spec":{"controlPlane":{"highAvailability":{"failureTolerance":{"type":"zone"}}}}}' &&
                 time (k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Processing shoot local --timeout=-1s
                       k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot local --timeout=-1s
                       k wait -n garden-local --for=condition=SystemComponentsHealthy                   shoot local --timeout=-1s) &&
@@ -3118,9 +3107,29 @@ spec:
                 stopwatch_stop
               fi
             EOF
-            new_pane "configure diki" Enter <<"EOF"
+            new_pane "harden shoot security" Enter <<"EOF"
+              export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               if ! is_state_tested; then
                 time flag_wait rootless_shoot_ha_ready &&
+                stopwatch_start &&
+                k -n garden-local patch shoot local --type merge -p '{"spec": {
+                    "provider":   {"workersSettings": {"sshAccess": {"enabled": false}}},
+                    "kubernetes": {"kubeAPIServer": {"admissionPlugins": [
+                        {"name":    "PodSecurity",
+                         "config": {"apiVersion": "pod-security.admission.config.k8s.io/v1",
+                                    "kind":       "PodSecurityConfiguration",
+                                    "defaults":   {"enforce": "baseline", "audit": "baseline", "warn": "baseline"}},
+                         "disabled": false}]}}}}' &&
+                time (k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Processing shoot local --timeout=-1s
+                      k wait -n garden-local --for=jsonpath='{.status.lastOperation.state}'=Succeeded  shoot local --timeout=-1s
+                      k wait -n garden-local --for=condition=SystemComponentsHealthy                   shoot local --timeout=-1s) &&
+                flag_notify rootless_shoot_diki_ready
+                stopwatch_stop
+              fi
+            EOF
+            new_pane "configure diki" Enter <<"EOF"
+              if ! is_state_tested; then
+                time flag_wait rootless_shoot_diki_ready &&
                 source ~/.bashrc &&
                 stopwatch_start &&
                 g target --shoot local &&
@@ -3202,16 +3211,17 @@ spec:
                   --ruleset-version=v2r1 \
                   --output=/tmp/disa-k8s-stigs-report.json &&
                 # TODO: Check the report and fail if necessary
-                echo "Report summary:" &&
-                jq -r '.providers[].rulesets[].rules[].checks[].status' < /tmp/disa-k8s-stigs-report.json | sort | uniq -c &&
-                flag_notify rootless_shoot_diki_ready
+                jq -r '.providers[] |
+                       .name, (.rulesets[] | "  \(.name)", (.rules[] | "   \(.name)", (.checks[] | "      [\(.status)] \(.message) (\(.targets|length))") ))
+                      ' /tmp/disa-k8s-stigs-report.json
+                flag_notify rootless_diki_ready
                 stopwatch_stop
               fi
             EOF
             new_pane "Delete" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               if ! is_state_tested; then
-                time flag_wait rootless_shoot_diki_ready &&
+                time flag_wait rootless_diki_ready &&
                 stopwatch_start &&
                 k annotate shoot local -n garden-local 'confirmation.gardener.cloud/deletion=true' &&
                 time k delete shoot local -n garden-local &&
