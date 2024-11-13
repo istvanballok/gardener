@@ -3962,8 +3962,13 @@ spec:
         - /bin/sh
         - -c
         - |
-          set -ex -o pipefail
+          set -e -o pipefail
 
+          (
+          set -e -o pipefail
+          exec > /tmp/log 2>&1
+          set -x
+          date
           cd
           mkdir -p ~/.cache/apk
           ln -s ~/.cache/apk /etc/apk/cache
@@ -3975,44 +3980,37 @@ spec:
           wget -N "https://dl.k8s.io/release/$VERSION/bin/linux/amd64/kubectl"
           cp kubectl /usr/local/bin/kubectl
           chmod +x /usr/local/bin/kubectl
+          date
+          )
 
           while true; do
-          while ! kubectl wait --for=condition=ready pod/remote-local-setup-with-jail-0 --timeout=-1s; do
-            echo "Wait for the remote-local-setup-with-jail pod to be ready"
+          while ! kubectl wait --for=condition=ready pod/remote-local-setup-with-jail-0 --timeout=-1s >/dev/null; do
+            echo "Wait for the remote-local-setup-with-jail pod to be ready" | ts >> /tmp/log
             sleep 10
           done
 
-          set +x
-          echo "Trying to jump into the rls pod, jail container and then into the cell container to attach to the tmux session" | ts
+          echo "Trying to jump into the rls pod, jail container and then into the cell container to attach to the tmux session" | ts >> /tmp/log
           sed 's/^  //' <<"EOF_EXEC" | xargs -0 \
           kubectl exec remote-local-setup-with-jail-0 -- sh -c | ts && break
-            echo "Exec-ed into the remote local setup pod"
             export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket/docker.sock
-            while ! docker ps -f name=demo | grep demo; do
-              echo "  Wait for the demo docker container..."
+            while ! docker ps -f name=demo | grep demo >/dev/null; do
               sleep 10
             done
-            echo "  OK"
             sed 's/^  //' <<"EOF_DEMO" | xargs -0 \
             docker exec demo sh -c
-              echo "      Exec-ed into the demo container"
               while [ ! -e /tmp/ready ]; do
-                echo "      Wait for the demo to be ready..."
                 sleep 10
               done
-              echo "      OK"
-              while ! tmux ls 2>/dev/null | grep gardener-demo; do
-                echo "      Wait for the tmux session..."
+              while ! tmux ls 2>/dev/null | grep gardener-demo >/dev/null; do
                 sleep 10
               done
-              echo "      OK"
             EOF_DEMO
           EOF_EXEC
-          echo "The probing failed, retrying in 10s"
+          echo "The probing failed, retrying in 10s" | ts >> /tmp/log
           sleep 10s
           done
 
-          echo "The probing worked: attach to the tmux session and mark the pod as ready once tmux produced some output"
+          echo "The probing worked: attach to the tmux session and mark the pod as ready once tmux produced some output" | ts >> /tmp/log
           cd
           DATE=$(date +%Y-%m-%d_%H-%M-%S)
           mkdir -p script_recordings/$DATE
@@ -4023,13 +4021,13 @@ spec:
             touch /tmp/ready
           } &
           {
-            while [ ! -f input.log ] || [ $(stat -c%s input.log) -lt 10240 ]; do sleep 1; done
-            echo "Input limit reached, maybe the user tries to paste a hexdump of a malicious binary, aborting the session"
+            while [ ! -f input.log ] || [ $(stat -c%s input.log) -lt $((200 * 1024)) ]; do sleep 1; done
+            echo "Input limit reached, maybe the user tries to paste a hexdump of a malicious binary, aborting the session" | ts >> /tmp/log
             killall kubectl # kill 1 did not work
           } &
 
           sed 's/^  //' <<"EOF" | xargs -o0 \
-          script --flush --log-timing timing.log --log-out out.log --log-in input.log --output-limit 100MB -c
+          script -q --flush --log-timing timing.log --log-out out.log --log-in input.log --output-limit 100MB -c
             sed 's/^  //' <<"EOF_EXEC" | xargs -o0 \
             kubectl exec -it remote-local-setup-with-jail-0 -- sh -c
               export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket/docker.sock
@@ -4037,21 +4035,10 @@ spec:
               mkdir -p ~/script_recordings/$DATE
               cd ~/script_recordings/$DATE
               sed 's/^  //' <<"EOF_SCRIPT" | xargs -o0 \
-              script --flush --log-timing timing.log --log-out out.log --log-in input.log --output-limit 100MB -c
-                sed 's/^  //' <<"EOF_DEMO" | xargs -o0 \
-                docker exec -it --detach-keys="ctrl-p,ctrl-w" demo sh -c
-                  if [ -e /tmp/ready ]; then
-                    export LANG=C.UTF-8
-                    export TERM=xterm-256color
-                    tmux a -t gardener-demo
-                    echo "*** tmux exited"
-                  fi
-                EOF_DEMO
-                echo "*** docker exec demo exited"
+              script -q --flush --log-timing timing.log --log-out out.log --log-in input.log --output-limit 100MB -c
+                docker exec -it --detach-keys="ctrl-p,ctrl-w" demo bash
               EOF_SCRIPT
-              echo "*** script exited"
             EOF_EXEC
-            echo "*** k exec  exited"
           EOF
         startupProbe:
           exec: {command: [cat, /tmp/ready]}
