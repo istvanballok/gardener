@@ -837,6 +837,12 @@ spec:
                   fi
                   gardenctl target --garden local >/dev/null
                 fi
+                alias gtv='gardenctl target view'
+                alias gtc='gardenctl target control-plane'
+                alias gtc-='gardenctl target unset control-plane'
+                alias gk='eval "$(gardenctl kubectl-env bash)"'
+                alias gp='eval "$(gardenctl provider-env bash)"'
+                alias gcv='gardenctl config view'
 
                 function uniq_unbuffered {
                   # like uniq --unbuffered, if uniq had an --unbuffered option
@@ -1201,7 +1207,7 @@ spec:
 
                 new_window "gardenctl" "gardenctl" <<"EOF"
                   eval $(gardenctl kubectl-env bash)
-                  g target --shoot managedseed
+                  g target shoot managedseed
                 EOF
 
                 new_window "k9s" "k9s" <<"EOF"
