@@ -924,30 +924,35 @@ spec:
                 EOF
 
                 new_window "garden" "watch k get garden" Enter <<"EOF"
+                  (
+                  set -e
+                  trap 'trap - TERM INT EXIT; jobs -pr | xargs -r kill; wait' TERM INT EXIT
                   while true; do
                     clear
-                    if is_tmux_window_shown.sh; then
+                    if is_tmux_session_attached.sh; then
                       while true; do
-                        k --context runtime get garden -w | uniq_unbuffered \
-                        | while read line; do
+                        k --context runtime get garden -w | uniq_unbuffered | while read line; do
                           flag_notify watch_garden
-                          done
+                        done
                         sleep 10
                       done &
                       while flag_wait watch_garden; do
                         flag_delete watch_garden
+                        date > /tmp/watch_garden
+                        k --context runtime get garden >> /tmp/watch_garden
                         clear
-                        date
-                        k --context runtime get garden
+                        cat /tmp/watch_garden
                         sleep 1
-                        if ! is_tmux_window_shown.sh; then
+                        if ! is_tmux_session_attached.sh; then
                           kill %1
+                          wait
                           break
                         fi
                       done
                     fi
                     sleep 10s
                   done
+                  )
                 EOF
                 new_pane "last operations" Enter <<"EOF"
                   while true; do k --context runtime get garden local -o json -w 2>/dev/null \
