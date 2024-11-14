@@ -2214,9 +2214,9 @@ spec:
                 ip address add $DOCKER_IP dev lo || true
                 KUBECONFIG=/home/demo/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator/kubeconfig
                 PORT=$(yq '.clusters[0].cluster.server' $KUBECONFIG | sed -E 's/.*:([^:]+)$/\1/')
-                yq ".clusters[0].cluster.server=\"https://$DOCKER_IP:6443\"" $KUBECONFIG > $KUBECONFIG.modified
-                yq ".clusters[0].cluster.server=\"https://gardener-operator-local-control-plane:6443\"" $KUBECONFIG > $KUBECONFIG.for_rootless
-                cp $KUBECONFIG.modified /home/demo/.kube/config
+                yq ".clusters[0].cluster.server=\"https://$DOCKER_IP:6443\"" $KUBECONFIG > /home/demo/kubeconfig.modified
+                yq ".clusters[0].cluster.server=\"https://gardener-operator-local-control-plane:6443\"" $KUBECONFIG > /home/demo/kubeconfig.for_rootless
+                cp /home/demo/kubeconfig.modified /home/demo/.kube/config
                 chown demo:demo /home/demo/.kube/config
                 sed 's/^  //' <<DEMO_EOF | xargs -d '\0' \
                 su -l demo -c -l
@@ -2596,7 +2596,7 @@ spec:
                         ip route add $ROOTLESS_DOCKER_IP via \$(ip route | awk '/default/ {print \$3}')
                         export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket2/docker.sock
                         ! docker images -q | grep .
-                        export KUBECONFIG=/home/demo/go/src/github.com/gardener/gardener/example/gardener-local/kind/operator/kubeconfig.for_rootless
+                        export KUBECONFIG=/home/demo/kubeconfig.for_rootless
                         k -n registry get deployments -o json | jq -r '
                           .items[] |
                           select(.metadata.name | startswith("registry-")) |
@@ -3712,7 +3712,7 @@ spec:
                         | jq '
                             .contexts[0].context.namespace = "garden-local"
                           ') \
-                      <(yq -o json example/gardener-local/kind/operator/kubeconfig.modified \
+                      <(yq -o json /home/demo/kubeconfig.modified \
                         | jq '
                             .contexts[0].name              = "runtime" |
                             .contexts[0].context.namespace = "garden"
@@ -3725,7 +3725,7 @@ spec:
                     ' | yq -P  > ~/.kube/kube_config.tmp
                     mv ~/.kube/kube_config.tmp ~/.kube/garden.config
 
-                    yq -o json example/gardener-local/kind/operator/kubeconfig.modified | jq '
+                    yq -o json /home/demo/kubeconfig.modified | jq '
                             ."current-context"             = "runtime" |
                             .contexts[0].name              = "runtime" |
                             .contexts[0].context.namespace = "garden"
