@@ -899,6 +899,7 @@ spec:
               EOF
 
               RUN sed 's/^  //' <<"SCRIPT_EOF" > ~/prepare-cell.sh
+                #!/bin/bash
                 set -x
                 source /usr/local/bin/tmux_functions.sh
                 while ! [ -f ~/.kube/config ]; do sleep 1; done
