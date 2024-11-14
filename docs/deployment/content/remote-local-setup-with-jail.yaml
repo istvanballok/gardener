@@ -1216,22 +1216,6 @@ spec:
                   nice k9s
                 EOF
 
-                mkdir -p ~/.config/procps; rm -f ~/.config/procps/toprc
-                new_window "stats" "top" Enter <<"EOF"
-                  top
-                EOF
-                sleep 1
-                for k in z C c t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
-                new_pane "sar - high major page faults could indicate thrashing" Enter <<"EOF"
-                  while true; do
-                    S_COLORS=always sar -B -h 60 10 | grep -v -E --line-buffered 'Linux|^$'
-                    sleep 1m
-                  done
-                EOF
-                new_pane "disk" Enter <<"EOF"
-                  df -h
-                EOF
-
                 tmux select-window -t 0
                 tmux select-pane -t 1
 
