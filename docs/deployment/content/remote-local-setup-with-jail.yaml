@@ -687,7 +687,7 @@ spec:
             cd gardener
             git fetch origin HEAD --tags
             if [[ $NAMESPACE == demo* ]]; then
-              git checkout $(git tag | sort -V | tail -n 1)
+              git checkout $(git log -1 FETCH_HEAD --pretty=format:"%H" --perl-regexp --author='^(?!dev <dev>).*$')
             elif [[ $NAMESPACE == test* ]]; then
               git checkout master
               git reset --hard origin/master
