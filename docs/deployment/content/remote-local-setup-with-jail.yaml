@@ -1077,6 +1077,7 @@ spec:
                         sleep 1
                         if ! is_tmux_session_attached.sh; then
                           kill %1
+                          wait
                           break
                         fi
                       done
@@ -1154,6 +1155,7 @@ spec:
                         sleep 1
                         if ! is_tmux_session_attached.sh; then
                           kill %1
+                          wait
                           break
                         fi
                       done
@@ -1165,30 +1167,36 @@ spec:
                   k --context garden annotate shoot local -n garden-local 'gardener.cloud/operation=reconcile'
                 EOF
 
-                new_window "runtime&seed pods" "pods" Enter <<"EOF"
-                  # the while loop is used instead of watch to allow for scrolling a longer list in the tmux pane
+                new_window "runtime&seed pods" "k --context runtime get pods -A" Enter <<"EOF"
+                  (
+                  set -e
+                  trap 'trap - TERM INT EXIT; jobs -pr | xargs -r kill; wait' TERM INT EXIT
                   while true; do
                     clear
-                    if is_tmux_window_shown.sh; then
+                    if is_tmux_session_attached.sh; then
                       while true; do
                         k --context runtime get pods -A -w | while read line; do
-                                                               flag_notify watch_shoot
+                                                               flag_notify watch_runtime_pods
                                                              done
                         sleep 10
                       done &
-                      while flag_wait watch_shoot; do
-                        flag_delete watch_shoot
+                      while flag_wait watch_runtime_pods; do
+                        flag_delete watch_runtime_pods
+                        date > /tmp/watch_runtime_pods
+                        k --context runtime get pods -A -o wide | nl >> /tmp/watch_runtime_pods
                         clear
-                        k --context runtime get pods -A -o wide | nl
+                        cat /tmp/watch_runtime_pods
                         sleep 10
-                        if ! is_tmux_window_shown.sh; then
+                        if ! is_tmux_session_attached.sh; then
                           kill %1
+                          wait
                           break
                         fi
                       done
                     fi
                     sleep 10s
                   done
+                  )
                 EOF
 
                 new_window "gardenctl" "gardenctl" <<"EOF"
