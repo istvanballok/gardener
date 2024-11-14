@@ -616,6 +616,17 @@ spec:
             fi
           SCRIPT_EOF
           chmod +x /usr/local/bin/is_tmux_window_shown.sh
+          sed 's/^  //' <<"SCRIPT_EOF" > /usr/local/bin/is_tmux_session_attached.sh
+            #!/bin/bash
+            if [ ! -f ~/disable_tmux_optimization ]; then
+              if [ $(tmux display-message -p -t $TMUX_PANE '#{session_attached}') -gt 0 ]; then
+                echo "Recently no tmux client watched this session so the commands were skipped." >&2
+                echo "Please wait a bit to see the content..." >&2
+                exit 1
+              fi
+            fi
+          SCRIPT_EOF
+          chmod +x /usr/local/bin/is_tmux_session_attached.sh
 
           sed 's/^  //' <<"SCRIPT_EOF" > /usr/local/bin/tmux_functions.sh
             #!/bin/bash
@@ -694,8 +705,9 @@ spec:
             fi
             cd -
             mkdir -p scripts
-            cp /usr/local/bin/tmux_functions.sh scripts
-            cp /usr/local/bin/is_tmux_window_shown.sh scripts
+            cp /usr/local/bin/tmux_functions.sh           scripts
+            cp /usr/local/bin/is_tmux_window_shown.sh     scripts
+            cp /usr/local/bin/is_tmux_session_attached.sh scripts
             mkdir -p bin
 
             sed 's/^  //' <<DOCKERFILE > ~/go/src/github.com/gardener/gardener/cell/Dockerfile
@@ -887,8 +899,9 @@ spec:
 
               RUN mkdir -p ~/go/src/github.com/gardener/gardener
 
-              ADD scripts/tmux_functions.sh /usr/local/bin/tmux_functions.sh
-              ADD scripts/is_tmux_window_shown.sh /usr/local/bin/is_tmux_window_shown.sh
+              ADD scripts/tmux_functions.sh           /usr/local/bin/tmux_functions.sh
+              ADD scripts/is_tmux_window_shown.sh     /usr/local/bin/is_tmux_window_shown.sh
+              ADD scripts/is_tmux_session_attached.sh /usr/local/bin/is_tmux_session_attached.sh
 
               RUN sed 's/^  //' <<"EOF" > ~/welcome.md
                 # Welcome to the interactive Gardener Demo environment
