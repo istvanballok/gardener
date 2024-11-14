@@ -1206,7 +1206,7 @@ spec:
                 EOF
 
                 new_window "gardenctl" "gardenctl" <<"EOF"
-                  eval $(gardenctl kubectl-env bash)
+                  gk
                   g target shoot managedseed
                 EOF
 
