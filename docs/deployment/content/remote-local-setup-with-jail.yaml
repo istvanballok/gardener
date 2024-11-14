@@ -931,9 +931,10 @@ spec:
                     clear
                     if is_tmux_session_attached.sh; then
                       while true; do
-                        k --context runtime get garden -w | uniq_unbuffered | while read line; do
-                          flag_notify watch_garden
-                        done
+                        k --context runtime get garden -w | uniq_unbuffered \
+                        | while read line; do
+                            flag_notify watch_garden
+                          done
                         sleep 10
                       done &
                       while flag_wait watch_garden; do
@@ -965,27 +966,31 @@ spec:
                     sleep 10s
                   done
                 EOF
-                new_pane "garden conditions" Enter <<"EOF"
+                new_pane "k get garden -w -o json | jq '.status.conditions'" Enter <<"EOF"
+                  (
+                  set -e
+                  trap 'trap - TERM INT EXIT; jobs -pr | xargs -r kill; wait' TERM INT EXIT
                   while true; do
                     clear
-                    if is_tmux_window_shown.sh; then
+                    if is_tmux_session_attached.sh; then
                       while true; do
                         k --context runtime get garden -w -o json | jq -c '.status.conditions' | uniq_unbuffered \
                         | while read line; do
-                          flag_notify watch_garden2
+                            flag_notify watch_garden2
                           done
                         sleep 10
                       done &
                       while flag_wait watch_garden2; do
                         flag_delete watch_garden2
-                        clear
                         k --context runtime get garden -o json | jq '
                           [.items[] |
                           { name: .metadata.name,
                             conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
-                        ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl
+                        ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl > /tmp/garden_conditions
+                        clear
+                        cat /tmp/garden_conditions
                         sleep 1
-                        if ! is_tmux_window_shown.sh; then
+                        if ! is_tmux_session_attached.sh; then
                           kill %1
                           break
                         fi
@@ -993,6 +998,10 @@ spec:
                     fi
                     sleep 10s
                   done
+                  )
+                EOF
+                new_pane "k annotate garden local operation=reconcile" <<"EOF"
+                  k --context runtime annotate garden local 'gardener.cloud/operation=reconcile'
                 EOF
 
                 new_window "seed&shoots" "seed&shoots" Enter <<"EOF"
