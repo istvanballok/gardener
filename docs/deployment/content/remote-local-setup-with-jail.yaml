@@ -903,13 +903,11 @@ spec:
                 source /usr/local/bin/tmux_functions.sh
                 while ! [ -f ~/.kube/config ]; do sleep 1; done
 
-                tmux new -d -s advanced -n demo -x 2000 -y 2000
+                tmux new -d -s gardener -n demo -x 2000 -y 2000
                 tmux select-pane -T demo;
                 send_commands Enter <<"EOF"
                   cat ~/welcome.md
                 EOF
-
-                ##### Prepare the panes for the demo scenario here #####
 
                 new_window "garden" "watch k get garden" Enter <<"EOF"
                   while true; do
@@ -1134,14 +1132,6 @@ spec:
                 tmux select-pane -t 1
 
                 sleep 1
-
-                tmux new -d -s gardener-demo -n demo -x 2000 -y 2000
-                tmux select-pane -T demo;
-                send_commands Enter <<"EOF"
-                  cat ~/welcome.md
-                EOF
-
-                tmux set mouse off
 
                 echo "The tmux session is prepared. To attach to it, run 'tmux a'."
                 while [ ! -f /tmp/demo_tested ]; do sleep 1; done
@@ -3868,7 +3858,7 @@ spec:
               source /usr/local/bin/tmux_functions.sh
               export TMUX_ARGS=(-t $TMUX_PANE)
               send_commands <<"TMUX_EOF" &
-                docker exec -it demo tmux -u a -t gardener-demo
+                docker exec -it demo tmux -u a -t gardener
               TMUX_EOF
               )
             EOF
@@ -4002,7 +3992,7 @@ spec:
               while [ ! -e /tmp/ready ]; do
                 sleep 10
               done
-              while ! tmux ls 2>/dev/null | grep gardener-demo >/dev/null; do
+              while ! tmux ls 2>/dev/null | grep gardener >/dev/null; do
                 sleep 10
               done
             EOF_DEMO
