@@ -1004,6 +1004,47 @@ spec:
                   k --context runtime annotate garden local 'gardener.cloud/operation=reconcile'
                 EOF
 
+                new_window "seeds" "watch k get seeds,managedseeds" Enter <<"EOF"
+                  (
+                  set -e
+                  trap 'trap - TERM INT EXIT; jobs -pr | xargs -r kill; wait' TERM INT EXIT
+                  while true; do
+                    clear
+                    if is_tmux_session_attached.sh; then
+                      while true; do
+                        k --context garden get seeds -w | uniq_unbuffered \
+                        | while read line; do
+                            flag_notify watch_seeds
+                          done
+                        sleep 10
+                      done &
+                      while true; do
+                        k --context garden get -A managedseeds -w | uniq_unbuffered \
+                        | while read line; do
+                            flag_notify watch_seeds
+                          done
+                        sleep 10
+                      done &
+                      while flag_wait watch_seeds; do
+                        flag_delete watch_seeds
+                        date > /tmp/watch_seeds
+                        k --context garden get -A seeds,managedseeds >> /tmp/watch_seeds
+                        clear
+                        cat /tmp/watch_seeds
+                        sleep 1
+                        if ! is_tmux_session_attached.sh; then
+                          kill %1 %2
+                          wait
+                          break
+                        fi
+                      done
+                    fi
+                    sleep 10s
+                  done
+                  )
+                EOF
+
+
                 new_window "seed&shoots" "seed&shoots" Enter <<"EOF"
                   nice watch is_tmux_window_shown.sh "&&" k --context garden get -A seeds,managedseeds,shoots
                 EOF
