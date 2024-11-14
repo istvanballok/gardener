@@ -3857,7 +3857,7 @@ spec:
               stopwatch_stop &&
               (
               source /usr/local/bin/tmux_functions.sh
-              export TMUX_ARGS=(-t $TMUX_PANE)
+              TMUX_ARGS=(-t $TMUX_PANE)
               send_commands <<"TMUX_EOF" &
                 docker exec -it demo tmux -u a -t gardener
               TMUX_EOF
