@@ -619,8 +619,8 @@ spec:
           sed 's/^  //' <<"SCRIPT_EOF" > /usr/local/bin/is_tmux_session_attached.sh
             #!/bin/bash
             if [ ! -f ~/disable_tmux_optimization ]; then
-              if [ $(tmux display-message -p -t $TMUX_PANE '#{session_attached}') -gt 0 ]; then
-                echo "Recently no tmux client watched this session so the commands were skipped." >&2
+              if [ $(tmux display-message -p -t $TMUX_PANE '#{session_attached}') -eq 0 ]; then
+                echo "Recently no tmux client was attached to this session so the commands were skipped." >&2
                 echo "Please wait a bit to see the content..." >&2
                 exit 1
               fi
