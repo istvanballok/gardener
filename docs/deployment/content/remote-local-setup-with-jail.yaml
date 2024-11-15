@@ -1894,6 +1894,7 @@ spec:
             EOF
             new_pane "magic keyword" Enter <<"EOF"
               cd script_recordings
+              flag_wait archive_recordings &&
               inotifywait -m -e create . \
               | while read line; do
                   set -m
@@ -1918,31 +1919,19 @@ spec:
             EOF
             new_pane "input output size" Enter <<"EOF"
               cd script_recordings
-              inotifywait -m -e create . \
-              | while read line; do
-                  set -m
-                  trap 'jobs; kill $(jobs -p); wait; jobs' SIGINT
-                  if [ -n "$(jobs -p)" ]; then
-                    jobs
-                    kill $(jobs -p)
-                    wait
-                    jobs
-                  fi
-                  echo $line
-                  echo "Checking the input and output size in $(ls -t | head -n 1)" | ts
-                  while true; do
-                    ls -alht $(ls -t | head -n 1)/input.log $(ls -t | head -n 1)/out.log | ts
-                    if [ $(stat -c %s $(ls -t | head -n 1)/input.log) -gt $(( 100 * 1024 )) ]; then
-                      echo "input size exceeded 100k" | ts | tee $(ls -t | head -n 1)/input_size_exceeded
-                      flag_notify overload_detected
-                    fi
-                    if [ $(stat -c %s $(ls -t | head -n 1)/out.log) -gt $(( 50 * 1024 * 1024 )) ]; then
-                      echo "output size exceeded 50M" | ts | tee $(ls -t | head -n 1)/output_size_exceeded
-                      flag_notify overload_detected
-                    fi
-                    sleep 10
-                  done &
-                done
+              flag_wait archive_recordings &&
+              echo "Checking the input and output size of the terminal session" | ts &&
+              while true; do
+                if [ $(du -bc */input.log | awk '/total/{print $1}') -gt $(( 100 * 1024 )) ]; then
+                  echo "input size exceeded 100k" | ts | tee $(ls -t | head -n 1)/input_size_exceeded
+                  flag_notify overload_detected
+                fi
+                if [ $(du -bc */out.log | awk '/total/{print $1}') -gt $(( 50 * 1024 * 1024 )) ]; then
+                  echo "output size exceeded 50M" | ts | tee $(ls -t | head -n 1)/output_size_exceeded
+                  flag_notify overload_detected
+                fi
+                sleep 10
+            done
             EOF
             new_pane "disk full" Enter <<"EOF"
               cd script_recordings
@@ -1980,6 +1969,7 @@ spec:
               mkdir -p /tmp/metrics
               mkdir -p ~/archived_script_recordings
               mv ~/script_recordings/* ~/archived_script_recordings
+              flag_notify archive_recordings
               cd ~/script_recordings
               while true; do
                 FOLDER=$(ls -t | head -n 1)
