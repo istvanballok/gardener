@@ -30,6 +30,7 @@ spec:
         - /bin/sh
         - -c
         - |
+          # ls $(find . -name tags)
           set -ex
           trap 'trap - TERM INT EXIT; jobs -p | xargs -r kill; wait' TERM INT EXIT
           apk add coreutils
