@@ -477,7 +477,7 @@ spec:
             }
             function rls_state {
               echo -n $(cd ~/go/src/github.com/gardener/gardener &&
-                        git log -1 --pretty=format:"%H" --perl-regexp --author='^(?!dev <dev>).*$')
+                        git log -1 --pretty=format:"%H" demo)
               echo -n -
               echo    $(sha1sum /proc/1/cmdline | awk '{print $1}')
             }
@@ -553,6 +553,7 @@ spec:
             else
               true # do not change the currently checked out commit
             fi
+            git branch -f demo
 
             if [[ $NAMESPACE == demo* ]] || [[ $NAMESPACE == test* ]]; then
               if ! git am -3 ~/gardener-patches/00*.patch; then
@@ -696,9 +697,9 @@ spec:
               git clone ~/go/src/github.com/gardener/gardener gardener
             fi
             cd gardener
-            git fetch origin HEAD --tags
+            git fetch origin demo --tags
             if [[ $NAMESPACE == demo* ]]; then
-              git checkout $(git log -1 FETCH_HEAD --pretty=format:"%H" --perl-regexp --author='^(?!dev <dev>).*$')
+              git checkout FETCH_HEAD
             elif [[ $NAMESPACE == test* ]]; then
               git checkout master
               git reset --hard origin/master
