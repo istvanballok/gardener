@@ -1858,7 +1858,7 @@ spec:
             new_window "recordings" "current" <<"EOF"
               mkdir -p ~/script_recordings
               cd ~/script_recordings
-              find . -name input.log -size +0 | sed -E 's|./(.*)/input.log|\1|' | fzf --preview '
+              find . -name input.log -size +0 | sort -r | sed -E 's|./(.*)/input.log|\1|' | fzf --preview '
                 ls -lht {}/*
                 echo
                 tail -n +2 {}/input.log | strings | sed -E "s/\[[^Mm]+(M|m)//g" | grep -v -E "^$|;rgb:"
@@ -1868,7 +1868,7 @@ spec:
             new_pane "archived" <<"EOF"
               mkdir -p ~/archived_script_recordings
               cd ~/archived_script_recordings
-              find . -name input.log -size +0 | sed -E 's|./(.*)/input.log|\1|' | fzf --preview '
+              find . -name input.log -size +0 | sort -r | sed -E 's|./(.*)/input.log|\1|' | fzf --preview '
                 ls -lht {}/*
                 echo
                 tail -n +2 {}/input.log | strings | sed -E "s/\[[^Mm]+(M|m)//g" | grep -v -E "^$|;rgb:"
