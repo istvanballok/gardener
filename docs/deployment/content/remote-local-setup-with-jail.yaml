@@ -57,7 +57,7 @@ spec:
             apache2-utils bash bash-completion bat bind-tools brotli conntrack-tools        \
             coreutils curl diffutils dnsmasq docker-bash-completion findutils fzf g++ gawk  \
             gcompat git git-prompt grep helm inotify-tools iotop iotop-doc iproute2 jq k9s  \
-            less lsof make mandoc mc moreutils mount ncurses neovim openssl parallel procps \
+            less lsof make mandoc mc moreutils mount nano ncurses neovim openssl parallel procps \
             sed shadow shadow-login socat strace sysstat sysstat-doc tar tcpdump tmux       \
             tmux-doc tzdata util-linux vim wget yq
 
@@ -715,7 +715,7 @@ spec:
               RUN apk add bash bash-completion bat bind-tools brotli conntrack-tools coreutils curl       \\
                           diffutils docker-bash-completion findutils fzf gawk gcompat git git-prompt grep \\
                           helm inotify-tools iptables jq k9s less lsof make mandoc mc moreutils mount     \\
-                          ncurses neovim openssl parallel procps sed sysstat tar tcpdump tmux tmux-doc    \\
+                          nano ncurses neovim openssl parallel procps sed sysstat tar tcpdump tmux tmux-doc \\
                           tzdata util-linux vim wget yq
               RUN echo golang                                                                                                  && \\
                        VERSION=$(curl -sL https://golang.org/VERSION?m=text | awk 'NR==1{print}')                              && \\
