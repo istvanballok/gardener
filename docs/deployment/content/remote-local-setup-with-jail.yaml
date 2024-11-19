@@ -937,11 +937,12 @@ spec:
                   (
                   set -e
                   trap 'trap - TERM INT EXIT; jobs -pr | xargs -r kill; wait' TERM INT EXIT
+                  export KUBECONFIG=~/.kube/runtime.config
                   while true; do
                     clear
                     if is_tmux_session_attached.sh; then
                       while true; do
-                        k --context runtime get garden -w | uniq_unbuffered \
+                        k get garden -w | uniq_unbuffered \
                         | while read line; do
                             flag_notify watch_garden
                           done
@@ -950,7 +951,7 @@ spec:
                       while flag_wait watch_garden; do
                         flag_delete watch_garden
                         date > /tmp/watch_garden
-                        k --context runtime get garden >> /tmp/watch_garden
+                        k get garden >> /tmp/watch_garden
                         clear
                         cat /tmp/watch_garden
                         sleep 1
@@ -966,8 +967,9 @@ spec:
                   )
                 EOF
                 new_pane "k get garden -w -o json | jq '.status.lastOperation'" Enter <<"EOF"
+                  export KUBECONFIG=~/.kube/runtime.config
                   while true; do
-                    k --context runtime get garden local -o json -w 2>/dev/null \
+                    k get garden local -o json -w 2>/dev/null \
                     | jq -r --unbuffered '.status.lastOperation |
                                           [.progress, .description] |
                                           join(" ")
@@ -980,23 +982,25 @@ spec:
                   (
                   set -e
                   trap 'trap - TERM INT EXIT; jobs -pr | xargs -r kill; wait' TERM INT EXIT
+                  export KUBECONFIG=~/.kube/runtime.config
                   while true; do
                     clear
                     if is_tmux_session_attached.sh; then
                       while true; do
-                        k --context runtime get garden -w -o json | jq -c '.status.conditions' | uniq_unbuffered \
+                        k get garden -w -o json | jq -c '.status.conditions' | uniq_unbuffered \
                         | while read line; do
-                            flag_notify watch_garden2
+                            flag_notify garden_conditions
                           done
                         sleep 10
                       done &
-                      while flag_wait watch_garden2; do
-                        flag_delete watch_garden2
-                        k --context runtime get garden -o json | jq '
+                      while flag_wait garden_conditions; do
+                        flag_delete garden_conditions
+                        date > /tmp/garden_conditions
+                        k get garden -o json | jq '
                           [.items[] |
                           { name: .metadata.name,
                             conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
-                        ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl > /tmp/garden_conditions
+                        ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl >> /tmp/garden_conditions
                         clear
                         cat /tmp/garden_conditions
                         sleep 1
@@ -1011,25 +1015,27 @@ spec:
                   )
                 EOF
                 new_pane "k annotate garden local operation=reconcile" <<"EOF"
-                  k --context runtime annotate garden local 'gardener.cloud/operation=reconcile'
+                  export KUBECONFIG=~/.kube/runtime.config
+                  k annotate garden local 'gardener.cloud/operation=reconcile'
                 EOF
 
                 new_window "seeds" "watch k get seeds,managedseeds" Enter <<"EOF"
                   (
                   set -e
                   trap 'trap - TERM INT EXIT; jobs -pr | xargs -r kill; wait' TERM INT EXIT
+                  export KUBECONFIG=~/.kube/garden.config
                   while true; do
                     clear
                     if is_tmux_session_attached.sh; then
                       while true; do
-                        k --context garden get seeds -w | uniq_unbuffered \
+                        k get seeds -w | uniq_unbuffered \
                         | while read line; do
                             flag_notify watch_seeds
                           done
                         sleep 10
                       done &
                       while true; do
-                        k --context garden get -A managedseeds -w | uniq_unbuffered \
+                        k get -A managedseeds -w | uniq_unbuffered \
                         | while read line; do
                             flag_notify watch_seeds
                           done
@@ -1038,7 +1044,7 @@ spec:
                       while flag_wait watch_seeds; do
                         flag_delete watch_seeds
                         date > /tmp/watch_seeds
-                        k --context garden get -A seeds,managedseeds >> /tmp/watch_seeds
+                        k get -A seeds,managedseeds >> /tmp/watch_seeds
                         clear
                         cat /tmp/watch_seeds
                         sleep 1
@@ -1054,8 +1060,9 @@ spec:
                   )
                 EOF
                 new_pane "k get seeds -w -o json | jq '.status.lastOperation'" Enter <<"EOF"
+                  export KUBECONFIG=~/.kube/garden.config
                   while true; do
-                    k --context garden get seeds -o json -w 2>/dev/null \
+                    k get seeds -o json -w 2>/dev/null \
                     | jq -r --unbuffered '[ "[seed=\(.metadata.name)]",
                                             (.status.lastOperation |
                                             [.progress, .description] |
@@ -1069,24 +1076,27 @@ spec:
                   (
                   set -e
                   trap 'trap - TERM INT EXIT; jobs -pr | xargs -r kill; wait' TERM INT EXIT
+                  export KUBECONFIG=~/.kube/garden.config
                   while true; do
                     clear
                     if is_tmux_session_attached.sh; then
                       while true; do
-                        k --context garden get seeds -w -o json | jq -c '.status.conditions' | uniq_unbuffered \
+                        k get seeds -w -o json | jq -c '.status.conditions' | uniq_unbuffered \
                         | while read line; do
-                            flag_notify watch_seed
+                            flag_notify seed_conditions
                           done
                         sleep 10
                       done &
-                      while flag_wait watch_seed; do
-                        flag_delete watch_seed
-                        clear
-                        k --context garden get seeds -o json | jq '
+                      while flag_wait seed_conditions; do
+                        flag_delete seed_conditions
+                        date > /tmp/seed_conditions
+                        k get seeds -o json | jq '
                           [.items[] |
                           { name: .metadata.name,
                             conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
-                        ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl
+                        ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl  >> /tmp/seed_conditions
+                        clear
+                        cat /tmp/seed_conditions
                         sleep 1
                         if ! is_tmux_session_attached.sh; then
                           kill %1
@@ -1100,8 +1110,9 @@ spec:
                   )
                 EOF
                 new_pane "k annotate seed local operation=reconcile" <<"EOF"
-                  for i in $(k get seeds -o json | jq '.items[].metadata.name' -r); do
-                    k --context garden annotate seed $i 'gardener.cloud/operation=reconcile'
+                  export KUBECONFIG=~/.kube/garden.config
+                  for name in $(k get seeds -o json | jq '.items[].metadata.name' -r); do
+                    k annotate seed $name 'gardener.cloud/operation=reconcile'
                   done
                 EOF
 
@@ -1109,11 +1120,12 @@ spec:
                   (
                   set -e
                   trap 'trap - TERM INT EXIT; jobs -pr | xargs -r kill; wait' TERM INT EXIT
+                  export KUBECONFIG=~/.kube/garden.config
                   while true; do
                     clear
                     if is_tmux_session_attached.sh; then
                       while true; do
-                        k --context garden get shoots -A -w | uniq_unbuffered \
+                        k get shoots -A -w | uniq_unbuffered \
                         | while read line; do
                             flag_notify watch_shoots
                           done
@@ -1122,7 +1134,7 @@ spec:
                       while flag_wait watch_shoots; do
                         flag_delete watch_shoots
                         date > /tmp/watch_shoots
-                        k --context garden get -A shoots >> /tmp/watch_shoots
+                        k get -A shoots >> /tmp/watch_shoots
                         clear
                         cat /tmp/watch_shoots
                         sleep 1
@@ -1138,8 +1150,9 @@ spec:
                   )
                 EOF
                 new_pane "k get shoots -w -o json | jq '.status.lastOperation'" Enter <<"EOF"
+                  export KUBECONFIG=~/.kube/garden.config
                   while true; do
-                    k --context garden get shoot -A -o json -w 2>/dev/null  \
+                    k get shoot -A -o json -w 2>/dev/null  \
                     | jq -r --unbuffered '[ "[shoot=\(.metadata.namespace)/\(.metadata.name)]",
                                             (.status.lastOperation |
                                             [.progress, .description] |
@@ -1149,28 +1162,31 @@ spec:
                     sleep 10s
                   done
                 EOF
-                new_pane "k get seeds -w -o json | jq '.status.conditions'" Enter <<"EOF"
+                new_pane "k get shoots -A -w -o json | jq '.status.conditions'" Enter <<"EOF"
                   (
                   set -e
                   trap 'trap - TERM INT EXIT; jobs -pr | xargs -r kill; wait' TERM INT EXIT
+                  export KUBECONFIG=~/.kube/garden.config
                   while true; do
                     clear
                     if is_tmux_session_attached.sh; then
                       while true; do
-                        k --context garden get shoots -A -w -o json | jq -c '.status.conditions' | uniq_unbuffered \
+                        k get shoots -A -w -o json | jq -c '.status.conditions' | uniq_unbuffered \
                         | while read line; do
-                            flag_notify watch_seed
+                            flag_notify shoot_conditions
                           done
                         sleep 10
                       done &
-                      while flag_wait watch_seed; do
-                        flag_delete watch_seed
-                        clear
-                        k --context garden get shoots -A -o json | jq '
+                      while flag_wait shoot_conditions; do
+                        flag_delete shoot_conditions
+                        date > /tmp/shoot_conditions
+                        k get shoots -A -o json | jq '
                           [.items[] |
                           { name: .metadata.name,
                             conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
-                        ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl
+                        ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl >> /tmp/shoot_conditions
+                        cat /tmp/shoot_conditions
+                        clear
                         sleep 1
                         if ! is_tmux_session_attached.sh; then
                           kill %1
@@ -1184,8 +1200,9 @@ spec:
                   )
                 EOF
                 new_pane "k annotate shoot local operation=reconcile" <<"EOF"
+                  export KUBECONFIG=~/.kube/garden.config
                   k get shoots -A -o json | jq '.items[].metadata | [.namespace, .name] | join(" ")' -r | while read namespace shoot; do
-                    k --context garden annotate shoot -n $namespace $shoot 'gardener.cloud/operation=reconcile'
+                    k annotate shoot -n $namespace $shoot 'gardener.cloud/operation=reconcile'
                   done
                 EOF
 
@@ -1193,11 +1210,12 @@ spec:
                   (
                   set -e
                   trap 'trap - TERM INT EXIT; jobs -pr | xargs -r kill; wait' TERM INT EXIT
+                  export KUBECONFIG=~/.kube/runtime.config
                   while true; do
                     clear
                     if is_tmux_session_attached.sh; then
                       while true; do
-                        k --context runtime get pods -A -w | while read line; do
+                        k get pods -A -w | while read line; do
                                                                flag_notify watch_runtime_pods
                                                              done
                         sleep 10
@@ -1205,7 +1223,7 @@ spec:
                       while flag_wait watch_runtime_pods; do
                         flag_delete watch_runtime_pods
                         date > /tmp/watch_runtime_pods
-                        k --context runtime get pods -A -o wide | nl >> /tmp/watch_runtime_pods
+                        k get pods -A -o wide | nl >> /tmp/watch_runtime_pods
                         clear
                         cat /tmp/watch_runtime_pods
                         sleep 10
@@ -1221,8 +1239,61 @@ spec:
                   )
                 EOF
 
+                new_window "managed seed pods" "k get pods -A" Enter <<"EOF"
+                  (
+                  set -e
+                  trap 'trap - TERM INT EXIT; jobs -pr | xargs -r kill; wait' TERM INT EXIT
+                  gk
+                  g target shoot managedseed
+                  while true; do
+                    clear
+                    if is_tmux_session_attached.sh; then
+                      while true; do
+                        k get pods -A -w | while read line; do
+                                                               flag_notify watch_managedseed_pods
+                                                             done
+                        sleep 10
+                      done &
+                      while flag_wait watch_managedseed_pods; do
+                        flag_delete watch_managedseed_pods
+                        date > /tmp/watch_managedseed_pods
+                        k get pods -A -o wide | nl >> /tmp/watch_managedseed_pods
+                        clear
+                        cat /tmp/watch_managedseed_pods
+                        sleep 10
+                        if ! is_tmux_session_attached.sh; then
+                          kill %1
+                          wait
+                          break
+                        fi
+                      done
+                    fi
+                    sleep 10s
+                  done
+                  )
+                EOF
+
+                new_window "layers" "garden" <<"EOF"
+                  export KUBECONFIG=~/.kube/garden.config
+                  k get seeds
+                EOF
+                new_pane "runtime&seeds" <<"EOF"
+                  export KUBECONFIG=~/.kube/runtime.config
+                  k get pods -A
+                EOF
+                new_pane "managed seed" <<"EOF"
+                  gk
+                  g target --project garden --shoot managedseed
+                  k get pods -A
+                EOF
+                new_pane "shoot" <<"EOF"
+                  gk
+                  g target --project local --shoot local-ms
+                  k get pods -A
+                EOF
+
                 new_window "gardenctl" "gardenctl" <<"EOF"
-                  gk &&
+                  gk
                   g target shoot managedseed
                 EOF
 
