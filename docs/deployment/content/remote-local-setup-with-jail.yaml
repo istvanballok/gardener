@@ -541,9 +541,16 @@ spec:
             if [[ $NAMESPACE == demo* ]]; then
               git checkout $(git tag | sort -V | tail -n 1)
               git checkout v1.107.0 # TODO remove the freeze
-            elif [[ $NAMESPACE == test* ]]; then
+              rm -rf .git/branch_name
+            elif [[ $NAMESPACE == test-release* ]]; then
+              RELEASE_BRANCH=$(git branch -r | grep release-v1 | sort -r | head -n 1)
+              git checkout $(echo $RELEASE_BRANCH | sed 's|origin/||')
+              git reset --hard  $RELEASE_BRANCH
+              echo $RELEASE_BRANCH | sed 's|origin/||' > .git/branch_name
+            elif [[ $NAMESPACE == test-master* ]]; then
               git checkout master
               git reset --hard origin/master
+              echo master > .git/branch_name
             else
               true # do not change the currently checked out commit
             fi
@@ -692,11 +699,9 @@ spec:
             fi
             cd gardener
             git fetch origin demo --tags
-            if [[ $NAMESPACE == demo* ]]; then
-              git checkout FETCH_HEAD
-            elif [[ $NAMESPACE == test* ]]; then
-              git checkout master
-              git reset --hard origin/master
+            git checkout FETCH_HEAD
+            if [ -f ../../.git/branch_name ]; then
+              git checkout -b $(cat ../../.git/branch_name)
             fi
             cd -
             mkdir -p scripts
