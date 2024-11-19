@@ -420,6 +420,7 @@ spec:
                 return $?
               fi
               (
+                trap 'trap - TERM INT EXIT; jobs -p | xargs -r kill; wait' TERM INT EXIT
                 mkdir -p /tmp/sync
                 FIFO=$(mktemp -u)
                 mkfifo $FIFO
