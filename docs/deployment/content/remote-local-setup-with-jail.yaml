@@ -1972,6 +1972,7 @@ spec:
               mkdir -p /tmp/metrics
               mkdir -p ~/archived_script_recordings
               mv ~/script_recordings/* ~/archived_script_recordings
+              find ~/archived_script_recordings -mindepth 1 -maxdepth 1 -type d -ctime +90 -exec rm -rf {} \;
               flag_notify archive_recordings
               cd ~/script_recordings
               while true; do
