@@ -1247,8 +1247,10 @@ spec:
           echo $elapsed > /root/elapsed_until_tmux
           echo "Elapsed time until the tmux session is prepared: ${elapsed}"
           { touch /tmp/alive
-            sleep $(( $(date -d '6 days 0:00' -u +%s) - $(date -u +%s) + RANDOM % 3600 )) &&
-            echo "Restarting after 5.x days of uptime to prevent issues with the registry cache expiration while offline" &&
+            RESTART_AT=$(( $(date -d '6 days 0:00' -u +%s) + RANDOM % (4 * 3600) ))
+            echo "Restart within 6 days shortly after UTC midnight to prevent issues with the registry cache expiration while offline: $(date -u --date="@$RESTART_AT")"
+            sleep $(( RESTART_AT - $(date -u +%s) ))
+            echo "Restarting after 5.x days of uptime to prevent issues with the registry cache expiration while offline"
             rm /tmp/alive
           } &
           {
