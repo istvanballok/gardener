@@ -407,24 +407,21 @@ spec:
                 '
             }
             function flag_notify {
-              if [ "$(whoami)" == "root" ]; then
-                su -l demo -c -l "flag_notify $1"
-                return $?
-              fi
               mkdir -p /tmp/sync
-              touch /tmp/sync/$1
+              chown demo:demo /tmp/sync
+              TEMP=$(mktemp -u)
+              touch $TEMP
+              chown demo:demo $TEMP
+              mv $TEMP /tmp/sync/$1
             }
             function flag_wait {
-              if [ "$(whoami)" == "root" ]; then
-                su -l demo -c -l "flag_wait $1"
-                return $?
-              fi
               (
-                trap 'trap - TERM INT EXIT; jobs -p | xargs -r kill; wait' TERM INT EXIT
+                trap 'trap - TERM INT EXIT; jobs -pr | xargs -r kill; wait' TERM INT EXIT
                 mkdir -p /tmp/sync
+                chown demo:demo /tmp/sync
                 FIFO=$(mktemp -u)
                 mkfifo $FIFO
-                inotifywait /tmp/sync --include /$1$ >/dev/null 2>$FIFO &
+                inotifywait /tmp/sync -e moved_to --include /$1$ >/dev/null 2>$FIFO &
                 pid=$!
                 head -2 $FIFO >/dev/null
                 if [ -f /tmp/sync/$1 ]; then
@@ -436,11 +433,8 @@ spec:
               )
             }
             function flag_delete {
-              if [ "$(whoami)" == "root" ]; then
-                su -l demo -c -l "flag_delete $1"
-                return $?
-              fi
               mkdir -p /tmp/sync
+              chown demo:demo /tmp/sync
               rm /tmp/sync/$1
             }
             function jwtd {
