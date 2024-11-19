@@ -933,7 +933,7 @@ spec:
                   cat ~/welcome.md
                 EOF
 
-                new_window "garden" "watch k get garden" <<"EOF"
+                new_window "garden" "watch k get garden" Enter <<"EOF"
                   (
                   set -e
                   trap 'trap - TERM INT EXIT; jobs -pr | xargs -r kill; wait' TERM INT EXIT
@@ -965,7 +965,7 @@ spec:
                   done
                   )
                 EOF
-                new_pane "k get garden -w -o json | jq '.status.lastOperation'" <<"EOF"
+                new_pane "k get garden -w -o json | jq '.status.lastOperation'" Enter <<"EOF"
                   while true; do
                     k --context runtime get garden local -o json -w 2>/dev/null \
                     | jq -r --unbuffered '.status.lastOperation |
@@ -976,7 +976,7 @@ spec:
                     sleep 10s
                   done
                 EOF
-                new_pane "k get garden -w -o json | jq '.status.conditions'" <<"EOF"
+                new_pane "k get garden -w -o json | jq '.status.conditions'" Enter <<"EOF"
                   (
                   set -e
                   trap 'trap - TERM INT EXIT; jobs -pr | xargs -r kill; wait' TERM INT EXIT
@@ -1014,7 +1014,7 @@ spec:
                   k --context runtime annotate garden local 'gardener.cloud/operation=reconcile'
                 EOF
 
-                new_window "seeds" "watch k get seeds,managedseeds" <<"EOF"
+                new_window "seeds" "watch k get seeds,managedseeds" Enter <<"EOF"
                   (
                   set -e
                   trap 'trap - TERM INT EXIT; jobs -pr | xargs -r kill; wait' TERM INT EXIT
@@ -1053,7 +1053,7 @@ spec:
                   done
                   )
                 EOF
-                new_pane "k get seeds -w -o json | jq '.status.lastOperation'" <<"EOF"
+                new_pane "k get seeds -w -o json | jq '.status.lastOperation'" Enter <<"EOF"
                   while true; do
                     k --context garden get seeds -o json -w 2>/dev/null \
                     | jq -r --unbuffered '[ "[seed=\(.metadata.name)]",
@@ -1065,7 +1065,10 @@ spec:
                     sleep 10s
                   done
                 EOF
-                new_pane "k get seeds -w -o json | jq '.status.conditions'" <<"EOF"
+                new_pane "k get seeds -w -o json | jq '.status.conditions'" Enter <<"EOF"
+                  (
+                  set -e
+                  trap 'trap - TERM INT EXIT; jobs -pr | xargs -r kill; wait' TERM INT EXIT
                   while true; do
                     clear
                     if is_tmux_session_attached.sh; then
@@ -1094,12 +1097,15 @@ spec:
                     fi
                     sleep 10s
                   done
+                  )
                 EOF
                 new_pane "k annotate seed local operation=reconcile" <<"EOF"
-                  k --context garden annotate seed local 'gardener.cloud/operation=reconcile'
+                  for i in $(k get seeds -o json | jq '.items[].metadata.name' -r); do
+                    k --context garden annotate seed $i 'gardener.cloud/operation=reconcile'
+                  done
                 EOF
 
-                new_window "shoots" "watch k get shoots -A" <<"EOF"
+                new_window "shoots" "watch k get shoots -A" Enter <<"EOF"
                   (
                   set -e
                   trap 'trap - TERM INT EXIT; jobs -pr | xargs -r kill; wait' TERM INT EXIT
@@ -1131,7 +1137,7 @@ spec:
                   done
                   )
                 EOF
-                new_pane "k get shoots -w -o json | jq '.status.lastOperation'" <<"EOF"
+                new_pane "k get shoots -w -o json | jq '.status.lastOperation'" Enter <<"EOF"
                   while true; do
                     k --context garden get shoot -A -o json -w 2>/dev/null  \
                     | jq -r --unbuffered '[ "[shoot=\(.metadata.namespace)/\(.metadata.name)]",
@@ -1143,7 +1149,10 @@ spec:
                     sleep 10s
                   done
                 EOF
-                new_pane "k get seeds -w -o json | jq '.status.conditions'" <<"EOF"
+                new_pane "k get seeds -w -o json | jq '.status.conditions'" Enter <<"EOF"
+                  (
+                  set -e
+                  trap 'trap - TERM INT EXIT; jobs -pr | xargs -r kill; wait' TERM INT EXIT
                   while true; do
                     clear
                     if is_tmux_session_attached.sh; then
@@ -1172,12 +1181,15 @@ spec:
                     fi
                     sleep 10s
                   done
+                  )
                 EOF
                 new_pane "k annotate shoot local operation=reconcile" <<"EOF"
-                  k --context garden annotate shoot local -n garden-local 'gardener.cloud/operation=reconcile'
+                  k get shoots -A -o json | jq '.items[].metadata | [.namespace, .name] | join(" ")' -r | while read namespace shoot; do
+                    k --context garden annotate shoot -n $namespace $shoot 'gardener.cloud/operation=reconcile'
+                  done
                 EOF
 
-                new_window "runtime&seed pods" "k --context runtime get pods -A" <<"EOF"
+                new_window "runtime&seed pods" "k --context runtime get pods -A" Enter <<"EOF"
                   (
                   set -e
                   trap 'trap - TERM INT EXIT; jobs -pr | xargs -r kill; wait' TERM INT EXIT
