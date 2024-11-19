@@ -3892,7 +3892,7 @@ spec:
               DEMO_EOF
             EOF
 
-            new_window "demo test" "test" Enter <<"EOF"
+            new_window "demo test" "end to end scenario test in the demo container" Enter <<"EOF"
               echo "Google IP: $(cat /tmp/google_ip)" &&
               flag_wait rootless_demo_managedseed_ip &&
               dd if=/dev/zero of=~/disk.buffer.5GB bs=1M count=$((5 * 1024)) &&
