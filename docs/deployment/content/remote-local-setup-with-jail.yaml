@@ -2806,6 +2806,14 @@ spec:
               git log --color -p origin/master.. --author dev | less -RN
             EOF
 
+            new_window "docker stats" "rootful" Enter <<"EOF"
+              docker stats
+            EOF
+            new_pane "rootless" Enter <<"EOF"
+              export DOCKER_HOST=unix:///home/demo/.docker-rootless-socket/docker.sock
+              docker stats
+            EOF
+
             mkdir -p ~/.config/procps; rm -f ~/.config/procps/toprc
             new_window "top1" "top - Running in tree" Enter <<"EOF"
               top
