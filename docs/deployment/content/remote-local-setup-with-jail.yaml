@@ -2728,8 +2728,8 @@ spec:
                 flag_wait rootless_demo_image
                 flag_wait rootless_managedseed_seed_ready
                 flag_wait managedseed_nested_shoot_ready
+                flag_wait rootless_image_preload_ready
                 if ! is_state_tested; then
-                  flag_wait rootless_image_preload_ready
                   flag_wait rootless_shoot_ha_ready_deleted
                   flag_wait managedseed_nested_workerless_shoot_deleted
                   flag_wait registry_mitigation
@@ -3496,21 +3496,19 @@ spec:
 
 
             new_window "image preload" "image preload" Enter <<"EOF"
-              is_state_tested || {
-                flag_wait rootless_kind_operator_up_ready &&
-                stopwatch_start &&
-                for i in alpine:latest nginx:latest; do
-                  retry docker pull $i
-                  docker tag $i localhost:5001/$i
-                  retry docker push localhost:5001/$i
-                done &&
-                for i in $(curl -s localhost:5001/v2/_catalog | jq '.repositories[]' -r | grep -v -E 'gardener|skaffold'); do
-                  echo $i
-                  curl -s localhost:5001/v2/$i/tags/list | jq .
-                done &&
-                flag_notify rootless_image_preload_ready
-                stopwatch_stop
-              }
+              flag_wait rootless_kind_operator_up_ready &&
+              stopwatch_start &&
+              for i in alpine:latest nginx:latest; do
+                retry docker pull $i
+                docker tag $i localhost:5001/$i
+                retry docker push localhost:5001/$i
+              done &&
+              for i in $(curl -s localhost:5001/v2/_catalog | jq '.repositories[]' -r | grep -v -E 'gardener|skaffold'); do
+                echo $i
+                curl -s localhost:5001/v2/$i/tags/list | jq .
+              done &&
+              flag_notify rootless_image_preload_ready
+              stopwatch_stop
             EOF
 
             new_window "virtual garden" "refresh kubeconfig | (long running)" Enter <<"EOF"
