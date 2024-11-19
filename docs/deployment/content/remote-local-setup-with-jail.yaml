@@ -3075,11 +3075,11 @@ spec:
                 sleep 10s
               done
             EOF
-            new_pane "Reconcile" <<"EOF"
+            new_pane "reconcile garden" <<"EOF"
               k annotate garden local 'gardener.cloud/operation=reconcile'
             EOF
 
-            new_window "managed seed" "create shoot" Enter <<"EOF"
+            new_window "managed seed" "create shoot for managed seed" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               time flag_wait rootless_virtual_garden_ha &&
               stopwatch_start &&
@@ -3096,7 +3096,7 @@ spec:
                     k wait -n garden --for=condition=SystemComponentsHealthy                   shoot managedseed --timeout=-1s) &&
               flag_notify rootless_managedseed_shoot_ready; stopwatch_stop
             EOF
-            new_pane "create managed seed" Enter <<"EOF"
+            new_pane "upgrade shoot to managed seed" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               time flag_wait rootless_managedseed_shoot_ready &&
               stopwatch_start &&
@@ -3105,7 +3105,7 @@ spec:
                     until k wait seed managedseed --for=condition=SeedSystemComponentsHealthy --timeout=-1s 2>/dev/null; do sleep 1; done ) &&
               flag_notify rootless_managedseed_seed_ready; stopwatch_stop
             EOF
-            new_pane "workerless shoot on managed seed" Enter <<"EOF"
+            new_pane "create workerless shoot on managed seed" Enter <<"EOF"
               # Note: regular shoots do not work due to nesting overlayfs, see errors in dmesg
               # Note: the managed seed has 1 node and no zones, so it is not HA
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
@@ -3133,7 +3133,7 @@ spec:
                 stopwatch_stop
               }
             EOF
-            new_pane "regular shoot on managed seed" Enter <<"EOF"
+            new_pane "create regular shoot on managed seed" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               {
                 time flag_wait rootless_managedseed_seed_ready &&
@@ -3163,7 +3163,7 @@ spec:
               }
             EOF
 
-            new_window "shoot lifecycle" "Create" Enter <<"EOF"
+            new_window "shoot lifecycle" "create shoot" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               flag_wait rootless_virtual_garden_ha &&
               if ! is_state_tested; then
@@ -3176,7 +3176,7 @@ spec:
                 stopwatch_stop
               fi
             EOF
-            new_pane "upgrade to HA" Enter <<"EOF"
+            new_pane "upgrade shoot to HA control plane" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               if ! is_state_tested; then
                 time flag_wait rootless_shoot_ready &&
@@ -3300,7 +3300,7 @@ spec:
                 stopwatch_stop
               fi
             EOF
-            new_pane "Delete" Enter <<"EOF"
+            new_pane "delete shoot" Enter <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               if ! is_state_tested; then
                 time flag_wait rootless_diki_ready &&
@@ -3313,7 +3313,7 @@ spec:
                 stopwatch_stop
               fi
             EOF
-            new_pane "Reconcile" <<"EOF"
+            new_pane "reconcile shoot" <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               k annotate shoot local -n garden-local 'gardener.cloud/operation=reconcile'
             EOF
@@ -3415,7 +3415,7 @@ spec:
               done
             EOF
 
-            new_window "runtime&seed pods" "pods" Enter <<"EOF"
+            new_window "runtime&seed pods" "runtime&seed pods" Enter <<"EOF"
               # the while loop is used instead of watch to allow for scrolling a longer list in the tmux pane
               flag_wait rootless_kind_operator_up_ready &&
               while true; do
@@ -3441,7 +3441,7 @@ spec:
                 sleep 10s
               done
             EOF
-            new_pane "not ready pods" Enter <<"EOF"
+            new_pane "not ready runtime&seed pods" Enter <<"EOF"
               flag_wait rootless_kind_operator_up_ready &&
               watch -n 10 "
                 is_tmux_window_shown.sh &&
