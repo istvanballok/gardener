@@ -3511,13 +3511,16 @@ spec:
               flag_wait rootless_kind_operator_up_ready &&
               stopwatch_start &&
               for i in alpine:latest nginx:latest; do
+                echo
+                echo $i
                 retry docker pull $i
                 docker tag $i localhost:5001/$i
                 retry docker push localhost:5001/$i
               done &&
+              echo &&
+              echo "Preloaded images:" &&
               for i in $(curl -s localhost:5001/v2/_catalog | jq '.repositories[]' -r | grep -v -E 'gardener|skaffold'); do
-                echo $i
-                curl -s localhost:5001/v2/$i/tags/list | jq .
+                curl -s localhost:5001/v2/$i/tags/list | jq -r '"- \(.name):\(.tags[])"'
               done &&
               flag_notify rootless_image_preload_ready
               stopwatch_stop
