@@ -1109,7 +1109,7 @@ spec:
                   done
                   )
                 EOF
-                new_pane "k annotate seed local operation=reconcile" <<"EOF"
+                new_pane "k annotate seeds operation=reconcile" <<"EOF"
                   export KUBECONFIG=~/.kube/garden.config
                   for name in $(k get seeds -o json | jq '.items[].metadata.name' -r); do
                     k annotate seed $name 'gardener.cloud/operation=reconcile'
@@ -1185,8 +1185,8 @@ spec:
                           { name: .metadata.name,
                             conditions: .status.conditions | map(del(.lastTransitionTime, .lastUpdateTime))}]
                         ' | yq -P -C | grep --color=Always -E '"False"| Unknown| Progressing|$' | nl >> /tmp/shoot_conditions
-                        cat /tmp/shoot_conditions
                         clear
+                        cat /tmp/shoot_conditions
                         sleep 1
                         if ! is_tmux_session_attached.sh; then
                           kill %1
@@ -1199,7 +1199,7 @@ spec:
                   done
                   )
                 EOF
-                new_pane "k annotate shoot local operation=reconcile" <<"EOF"
+                new_pane "k annotate shoots operation=reconcile" <<"EOF"
                   export KUBECONFIG=~/.kube/garden.config
                   k get shoots -A -o json | jq '.items[].metadata | [.namespace, .name] | join(" ")' -r | while read namespace shoot; do
                     k annotate shoot -n $namespace $shoot 'gardener.cloud/operation=reconcile'
@@ -1279,17 +1279,17 @@ spec:
                 EOF
                 new_pane "runtime&seeds" <<"EOF"
                   export KUBECONFIG=~/.kube/runtime.config
-                  k get pods -A
+                  k get pods -A | nl
                 EOF
                 new_pane "managed seed" <<"EOF"
                   gk
                   g target --project garden --shoot managedseed
-                  k get pods -A
+                  k get pods -A | nl
                 EOF
                 new_pane "shoot" <<"EOF"
                   gk
                   g target --project local --shoot local-ms
-                  k get pods -A
+                  k get pods -A | nl
                 EOF
 
                 new_window "gardenctl" "gardenctl" <<"EOF"
