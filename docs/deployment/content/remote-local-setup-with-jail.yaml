@@ -3494,14 +3494,14 @@ spec:
               git log $(git describe --tags --abbrev=0)..HEAD --oneline --boundary
             EOF
 
-            new_window "ad-hoc" "demo" Enter <<"EOF"
+            new_window "ad-hoc" "demo user" Enter <<"EOF"
               # Use this pane for ad-hoc commands as the demo user
             EOF
             new_pane "demo container as root" <<"EOF"
               # Use this pane for ad-hoc commands in the demo container as root
               docker exec -it -u root demo bash
             EOF
-            new_pane "demo container" <<"EOF"
+            new_pane "demo container as the demo user (like the untrusted user)" <<"EOF"
               # Use this pane for ad-hoc commands in the demo container
               docker exec -it demo bash
             EOF
