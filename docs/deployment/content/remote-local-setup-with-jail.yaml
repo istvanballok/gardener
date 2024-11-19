@@ -3781,7 +3781,7 @@ spec:
               docker ps --filter name=demo                                                     &&
               flag_notify rootless_demo_run; stopwatch_stop
             EOF
-            new_pane "Manage /etc/hosts | (long running)" Enter <<"EOF"
+            new_pane "maintain /etc/hosts for the demo container | (long running)" Enter <<"EOF"
               flag_wait rootless_demo_run &&
               stopwatch_start &&
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' docker exec -u root demo sh -c; stopwatch_stop
@@ -3797,7 +3797,7 @@ spec:
                   done
               DEMO_EOF
             EOF
-            new_pane "Merge the virtual-garden and the runtime-garden (KinD) kube configs | (long running)" Enter <<"EOF"
+            new_pane "merge the virtual-garden and the runtime-garden (KinD) kube configs for the demo container | (long running)" Enter <<"EOF"
               flag_wait rootless_demo_run &&
               stopwatch_start &&
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' docker exec demo bash -l -c; stopwatch_stop
@@ -3859,7 +3859,7 @@ spec:
                   done
               DEMO_EOF
             EOF
-            new_pane "DNAT" Enter << "EOF"
+            new_pane "configure DNAT in the demo container" Enter << "EOF"
               flag_wait rootless_demo_run &&
               stopwatch_start &&
               CONTROL_PLANE_IP=$(docker exec gardener-operator-local-control-plane ip addr show eth0 \
@@ -3872,14 +3872,14 @@ spec:
                 iptables -t nat -A OUTPUT -o eth0 -p tcp -d 172.18.255.12 --dport 443   -j DNAT --to-destination $CONTROL_PLANE_IP:30446 # Soil / zone 3 Istio/Envoy ingress
               DEMO_EOF
             EOF
-            new_pane "Managed seed IP" Enter << "EOF"
+            new_pane "add the managed seed IP to the demo container" Enter << "EOF"
               flag_wait rootless_demo_dnat &&
               stopwatch_start &&
               sed 's/^  //' <<DEMO_EOF | xargs -d '\0' docker exec -u root demo sh -c && flag_notify rootless_demo_managedseed_ip; stopwatch_stop
                 ip addr add 172.18.255.20 dev lo
               DEMO_EOF
             EOF
-            new_pane "Managed seed port forward | (long running)" Enter << "EOF"
+            new_pane "port-forward to the managed seed ingress in the demo container | (long running)" Enter << "EOF"
               flag_wait rootless_demo_managedseed_ip &&
               stopwatch_start &&
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' docker exec demo bash -l -c; stopwatch_stop
