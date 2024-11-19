@@ -409,7 +409,7 @@ spec:
             function flag_notify {
               mkdir -p /tmp/sync
               chown demo:demo /tmp/sync
-              TEMP=$(mktemp -u)
+              TEMP=$(mktemp)
               touch $TEMP
               chown demo:demo $TEMP
               mv $TEMP /tmp/sync/$1
@@ -419,16 +419,16 @@ spec:
                 trap 'trap - TERM INT EXIT; jobs -pr | xargs -r kill; wait' TERM INT EXIT
                 mkdir -p /tmp/sync
                 chown demo:demo /tmp/sync
-                FIFO=$(mktemp -u)
-                mkfifo $FIFO
-                inotifywait /tmp/sync -e moved_to --include /$1$ >/dev/null 2>$FIFO &
+                FIFO=$(mktemp -d)
+                mkfifo $FIFO/pipe
+                inotifywait /tmp/sync -e moved_to --include /$1$ >/dev/null 2>$FIFO/pipe &
                 pid=$!
-                head -2 $FIFO >/dev/null
+                head -2 $FIFO/pipe >/dev/null
                 if [ -f /tmp/sync/$1 ]; then
                   kill $pid
                 fi
                 wait $pid 2>/dev/null
-                rm $FIFO
+                rm -rf $FIFO
               )
             }
             function flag_delete {
