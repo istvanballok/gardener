@@ -1814,7 +1814,7 @@ spec:
             echo '{"current-context": "kind-gardener-operator-local"}' > ~/.kube/config
             source /usr/local/bin/tmux_functions.sh
             tmux new -d -s root -n tasks -x 250 -y 70
-            tmux select-pane -T "all";
+            tmux select-pane -T "all tasks";
             send_commands Enter <<"EOF"
               while true; do
                 { stopwatch_tasks | grep -v "long running"
@@ -1825,7 +1825,7 @@ spec:
                 sleep $(echo "2 - $(date +%s.%3N) % 2 + 1" | bc)
               done
             EOF
-            new_pane "currently running" Enter <<"EOF"
+            new_pane "currently running tasks" Enter <<"EOF"
               while true; do
                 stopwatch_tasks | tail -n +3 | grep -E "STARTED AFTER|RUNNING" | grep -v "long running" > /tmp/stopwatch_tasks_current
                 clear
@@ -1833,7 +1833,7 @@ spec:
                 sleep $(echo "2 - $(date +%s.%3N) % 2 + 1" | bc)
               done
             EOF
-            new_pane "long running" Enter <<"EOF"
+            new_pane "long running tasks" Enter <<"EOF"
               while true; do
                 stopwatch_tasks | tail -n +3 | grep -E "STARTED AFTER|long running" > /tmp/stopwatch_tasks_long
                 clear
@@ -1841,7 +1841,7 @@ spec:
                 sleep $(echo "2 - $(date +%s.%3N) % 2 + 1" | bc)
               done
             EOF
-            new_pane "waiting for" Enter <<"EOF"
+            new_pane "tasks waiting for" Enter <<"EOF"
               while true; do
                 {
                   echo "WAITING FOR | SESSION | WINDOW | PANE "
