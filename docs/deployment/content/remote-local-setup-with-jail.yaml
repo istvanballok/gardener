@@ -2822,10 +2822,10 @@ spec:
             EOF
 
             mkdir -p ~/.config/procps; rm -f ~/.config/procps/toprc
-            new_window "top1" "top - Running in tree" Enter <<"EOF"
+            new_window "top1" "top - Forest view (all)" Enter <<"EOF"
               top
             EOF
-            for k in " " z C c i t t m m V s 5 Enter E e W; do sleep .2; tmux send $k; done
+            for k in " " z C c i t t m m V s 5 Enter E e W i; do sleep .2; tmux send $k; done
             new_pane "top - sorted by TIME+" Enter <<"EOF"
               top
             EOF
