@@ -3451,17 +3451,17 @@ spec:
                      print}}'"
             EOF
 
-            new_window "managed seed pods" "pods" Enter <<"EOF"
+            new_window "managed seed pods" "managed seed pods" <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               while true; do
                 flag_wait rootless_managedseed_shoot_ready &&
                 is_tmux_window_shown.sh &&
                 bash -o pipefail generate-admin-kubeconf.sh --namespace garden --shoot-name managedseed > /tmp/managed_seed.kubeconfig &&
-                yes | watch -e -n 10 is_tmux_window_shown.sh "&&" k --kubeconfig /tmp/managed_seed.kubeconfig get pods -A
+                yes | watch -e -n 10 "is_tmux_window_shown.sh && k --kubeconfig /tmp/managed_seed.kubeconfig get pods -A"
                 sleep 10s
               done
             EOF
-            new_pane "not ready pods" Enter <<"EOF"
+            new_pane "not ready managed seed pods" <<"EOF"
               export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               while true; do
                 flag_wait rootless_managedseed_shoot_ready &&
