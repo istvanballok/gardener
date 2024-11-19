@@ -838,8 +838,8 @@ spec:
                 alias gk='eval "$(gardenctl kubectl-env bash)"'
                 alias gp='eval "$(gardenctl provider-env bash)"'
                 alias gcv='gardenctl config view'
-                function g         { eval "$(gardenctl kubectl-env bash)"; /usr/local/bin/g "$@"; }
-                function gardenctl { eval "$(gardenctl kubectl-env bash)"; /usr/local/bin/g "$@"; }
+                function g         { eval "$(/usr/local/bin/g kubectl-env bash)"; /usr/local/bin/g "$@"; }
+                function gardenctl { eval "$(/usr/local/bin/g kubectl-env bash)"; /usr/local/bin/g "$@"; }
 
                 function uniq_unbuffered {
                   # like uniq --unbuffered, if uniq had an --unbuffered option
