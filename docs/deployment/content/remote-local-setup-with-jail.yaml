@@ -3734,6 +3734,7 @@ spec:
                          --cpus=1 --memory=2g --pids-limit 1000                          \
                          --add-host api.virtual-garden.local.gardener.cloud:172.18.255.3 \
                          -v /home/demo/etc:/home/demo/etc:ro                             \
+                         -v /home/demo/.kube:/home/demo/.kube2:ro                        \
                          -v $RUNTIME_GARDEN:$RUNTIME_GARDEN:ro                           \
                          -v $VIRTUAL_GARDEN:$VIRTUAL_GARDEN:ro                           \
                          demo_image                                                      \
@@ -3791,7 +3792,7 @@ spec:
                         | jq '
                             .contexts[0].context.namespace = "garden-local"
                           ') \
-                      <(yq -o json /home/demo/kubeconfig.modified \
+                      <(yq -o json /home/demo/.kube2/config \
                         | jq '
                             .contexts[0].name              = "runtime" |
                             .contexts[0].context.namespace = "garden"
@@ -3804,7 +3805,7 @@ spec:
                     ' | yq -P  > ~/.kube/kube_config.tmp
                     mv ~/.kube/kube_config.tmp ~/.kube/garden.config
 
-                    yq -o json /home/demo/kubeconfig.modified | jq '
+                    yq -o json /home/demo/.kube2/config | jq '
                             ."current-context"             = "runtime" |
                             .contexts[0].name              = "runtime" |
                             .contexts[0].context.namespace = "garden"
