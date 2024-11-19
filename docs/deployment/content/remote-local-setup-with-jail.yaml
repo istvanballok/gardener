@@ -1817,7 +1817,9 @@ spec:
             tmux select-pane -T "all";
             send_commands Enter <<"EOF"
               while true; do
-                stopwatch_tasks | grep -v "long running" > /tmp/stopwatch_tasks_all
+                { stopwatch_tasks | grep -v "long running"
+                  echo "$(date) $(date -u -d @$(($(date +%s) - $(cat /rls_start))) +"%T")"
+                } > /tmp/stopwatch_tasks_all
                 clear
                 cat /tmp/stopwatch_tasks_all
                 sleep $(echo "2 - $(date +%s.%3N) % 2 + 1" | bc)
