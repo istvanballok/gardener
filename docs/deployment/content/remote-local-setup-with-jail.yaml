@@ -3951,6 +3951,9 @@ spec:
                     time ! curl -v $GOOGLE_IP
                     echo "time ! curl -v $GOOGLE_IP" | k node-shell $(k get nodes --no-headers | awk '{print $1}' | head -n 1)
 
+                    echo "assert rootless"
+                    k node-shell $(k get nodes --no-headers | awk '{print $1}' | head -n 1) -- bash -c 'ls -alht /dev/sd*' | grep nobody
+
                     echo "delete the shoot"
                     unset KUBECONFIG
                     k -n garden-local annotate shoot local -n garden-local 'confirmation.gardener.cloud/deletion=true'
