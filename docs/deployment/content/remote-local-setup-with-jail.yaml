@@ -1859,7 +1859,7 @@ spec:
               done
             EOF
 
-            new_window "recordings" "current" <<"EOF"
+            new_window "recordings" "current recordings" <<"EOF"
               mkdir -p ~/script_recordings
               cd ~/script_recordings
               find . -name input.log -size +0 | sort -r | sed -E 's|./(.*)/input.log|\1|' | fzf --preview '
@@ -1869,7 +1869,7 @@ spec:
               ' | xargs -o -I {} \
                 scriptreplay -m 1 --log-timing {}/timing.log --log-out {}/out.log
             EOF
-            new_pane "archived" <<"EOF"
+            new_pane "archived recordings" <<"EOF"
               mkdir -p ~/archived_script_recordings
               cd ~/archived_script_recordings
               find . -name input.log -size +0 | sort -r | sed -E 's|./(.*)/input.log|\1|' | fzf --preview '
@@ -1880,7 +1880,7 @@ spec:
                 scriptreplay -m 1 --log-timing {}/timing.log --log-out {}/out.log
             EOF
 
-            new_window "guard" "guard" Enter <<"EOF"
+            new_window "guard" "pause if overloaded" Enter <<"EOF"
               flag_wait overload_detected &&
               echo "Overload or unintended usage detected" | ts &&
               sed 's/^  //' <<"DEMO_EOF" | xargs -d '\0' \
@@ -1893,10 +1893,10 @@ spec:
                 DEMO_CONTAINER_EOF
               DEMO_EOF
             EOF
-            new_pane "unpause" <<"EOF"
+            new_pane "unpause (for testing)" <<"EOF"
               docker unpause ubuntu_systemd_rootless_docker
             EOF
-            new_pane "magic keyword" Enter <<"EOF"
+            new_pane "magic keyword guard" Enter <<"EOF"
               cd script_recordings
               flag_wait archive_recordings &&
               inotifywait -m -e create . \
@@ -1921,7 +1921,7 @@ spec:
                     done &
                 done
             EOF
-            new_pane "input output size" Enter <<"EOF"
+            new_pane "input output size guard" Enter <<"EOF"
               cd script_recordings
               flag_wait archive_recordings &&
               echo "Checking the input and output size of the terminal session" | ts &&
@@ -1937,7 +1937,7 @@ spec:
                 sleep 10
             done
             EOF
-            new_pane "disk full" Enter <<"EOF"
+            new_pane "disk full guard" Enter <<"EOF"
               cd script_recordings
               echo "disk full detection" | ts
               while true; do
@@ -1953,7 +1953,7 @@ spec:
                 sleep 10
               done
             EOF
-            new_pane "thrashing" Enter <<"EOF"
+            new_pane "thrashing guard" Enter <<"EOF"
               # TODO good threshold
               cd script_recordings
               echo "thrashing detection" | ts
@@ -1969,7 +1969,7 @@ spec:
               done
             EOF
 
-            new_window "metrics" "metrics" Enter <<"EOF"
+            new_window "metrics" "metrics collector" Enter <<"EOF"
               mkdir -p /tmp/metrics
               mkdir -p ~/archived_script_recordings
               mv ~/script_recordings/* ~/archived_script_recordings
@@ -1991,13 +1991,13 @@ spec:
                 sleep 1m
               done
             EOF
-            new_pane "exporter" Enter <<"EOF"
+            new_pane "metrics exporter" Enter <<"EOF"
               docker run --rm -it -p 9100:9100 -v /tmp/metrics:/metrics --name node-exporter \
                 prom/node-exporter \
                 --collector.disable-defaults --web.disable-exporter-metrics \
                 --collector.textfile --collector.textfile.directory=/metrics
             EOF
-            new_pane "curl" <<"EOF"
+            new_pane "metrics demo (for testing)" <<"EOF"
               curl localhost:9100/metrics
             EOF
 
@@ -2406,7 +2406,7 @@ spec:
                 DEMO_EOF
               NETWORK_EOF
             EOF
-            new_pane "debug" Enter <<"EOF"
+            new_pane "debug (for testing)" Enter <<"EOF"
               # export KUBECONFIG=$PWD/example/operator/virtual-garden/kubeconfig
               # unset KUBECONFIG
               flag_wait rootless_kind_operator_up &&
@@ -2755,7 +2755,7 @@ spec:
                 stopwatch_stop
               NETWORK_EOF
             EOF
-            new_pane "online" <<"EOF"
+            new_pane "get back online (for testing)" <<"EOF"
               flag_wait ubuntu_systemd_rootless_docker_rootless_docker_service &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' ubuntu_systemd_rootless_docker) -n bash -c
@@ -2765,7 +2765,7 @@ spec:
                 iptables -D OUTPUT  -o eth0 -j REJECT -p tcp --reject-with tcp-reset
               NETWORK_EOF
             EOF
-            new_pane "stats" Enter <<"EOF"
+            new_pane "iptables stats" Enter <<"EOF"
               flag_wait ubuntu_systemd_rootless_docker_rootless_docker_service &&
               sed 's/^  //' <<"NETWORK_EOF" | xargs -d '\0' \
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' ubuntu_systemd_rootless_docker) -n bash -c
@@ -2776,7 +2776,7 @@ spec:
                 done
               NETWORK_EOF
             EOF
-            new_pane "ad-hoc" <<"EOF"
+            new_pane "ad-hoc (for testing)" <<"EOF"
               flag_wait ubuntu_systemd_rootless_docker_rootless_docker_service &&
               nsenter -t $(DOCKER_HOST= docker inspect --format '{{ .State.Pid }}' ubuntu_systemd_rootless_docker) -n
             EOF
