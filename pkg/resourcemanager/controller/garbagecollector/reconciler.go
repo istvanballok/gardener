@@ -6,6 +6,7 @@ package garbagecollector
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/hashicorp/go-multierror"
@@ -124,7 +125,7 @@ func (r *Reconciler) Reconcile(reconcileCtx context.Context, _ reconcile.Request
 		obj := o
 
 		wg.StartWithContext(ctx, func(ctx context.Context) {
-			_, ok := obj.Labels[references.LabelKeyUnusedAt]
+			unusedAtStr, ok := obj.Labels[references.LabelKeyUnusedAt]
 			if !ok {
 				// If the object does not have the unusedAt label, set the label to the current time.
 				patch := client.StrategicMergeFrom(obj.DeepCopy(), client.MergeFromWithOptimisticLock{})
@@ -135,6 +136,19 @@ func (r *Reconciler) Reconcile(reconcileCtx context.Context, _ reconcile.Request
 				}
 				// requeue soon to delete the object
 				requeueNeeded <- true
+				return
+			}
+
+			unusedAt, err := time.Parse(time.RFC3339, unusedAtStr)
+			if err != nil {
+				errorList = multierror.Append(errorList, fmt.Errorf("failed to parse unusedAt %s: %w", unusedAtStr, err))
+				return
+			}
+
+			if unusedAt.Add(*r.MinimumObjectLifetime).UTC().After(r.Clock.Now().UTC()) {
+				// requeue soon to delete the object
+				requeueNeeded <- true
+				// Do not consider objects for garbage collection that were marked as unused only recently.
 				return
 			}
 
