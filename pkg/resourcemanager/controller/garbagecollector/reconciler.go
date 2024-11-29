@@ -113,7 +113,9 @@ func (r *Reconciler) Reconcile(reconcileCtx context.Context, _ reconcile.Request
 	}
 
 	var (
-		results   = make(chan error, 1)
+		results       = make(chan error, 1)
+		requeueNeeded = make(chan bool, 1)
+
 		wg        wait.Group
 		errorList = &multierror.Error{ErrorFormat: errorsutils.NewErrorFormatFuncWithPrefix("Could not delete all unused resources")}
 	)
@@ -131,6 +133,8 @@ func (r *Reconciler) Reconcile(reconcileCtx context.Context, _ reconcile.Request
 				if err := r.TargetClient.Patch(ctx, obj, patch); err != nil {
 					results <- err
 				}
+				// requeue soon to delete the object
+				requeueNeeded <- true
 				return
 			}
 
@@ -155,15 +159,29 @@ func (r *Reconciler) Reconcile(reconcileCtx context.Context, _ reconcile.Request
 	go func() {
 		wg.Wait()
 		close(results)
+		close(requeueNeeded)
 	}()
 
-	for err := range results {
-		if err != nil {
-			errorList = multierror.Append(errorList, err)
+	requeueAfter := r.Config.SyncPeriod.Duration
+
+	var err error
+	resultsOK := true
+	requeueNeededOK := true
+	for resultsOK || requeueNeededOK {
+		select {
+		case err, resultsOK = <-results:
+			if resultsOK {
+				errorList = multierror.Append(errorList, err)
+				requeueAfter = *r.MinimumObjectLifetime + 1*time.Minute
+			}
+		case _, requeueNeededOK = <-requeueNeeded:
+			if requeueNeededOK {
+				requeueAfter = *r.MinimumObjectLifetime + 1*time.Minute
+			}
 		}
 	}
 
-	return reconcile.Result{Requeue: true, RequeueAfter: r.Config.SyncPeriod.Duration}, errorList.ErrorOrNil()
+	return reconcile.Result{Requeue: true, RequeueAfter: requeueAfter}, errorList.ErrorOrNil()
 }
 
 type objectId struct {
