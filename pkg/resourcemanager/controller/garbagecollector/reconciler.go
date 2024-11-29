@@ -106,7 +106,8 @@ func (r *Reconciler) Reconcile(reconcileCtx context.Context, _ reconcile.Request
 				continue
 			}
 
-			delete(objectsToGarbageCollect, objectId{objectKind, objectMeta.Namespace, objectName})
+			key := objectId{objectKind, objectMeta.Namespace, objectName}
+			delete(objectsToGarbageCollect, key)
 		}
 	}
 
