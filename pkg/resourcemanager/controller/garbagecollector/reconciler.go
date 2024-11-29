@@ -122,6 +122,17 @@ func (r *Reconciler) Reconcile(reconcileCtx context.Context, _ reconcile.Request
 		obj := o
 
 		wg.StartWithContext(ctx, func(ctx context.Context) {
+			_, ok := obj.Labels[references.LabelKeyUnusedAt]
+			if !ok {
+				// If the object does not have the unusedAt label, set the label to the current time.
+				patch := client.StrategicMergeFrom(obj.DeepCopy(), client.MergeFromWithOptimisticLock{})
+				obj.Labels[references.LabelKeyUnusedAt] = r.Clock.Now().UTC().Format(time.RFC3339)
+				obj.Labels[references.LabelKeyUsed] = references.LabelValueUnused
+				if err := r.TargetClient.Patch(ctx, obj, patch); err != nil {
+					results <- err
+				}
+				return
+			}
 
 			log.Info("Delete resource",
 				"kind", obj.Kind,
