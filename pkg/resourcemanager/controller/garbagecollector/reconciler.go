@@ -17,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/clock"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -128,7 +129,13 @@ func (r *Reconciler) Reconcile(reconcileCtx context.Context, _ reconcile.Request
 				"name", obj.Name,
 			)
 
-			if err := r.TargetClient.Delete(ctx, obj); client.IgnoreNotFound(err) != nil {
+			deleteOptions := []client.DeleteOption{
+				client.Preconditions(metav1.Preconditions{
+					ResourceVersion: ptr.To(obj.GetResourceVersion()),
+					UID:             ptr.To(obj.GetUID()),
+				}),
+			}
+			if err := r.TargetClient.Delete(ctx, obj, deleteOptions...); client.IgnoreNotFound(err) != nil {
 				results <- err
 			}
 		})
