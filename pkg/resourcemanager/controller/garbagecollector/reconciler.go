@@ -123,6 +123,22 @@ func (r *Reconciler) Reconcile(reconcileCtx context.Context, _ reconcile.Request
 		errorList = &multierror.Error{ErrorFormat: errorsutils.NewErrorFormatFuncWithPrefix("Could not delete all unused resources")}
 	)
 
+	for _, o := range usedObjects {
+		obj := o
+
+		wg.StartWithContext(ctx, func(ctx context.Context) {
+			if _, ok := obj.Labels[references.LabelKeyUnusedAt]; ok {
+				patch := client.StrategicMergeFrom(obj.DeepCopy(), client.MergeFromWithOptimisticLock{})
+				delete(obj.Labels, references.LabelKeyUnusedAt)
+				obj.Labels[references.LabelKeyUsed] = references.LabelValueUsed
+				if err := r.TargetClient.Patch(ctx, obj, patch); err != nil {
+					results <- err
+				}
+				return
+			}
+		})
+	}
+
 	for _, o := range objectsToGarbageCollect {
 		obj := o
 
