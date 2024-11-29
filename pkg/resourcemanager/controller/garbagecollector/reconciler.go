@@ -48,7 +48,7 @@ func (r *Reconciler) Reconcile(reconcileCtx context.Context, _ reconcile.Request
 
 	var (
 		labels                  = client.MatchingLabels{references.LabelKeyGarbageCollectable: references.LabelValueGarbageCollectable}
-		objectsToGarbageCollect = map[objectId]struct{}{}
+		objectsToGarbageCollect = map[objectId]*metav1.PartialObjectMetadata{}
 	)
 
 	for _, resource := range []struct {
@@ -65,12 +65,13 @@ func (r *Reconciler) Reconcile(reconcileCtx context.Context, _ reconcile.Request
 		}
 
 		for _, obj := range objList.Items {
+			obj.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind(resource.kind))
 			if obj.CreationTimestamp.Add(*r.MinimumObjectLifetime).UTC().After(r.Clock.Now().UTC()) {
 				// Do not consider recently created objects for garbage collection.
 				continue
 			}
 
-			objectsToGarbageCollect[objectId{resource.kind, obj.Namespace, obj.Name}] = struct{}{}
+			objectsToGarbageCollect[objectId{resource.kind, obj.Namespace, obj.Name}] = &obj
 		}
 	}
 
