@@ -117,28 +117,15 @@ func (r *Reconciler) Reconcile(reconcileCtx context.Context, _ reconcile.Request
 		errorList = &multierror.Error{ErrorFormat: errorsutils.NewErrorFormatFuncWithPrefix("Could not delete all unused resources")}
 	)
 
-	for id := range objectsToGarbageCollect {
-		objId := id
+	for _, o := range objectsToGarbageCollect {
+		obj := o
 
 		wg.StartWithContext(ctx, func(ctx context.Context) {
-			var (
-				meta = metav1.ObjectMeta{Namespace: objId.namespace, Name: objId.name}
-				obj  client.Object
-			)
-
-			switch objId.kind {
-			case references.KindSecret:
-				obj = &corev1.Secret{ObjectMeta: meta}
-			case references.KindConfigMap:
-				obj = &corev1.ConfigMap{ObjectMeta: meta}
-			default:
-				return
-			}
 
 			log.Info("Delete resource",
-				"kind", objId.kind,
-				"namespace", objId.namespace,
-				"name", objId.name,
+				"kind", obj.Kind,
+				"namespace", obj.Namespace,
+				"name", obj.Name,
 			)
 
 			if err := r.TargetClient.Delete(ctx, obj); client.IgnoreNotFound(err) != nil {
