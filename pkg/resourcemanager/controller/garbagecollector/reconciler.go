@@ -6,6 +6,7 @@ package garbagecollector
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/hashicorp/go-multierror"
@@ -67,6 +68,7 @@ func (r *Reconciler) Reconcile(reconcileCtx context.Context, _ reconcile.Request
 		for _, obj := range objList.Items {
 			if obj.CreationTimestamp.Add(*r.MinimumObjectLifetime).UTC().After(r.Clock.Now().UTC()) {
 				// Do not consider recently created objects for garbage collection.
+				fmt.Printf("Early exit due to timestamp: creation: %v, now: %v, minimum: %v\n", obj.CreationTimestamp, r.Clock.Now(), *r.MinimumObjectLifetime)
 				continue
 			}
 

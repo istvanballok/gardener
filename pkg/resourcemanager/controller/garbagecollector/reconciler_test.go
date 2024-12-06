@@ -6,8 +6,11 @@ package garbagecollector_test
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
+	kubernetesutils "github.com/gardener/gardener/pkg/utils/kubernetes"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
@@ -18,12 +21,14 @@ import (
 	testclock "k8s.io/utils/clock/testing"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/resourcemanager/apis/config"
 	. "github.com/gardener/gardener/pkg/resourcemanager/controller/garbagecollector"
+	"github.com/gardener/gardener/pkg/resourcemanager/controller/garbagecollector/race"
 	"github.com/gardener/gardener/pkg/resourcemanager/controller/garbagecollector/references"
 )
 
@@ -47,6 +52,133 @@ var _ = Describe("Collector", func() {
 			Clock:                 fakeClock,
 			MinimumObjectLifetime: &minimumObjectLifetime,
 		}
+	})
+
+	Describe("#raceCondition", func() {
+		var (
+			secret *corev1.Secret
+		)
+
+		When("performing a simple test witout concurrency", func() {
+			BeforeEach(func() {
+				secret = &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+					Name:      "secret",
+					Namespace: metav1.NamespaceDefault,
+					Labels: map[string]string{
+						"resources.gardener.cloud/garbage-collectable-reference": "true",
+					},
+				}}
+				kubernetesutils.MakeUnique(secret)
+				Expect(c.Create(ctx, secret)).To(Succeed())
+				secretList := &corev1.SecretList{}
+				Expect(c.List(ctx, secretList)).To(Succeed())
+				Expect(secretList.Items).To(ConsistOf(*secret))
+			})
+
+			It("should delete the unused secret", func() {
+				_, err := gc.Reconcile(ctx, reconcile.Request{})
+				Expect(err).NotTo(HaveOccurred())
+
+				secretList := &corev1.SecretList{}
+				Expect(c.List(ctx, secretList)).To(Succeed())
+				Expect(secretList.Items).To(BeEmpty())
+			})
+		})
+
+		When("another actor concurrently creates or updates the secret to be deleted", func() {
+			var (
+				executor   race.CooperativeExecutor
+				cA, cB     client.Client
+				errA, errB error
+				setup      func()
+				assert     func() error
+			)
+
+			BeforeEach(func() {
+				executor = race.NewCooperativeExecutor(1)
+				setup = func() {
+					secret = &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+						Name:      "secret",
+						Namespace: metav1.NamespaceDefault,
+						Labels: map[string]string{
+							"resources.gardener.cloud/garbage-collectable-reference": "true",
+						},
+					}}
+					kubernetesutils.MakeUnique(secret)
+					c.Create(ctx, secret)
+					cA = race.NewCooperativeClient("A", c, executor)
+					gc.TargetClient = cA
+					cB = race.NewCooperativeClient("B", c, executor)
+				}
+
+				assert = func() error {
+					secretList := &corev1.SecretList{}
+					Expect(c.List(ctx, secretList)).To(Succeed())
+					if len(secretList.Items) == 0 && errA == nil && errB == nil {
+						return fmt.Errorf("the secret was deleted and none of the actors failed with a conflict")
+					}
+					return nil
+				}
+			})
+
+			It("should not silently delete the secret: the secret should be there at the end, or one of the actors should fail with a conflict", func() {
+				result := executor.RunAllCombinations(
+					setup,
+					assert,
+					func() {
+						result, errA := gc.Reconcile(ctx, reconcile.Request{})
+						fmt.Printf("GC result: %+v, err: %v", result, errA)
+					},
+					func() {
+						s := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+							Name:      "secret",
+							Namespace: metav1.NamespaceDefault,
+							Labels: map[string]string{
+								"resources.gardener.cloud/garbage-collectable-reference": "true",
+							},
+						}}
+						kubernetesutils.MakeUnique(s)
+
+						secret := &corev1.Secret{
+							ObjectMeta: metav1.ObjectMeta{Name: s.Name, Namespace: s.Namespace},
+						}
+						mutate := func() error {
+							secret.Labels = s.Labels
+							secret.Annotations = s.Annotations
+							secret.Type = s.Type
+							secret.Data = s.Data
+							secret.Immutable = s.Immutable
+							return nil
+						}
+						result, errB := controllerutil.CreateOrUpdate(ctx, cB, secret, mutate)
+						fmt.Printf("CreateOrUpdate result: %+v, err: %v", result, errB)
+					},
+				)
+				Expect(result.NumberOfPathsChecked).To(Equal(3))
+				fmt.Printf("Result: \n\n%s\n\n", result.PathsChecked)
+				Expect(strings.TrimSpace(result.PathsChecked)).To(Equal(strings.TrimSpace(`
+
+Path 1:
+- A/0 List(&PartialObjectMetadataList{ListMeta:ListMeta{SelfLink:,ResourceVersion:,Continue:,RemainingItemCount:nil,},Items:[]PartialObjectMetadata{},}, [map[resources.gardener.cloud/garbage-collectable-reference:true]])
+- A/1 Delete(&Secret{ObjectMeta:{secret-e3b0c442  default    0 0001-01-01 00:00:00 +0000 UTC <nil> <nil> map[] map[] [] [] []},Data:map[string][]byte{},Type:,StringData:map[string]string{},Immutable:nil,}, [])
+- B/0 Get(default/secret-e3b0c442, [])
+- B/1 Create(&Secret{ObjectMeta:{secret-e3b0c442  default    0 0001-01-01 00:00:00 +0000 UTC <nil> <nil> map[resources.gardener.cloud/garbage-collectable-reference:true] map[] [] [] []},Data:map[string][]byte{},Type:,StringData:map[string]string{},Immutable:*true,}, [])
+  assertion error: <nil>
+Path 2:
+- B/0 Get(default/secret-e3b0c442, [])
+- A/0 List(&PartialObjectMetadataList{ListMeta:ListMeta{SelfLink:,ResourceVersion:,Continue:,RemainingItemCount:nil,},Items:[]PartialObjectMetadata{},}, [map[resources.gardener.cloud/garbage-collectable-reference:true]])
+- A/1 Delete(&Secret{ObjectMeta:{secret-e3b0c442  default    0 0001-01-01 00:00:00 +0000 UTC <nil> <nil> map[] map[] [] [] []},Data:map[string][]byte{},Type:,StringData:map[string]string{},Immutable:nil,}, [])
+  assertion error: the secret was deleted and none of the actors failed with a conflict
+Path 3:
+- A/0 List(&PartialObjectMetadataList{ListMeta:ListMeta{SelfLink:,ResourceVersion:,Continue:,RemainingItemCount:nil,},Items:[]PartialObjectMetadata{},}, [map[resources.gardener.cloud/garbage-collectable-reference:true]])
+- B/0 Get(default/secret-e3b0c442, [])
+- A/1 Delete(&Secret{ObjectMeta:{secret-e3b0c442  default    0 0001-01-01 00:00:00 +0000 UTC <nil> <nil> map[] map[] [] [] []},Data:map[string][]byte{},Type:,StringData:map[string]string{},Immutable:nil,}, [])
+  assertion error: the secret was deleted and none of the actors failed with a conflict
+
+  `)))
+				Expect(result.NumberOfPathsWithFailedAssertion).To(Equal(2), "this test shows that the garbage collector is not safe against race conditions")
+			})
+		})
 	})
 
 	Describe("#collectGarbage", func() {
