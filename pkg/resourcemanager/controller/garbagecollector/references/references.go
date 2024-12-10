@@ -32,6 +32,24 @@ const (
 	// workload.
 	LabelValueGarbageCollectable = "true"
 
+	// LabelKeyUsed is a constant for a label key on a Secret or ConfigMap resource
+	// which is used by the Garbage Collector to detect concurrent modifications.
+	// Clients are expected to always set this label to LabelValueUsed: "true".
+	// The Garbage Collector will set this label to LabelValueUnused: "false"
+	// when it marks a resource as to be deleted.
+	LabelKeyUsed = "resources.gardener.cloud/used"
+	// LabelValueUnusedAt is a constant for a label value on a Secret or ConfigMap resource.
+	// Clients are expected to set the label LabelKeyUsed always to LabelValueUsed.
+	LabelValueUsed = "true"
+	// LabelValueUnused is a constant for a label value on a Secret or ConfigMap resource.
+	// The GRM's garbage collector controller will set the label LabelKeyUsed to LabelValueUnused
+	// when it marks a resource as to be deleted.
+	LabelValueUnused = "false"
+
+	// LabelKeyUnusedAt is a constant for a label key on a Secret or ConfigMap resource
+	// which contains a timestamp when the resource was detected to be unused by the GRM's garbage collector controller.
+	LabelKeyUnusedAt = "resources.gardener.cloud/unused_at"
+
 	delimiter = "-"
 	// AnnotationKeyPrefix is a constant for the prefix used in annotations keys to indicate references to
 	// other resources.
