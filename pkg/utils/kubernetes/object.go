@@ -142,11 +142,13 @@ func MakeUnique(obj runtime.Object) error {
 		o.Immutable = ptr.To(true)
 		o.Name += prependHyphen(o.Name) + utils.ComputeSecretChecksum(mergeMaps(o.StringData, o.Data))[:numberOfChecksumChars]
 		metav1.SetMetaDataLabel(&o.ObjectMeta, references.LabelKeyGarbageCollectable, references.LabelValueGarbageCollectable)
+		metav1.SetMetaDataLabel(&o.ObjectMeta, references.LabelKeyUsed, references.LabelValueUsed)
 
 	case *corev1.ConfigMap:
 		o.Immutable = ptr.To(true)
 		o.Name += prependHyphen(o.Name) + utils.ComputeSecretChecksum(mergeMaps(o.Data, o.BinaryData))[:numberOfChecksumChars]
 		metav1.SetMetaDataLabel(&o.ObjectMeta, references.LabelKeyGarbageCollectable, references.LabelValueGarbageCollectable)
+		metav1.SetMetaDataLabel(&o.ObjectMeta, references.LabelKeyUsed, references.LabelValueUsed)
 
 	default:
 		return fmt.Errorf("unhandled object type: %T", obj)
