@@ -8,6 +8,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
@@ -18,10 +19,12 @@ import (
 	testclock "k8s.io/utils/clock/testing"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
+	"github.com/gardener/gardener/pkg/logger"
 	"github.com/gardener/gardener/pkg/resourcemanager/apis/config"
 	. "github.com/gardener/gardener/pkg/resourcemanager/controller/garbagecollector"
 	"github.com/gardener/gardener/pkg/resourcemanager/controller/garbagecollector/references"
@@ -30,6 +33,7 @@ import (
 var _ = Describe("Collector", func() {
 	var (
 		ctx = context.TODO()
+		log logr.Logger
 
 		c  client.Client
 		gc *Reconciler
@@ -40,6 +44,8 @@ var _ = Describe("Collector", func() {
 	)
 
 	BeforeEach(func() {
+		log = logger.MustNewZapLogger(logger.DebugLevel, logger.FormatText)
+		logf.SetLogger(log.WithName("garbagecollector"))
 		c = fakeclient.NewClientBuilder().WithScheme(kubernetes.SeedScheme).Build()
 		gc = &Reconciler{
 			TargetClient:          c,
