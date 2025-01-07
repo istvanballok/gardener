@@ -51,7 +51,7 @@ var _ = Describe("Collector", func() {
 		fakeClock = testclock.NewFakeClock(creationTimestamp.Add(minimumObjectLifetime / 2))
 		gc = &Reconciler{
 			TargetClient:          c,
-			Config:                config.GarbageCollectorControllerConfig{SyncPeriod: &metav1.Duration{}},
+			Config:                config.GarbageCollectorControllerConfig{SyncPeriod: &metav1.Duration{Duration: 12 * time.Hour}},
 			Clock:                 fakeClock,
 			MinimumObjectLifetime: &minimumObjectLifetime,
 		}
