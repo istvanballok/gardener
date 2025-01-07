@@ -38,15 +38,17 @@ var _ = Describe("Collector", func() {
 		c  client.Client
 		gc *Reconciler
 
+		fakeClock *testclock.FakeClock
+
 		minimumObjectLifetime = time.Minute
 		creationTimestamp     = metav1.Date(2000, 5, 5, 5, 30, 0, 0, time.Local)
-		fakeClock             = testclock.NewFakeClock(creationTimestamp.Add(minimumObjectLifetime / 2))
 	)
 
 	BeforeEach(func() {
 		log = logger.MustNewZapLogger(logger.DebugLevel, logger.FormatText)
 		logf.SetLogger(log.WithName("garbagecollector"))
 		c = fakeclient.NewClientBuilder().WithScheme(kubernetes.SeedScheme).Build()
+		fakeClock = testclock.NewFakeClock(creationTimestamp.Add(minimumObjectLifetime / 2))
 		gc = &Reconciler{
 			TargetClient:          c,
 			Config:                config.GarbageCollectorControllerConfig{SyncPeriod: &metav1.Duration{}},
