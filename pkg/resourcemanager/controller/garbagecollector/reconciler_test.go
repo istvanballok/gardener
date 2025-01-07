@@ -162,8 +162,18 @@ var _ = Describe("Collector", func() {
 			Expect(c.List(ctx, configMapList)).To(Succeed())
 			Expect(configMapList.Items).To(BeEmpty())
 
-			_, err := gc.Reconcile(ctx, reconcile.Request{})
-			Expect(err).NotTo(HaveOccurred())
+			runs := 0
+			for {
+				result, err := gc.Reconcile(ctx, reconcile.Request{})
+				runs++
+				Expect(err).NotTo(HaveOccurred())
+				if result.Requeue && result.RequeueAfter < gc.Config.SyncPeriod.Duration {
+					fakeClock.Step(result.RequeueAfter)
+				} else {
+					break
+				}
+			}
+			Expect(runs).To(Equal(1))
 
 			secretList = &corev1.SecretList{}
 			Expect(c.List(ctx, secretList)).To(Succeed())
@@ -186,8 +196,18 @@ var _ = Describe("Collector", func() {
 			Expect(c.List(ctx, configMapList)).To(Succeed())
 			Expect(configMapList.Items).To(ConsistOf(*unlabeledConfigMap))
 
-			_, err := gc.Reconcile(ctx, reconcile.Request{})
-			Expect(err).NotTo(HaveOccurred())
+			runs := 0
+			for {
+				result, err := gc.Reconcile(ctx, reconcile.Request{})
+				runs++
+				Expect(err).NotTo(HaveOccurred())
+				if result.Requeue && result.RequeueAfter < gc.Config.SyncPeriod.Duration {
+					fakeClock.Step(result.RequeueAfter)
+				} else {
+					break
+				}
+			}
+			Expect(runs).To(Equal(1))
 
 			secretList = &corev1.SecretList{}
 			Expect(c.List(ctx, secretList)).To(Succeed())
@@ -242,8 +262,22 @@ var _ = Describe("Collector", func() {
 			Expect(c.Create(ctx, &corev1.Pod{ObjectMeta: objectMetaFor("pod1", labeledSecret6, labeledConfigMap6)})).To(Succeed())
 			Expect(c.Create(ctx, &batchv1.CronJob{ObjectMeta: objectMetaFor("cronjob2", labeledSecret7, labeledConfigMap7)})).To(Succeed())
 
-			_, err := gc.Reconcile(ctx, reconcile.Request{})
-			Expect(err).NotTo(HaveOccurred())
+			runs := 0
+			for {
+				result, err := gc.Reconcile(ctx, reconcile.Request{})
+				runs++
+				Expect(err).NotTo(HaveOccurred())
+				if result.Requeue && result.RequeueAfter < gc.Config.SyncPeriod.Duration {
+					fakeClock.Step(result.RequeueAfter)
+					labeledSecret9.CreationTimestamp.Time = labeledSecret9.CreationTimestamp.Time.Add(result.RequeueAfter)
+					c.Update(ctx, labeledSecret9)
+					labeledConfigMap5.CreationTimestamp.Time = labeledConfigMap5.CreationTimestamp.Time.Add(result.RequeueAfter)
+					c.Update(ctx, labeledConfigMap5)
+				} else {
+					break
+				}
+			}
+			Expect(runs).To(Equal(1))
 
 			secretList = &corev1.SecretList{}
 			Expect(c.List(ctx, secretList)).To(Succeed())
