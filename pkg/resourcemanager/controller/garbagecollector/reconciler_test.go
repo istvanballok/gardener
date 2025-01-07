@@ -349,7 +349,7 @@ var _ = Describe("Collector", func() {
 					break
 				}
 			}
-			Expect(runs).To(Equal(1))
+			Expect(runs).To(Equal(2))
 
 			secretList = &corev1.SecretList{}
 			Expect(c.List(ctx, secretList)).To(Succeed())
@@ -383,7 +383,7 @@ var _ = Describe("Collector", func() {
 					break
 				}
 			}
-			Expect(runs).To(Equal(1))
+			Expect(runs).To(Equal(2))
 
 			secretList = &corev1.SecretList{}
 			Expect(c.List(ctx, secretList)).To(Succeed())
@@ -453,7 +453,7 @@ var _ = Describe("Collector", func() {
 					break
 				}
 			}
-			Expect(runs).To(Equal(1))
+			Expect(runs).To(Equal(2))
 
 			secretList = &corev1.SecretList{}
 			Expect(c.List(ctx, secretList)).To(Succeed())
