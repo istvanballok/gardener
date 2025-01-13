@@ -51,6 +51,7 @@ func (r *Reconciler) Reconcile(reconcileCtx context.Context, _ reconcile.Request
 	var (
 		labels                  = client.MatchingLabels{references.LabelKeyGarbageCollectable: references.LabelValueGarbageCollectable}
 		objectsToGarbageCollect = map[objectId]*metav1.PartialObjectMetadata{}
+		usedObjects             = map[objectId]*metav1.PartialObjectMetadata{}
 	)
 
 	for _, resource := range []struct {
@@ -109,6 +110,7 @@ func (r *Reconciler) Reconcile(reconcileCtx context.Context, _ reconcile.Request
 			}
 
 			key := objectId{objectKind, objectMeta.Namespace, objectName}
+			usedObjects[key] = objectsToGarbageCollect[key]
 			delete(objectsToGarbageCollect, key)
 		}
 	}
