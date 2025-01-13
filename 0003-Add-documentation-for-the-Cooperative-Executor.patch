@@ -1,0 +1,587 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+Date: Fri, 6 Dec 2024 17:07:12 +0100
+Subject: [PATCH 03/29] Add documentation for the Cooperative Executor
+
+This PR will later use the *Cooperative Executor* struct of the 'race' test
+utility package to check for race conditions in the Garbage Collector
+implementation.
+
+This commit adds a documentation that introduces the problem of race conditions
+based on a simple example and then shows how the Cooperative Executor (that will
+be implemented in the next commit) can help to detect race conditions in unit
+tests.
+---
+ .../race/cooperative_executor.md              | 563 ++++++++++++++++++
+ 1 file changed, 563 insertions(+)
+ create mode 100644 pkg/resourcemanager/controller/garbagecollector/race/cooperative_executor.md
+
+diff --git a/pkg/resourcemanager/controller/garbagecollector/race/cooperative_executor.md b/pkg/resourcemanager/controller/garbagecollector/race/cooperative_executor.md
+new file mode 100644
+index 0000000000..8e7010db85
+--- /dev/null
++++ b/pkg/resourcemanager/controller/garbagecollector/race/cooperative_executor.md
+@@ -0,0 +1,563 @@
++# Cooperative Executor
++
++The *Cooperative Executor* allows to check for a special case of race conditions
++in unit tests.
++
++## Introduction to Race Conditions
++
++Let's consider the following simple client API:
++
++```go
++type Client interface {
++  Get() (value int)
++  Set(value int)
++}
++```
++
++The client API has two methods: `Get` and `Set`. The `Get` method returns a
++global value stored in a shared server that the client is connected to. The
++`Set` method takes a value and stores that in the shared server.
++
++Let's consider the following function that uses the client API to increment the
++value stored in the server:
++
++```go
++func Increment(client Client) {
++  value := client.Get()
++  client.Set(value + 1)
++}
++```
++
++If two actors, goroutines in a single golang process or in separate golang
++processes on the same or even on different machines execute the `Increment`
++function concurrently, depending on the order of the execution of the client API
++methods `Get` and `Set`, the final value stored in the server may not be the
++same as if the two `Increment` function calls were executed sequentially.
++
++If the two actors, `A` and `B`, execute the `Increment` function sequentially,
++the final value will be always `2`.
++
++```text
++A: client.Get() -> 0
++A: client.Set(0 + 1) -> 1
++B: client.Get() -> 1
++B: client.Set(1 + 1) -> 2
++```
++
++However, if the two actors execute the `Increment` function concurrently, the
++final value may be unequal to `2`. For example, if the client API calls are
++interleaved and executed in the following order, the final value will be `1`.
++
++```text
++A: client.Get() -> 0
++B: client.Get() -> 0
++A: client.Set(0 + 1) -> 1
++B: client.Set(0 + 1) -> 1
++```
++
++This is a **race condition**: the final value depends on the execution order of
++the client API calls.
++
++## Locking
++
++If the two actors are goroutines running in the same process, we can use
++**locks** to ensure that the critical section of the code, in this case the
++whole body of the `Increment` function, is executed by only one actor *at a
++time*.
++
++```go
++var lock sync.Mutex
++
++func Increment(client Client) {
++  lock.Lock()
++  defer lock.Unlock()
++  value := client.Get()
++  client.Set(value + 1)
++}
++```
++
++With the help of the lock, even if the two actors execute the `Increment`
++function concurrently, only one actor will be able to execute the critical
++section of the code at a time, hence the execution order of the client API calls
++will always be the same as if the actors were executed sequentially, and the
++final value will be always `2`.
++
++## Optimistic Locking
++
++In distributed systems like Kubernetes, locks are not always the best solution
++to synchronize access to shared resources. Locks can lead to deadlocks and can
++also have an impact on the performance of the system.
++
++An alternative concurrency control mechanism is **optimistic locking**.
++Optimistic locking assumes that there will be no conflict. If there is a
++conflict, the operation will fail and can be retried. This approach can improve
++performance and reduce the risk of deadlocks compared to traditional locking
++mechanisms.
++
++A client API that supports optimistic locking with the help of a version number
++could look like this:
++
++```go
++type Client interface {
++  GetWithVersion() (value int, version int)
++  SetWithVersion(value int, version int) error
++}
++```
++
++The `GetWithVersion` method returns the global value stored in the shared server
++and also a version number. The version number is a monotonically increasing
++number that is incremented by the server atomically every time the value is
++updated.
++
++The `SetWithVersion` method takes a value to be stored in the shared server and
++also the version number that the client has. If the version number stored in the
++server is different from the version number passed by the client, the
++`SetWithVersion` method will return an error. The actor has a stale version of
++the value and executing the `SetWithVersion` method might lead to losing updates
++made by other actors in the meantime. If the `SetWithVersion` method returns an
++error, the actor should retry the entire operation.
++
++The `Increment` function that uses the client API that supports optimistic
++locking could look like this:
++
++```go
++func Increment(client Client) {
++  for {
++    value, version := client.GetWithVersion()
++    if err := client.SetWithVersion(value + 1, version); err == nil {
++      break
++    }
++  }
++}
++```
++
++If the value stored in the server has been updated by another actor, the
++`SetWithVersion` method will return an error, and the `Increment` function will
++retry the entire operation in the `for` loop: it will call the `GetWithVersion`
++method to get the updated value and the version number, and then it will try to
++store the incremented value again.
++
++If two actors execute the `Increment` function sequentially, the final value
++will be `2`.
++
++```text
++A: client.GetWithVersion() -> 0, 0
++A: client.SetWithVersion(0 + 1, 0) -> nil
++B: client.GetWithVersion() -> 1, 1
++B: client.SetWithVersion(1 + 1, 1) -> nil
++// 2
++```
++
++Even if two actors execute the `Increment` function *concurrently*, the final
++value will be *always* `2`. If there was a concurrent modification, and e.g.
++actor `A` updated the value before actor `B`, the `SetWithVersion` method of
++actor `B` will return an error and actor `B` will retry the `Increment`
++operation.
++
++```text
++A: client.GetWithVersion() -> 0, 0
++B: client.GetWithVersion() -> 0, 0
++A: client.SetWithVersion(0 + 1, 0) -> nil
++B: client.SetWithVersion(0 + 1, 0) -> error
++B: client.GetWithVersion() -> 1, 1
++B: client.SetWithVersion(1 + 1, 1) -> nil
++// 2
++```
++
++## Testability
++
++Checking actor implementations in unit tests for race conditions is challenging:
++the probability of observing an execution order of the client API calls that
++leads to an unexpected result is low. So, although a race condition might
++"reliably" occur in production at scale, it might not be easily reproducible in a
++unit test.
++
++Checking for race conditions in a golang program *in general* is known to be
++hard: race conditions in golang deal with the execution order of low-level
++CPU operations in different goroutines.
++
++### Cooperative Executor
++
++The Cooperative Executor is a go struct that aims to check a *very specific
++case* of race conditions: the scenario where functions use a client API and the
++race condition only emerges from the execution order of the client API calls.
++
++This is a much simpler problem than the general case of checking for race
++conditions in golang. Typically it is sufficient to check for two actors and the
++number of client API calls is small, such that it is feasible to check even all
++possible orderings of the client API calls.
++
++This special case of race conditions that depends on the execution order of the
++client API calls is relevant in distributed systems like Kubernetes, where
++multiple actors running even in different processes access a shared remote
++service concurrently via a client API.
++
++The **Cooperative Executor** is designed to facilitate testing such actors for
++race conditions in unit tests. It allows to check if there is an ordering of the
++client API calls when two actors execute concurrently that leads to an
++unexpected result.
++
++Why is it called the **Cooperative** Executor? The term "cooperative" is
++borrowed from cooperative multitasking, where the actors yield control to a
++scheduler that decides which actor to run next.
++
++The Cooperative Executor is basically a scheduler that waits until all the
++actors reach the point of trying to execute a client API call. Then, it decides
++which actor's client API call should proceed. It explores all possible orderings
++of the client API calls by running the actors several times, each time exploring
++another combination of client API calls.
++
++#### Example
++
++With the help of the Cooperative Executor, we can write a unit test to
++detect race conditions when two actors concurrently execute the `Increment` function.
++
++```go
++	It("should detect possible race conditions when two actors try to increment a shared value without any synchronization mechanism", func() {
++		executor := race.NewCooperativeExecutor(race.DEBUG)
++		var simpleClient, clientA, clientB SimpleClient
++
++		setup := func() {
++			simpleClient = NewSimpleClient()
++			clientA = NewCooperativeSimpleClient("A", simpleClient, executor)
++			clientB = NewCooperativeSimpleClient("B", simpleClient, executor)
++		}
++
++		assert := func() error {
++			if simpleClient.Get() != 2 {
++				return fmt.Errorf("expected value==2, got value==%d", simpleClient.Get())
++			}
++			return nil
++		}
++
++		result := executor.RunAllCombinations(
++			setup,
++			assert,
++			func() {
++				value := clientA.Get()
++				clientA.Set(value + 1)
++			},
++			func() {
++				value := clientB.Get()
++				clientB.Set(value + 1)
++			},
++		)
++		Expect(result.NumberOfPathsWithFailedAssertion).To(Equal(4))
++		Expect(result.NumberOfPathsChecked).To(Equal(6))
++		Expect(strings.TrimSpace(result.PathsChecked)).To(Equal(strings.TrimSpace(`
++
++Path 1:
++- A/0 Get() -> value=0
++- A/1 Set(1) -> [value=1]
++- B/0 Get() -> value=1
++- B/1 Set(2) -> [value=2]
++  assertion error: <nil>
++Path 2:
++- B/0 Get() -> value=0
++- A/0 Get() -> value=0
++- A/1 Set(1) -> [value=1]
++- B/1 Set(1) -> [value=1]
++  assertion error: expected value==2, got value==1
++Path 3:
++- A/0 Get() -> value=0
++- B/0 Get() -> value=0
++- A/1 Set(1) -> [value=1]
++- B/1 Set(1) -> [value=1]
++  assertion error: expected value==2, got value==1
++Path 4:
++- B/0 Get() -> value=0
++- B/1 Set(1) -> [value=1]
++- A/0 Get() -> value=1
++- A/1 Set(2) -> [value=2]
++  assertion error: <nil>
++Path 5:
++- B/0 Get() -> value=0
++- A/0 Get() -> value=0
++- B/1 Set(1) -> [value=1]
++- A/1 Set(1) -> [value=1]
++  assertion error: expected value==2, got value==1
++Path 6:
++- A/0 Get() -> value=0
++- B/0 Get() -> value=0
++- B/1 Set(1) -> [value=1]
++- A/1 Set(1) -> [value=1]
++  assertion error: expected value==2, got value==1
++
++		`)))
++	})
++```
++
++This shows that the `Increment` function that uses the simple client API is
++susceptible to race conditions. There are `6` combinations how the client API
++calls from actor `A` and `B` could be interleaved. In `4` of the `6` cases, the
++final value is `1` and not `2`.
++
++So the unit test with the Cooperative Executor detects, without changing the
++source code of the functions under test, that the calls:
++
++```go
++// Actor A
++value := clientA.Get()
++clientA.Set(value + 1)
++
++// Actor B
++value := clientB.Get()
++clientB.Set(value + 1)
++```
++
++might be interleaved in this order:
++
++```text
++Path 2:
++- B/0 Get() -> value=0
++- A/0 Get() -> value=0
++- A/1 Set(1) -> [value=1]
++- B/1 Set(1) -> [value=1]
++  assertion error: Assertion failed: expected value==2, got value==1
++```
++
++and that leads to an unexpected result: the final value is `1` instead of `2`.
++
++This is the proof of the race condition: the final value depends on the execution
++order of the client API calls.
++
++Furthermore, we can assert that the improved version of the `Increment` function
++that properly uses optimistic locking is not susceptible to such race
++conditions.
++
++```go
++	It("should detect no race conditions when the actors properly use optimistic locking", func() {
++		executor := race.NewCooperativeExecutor(race.DEBUG)
++		var simpleClient, clientA, clientB SimpleClient
++
++		setup := func() {
++			simpleClient = NewSimpleClient()
++			clientA = NewCooperativeSimpleClient("A", simpleClient, executor)
++			clientB = NewCooperativeSimpleClient("B", simpleClient, executor)
++		}
++
++		assert := func() error {
++			if simpleClient.Get() != 2 {
++				return fmt.Errorf("expected value==2, got value==%d", simpleClient.Get())
++			}
++			return nil
++		}
++
++		result := executor.RunAllCombinations(
++			setup,
++			assert,
++			func() {
++				for {
++					value, version := clientA.GetWithVersion()
++					if clientA.SetWithVersion(value+1, version) == nil {
++						break
++					}
++				}
++			},
++			func() {
++				for {
++					value, version := clientB.GetWithVersion()
++					if clientB.SetWithVersion(value+1, version) == nil {
++						break
++					}
++				}
++			},
++		)
++		Expect(result.NumberOfPathsWithFailedAssertion).To(Equal(0))
++		Expect(result.NumberOfPathsChecked).To(Equal(6))
++
++		Expect(strings.TrimSpace(result.PathsChecked)).To(Equal(strings.TrimSpace(`
++
++Path 1:
++- A/0 GetWithVersion() -> value=0, version=0
++- A/1 SetWithVersion(1, 0) -> [value=1], error=<nil>
++- B/0 GetWithVersion() -> value=1, version=1
++- B/1 SetWithVersion(2, 1) -> [value=2], error=<nil>
++  assertion error: <nil>
++Path 2:
++- B/0 GetWithVersion() -> value=0, version=0
++- A/0 GetWithVersion() -> value=0, version=0
++- A/1 SetWithVersion(1, 0) -> [value=1], error=<nil>
++- B/1 SetWithVersion(1, 0) -> [value=1], error=version mismatch: expected 1, got 0
++- B/2 GetWithVersion() -> value=1, version=1
++- B/3 SetWithVersion(2, 1) -> [value=2], error=<nil>
++  assertion error: <nil>
++Path 3:
++- A/0 GetWithVersion() -> value=0, version=0
++- B/0 GetWithVersion() -> value=0, version=0
++- A/1 SetWithVersion(1, 0) -> [value=1], error=<nil>
++- B/1 SetWithVersion(1, 0) -> [value=1], error=version mismatch: expected 1, got 0
++- B/2 GetWithVersion() -> value=1, version=1
++- B/3 SetWithVersion(2, 1) -> [value=2], error=<nil>
++  assertion error: <nil>
++Path 4:
++- B/0 GetWithVersion() -> value=0, version=0
++- B/1 SetWithVersion(1, 0) -> [value=1], error=<nil>
++- A/0 GetWithVersion() -> value=1, version=1
++- A/1 SetWithVersion(2, 1) -> [value=2], error=<nil>
++  assertion error: <nil>
++Path 5:
++- B/0 GetWithVersion() -> value=0, version=0
++- A/0 GetWithVersion() -> value=0, version=0
++- B/1 SetWithVersion(1, 0) -> [value=1], error=<nil>
++- A/1 SetWithVersion(1, 0) -> [value=1], error=version mismatch: expected 1, got 0
++- A/2 GetWithVersion() -> value=1, version=1
++- A/3 SetWithVersion(2, 1) -> [value=2], error=<nil>
++  assertion error: <nil>
++Path 6:
++- A/0 GetWithVersion() -> value=0, version=0
++- B/0 GetWithVersion() -> value=0, version=0
++- B/1 SetWithVersion(1, 0) -> [value=1], error=<nil>
++- A/1 SetWithVersion(1, 0) -> [value=1], error=version mismatch: expected 1, got 0
++- A/2 GetWithVersion() -> value=1, version=1
++- A/3 SetWithVersion(2, 1) -> [value=2], error=<nil>
++  assertion error: <nil>
++
++		`)))
++	})
++```
++
++Although the operations are similarly interleaved, the final value is always `2`.
++The unit test shows that in some of the combinations the first try to update
++the value fails, and the operation is retried, leading to the correct result.
++
++This is how optimistic locking works, and the Cooperative Executor helps to
++assert that the actor implementation is correctly using the optimistic locking
++mechanism to prevent unexpected results.
++
++The following snippet shows that actor `B` tries to update the value. On the
++first attempt, it fails because the version number is stale. It retries the
++operation and then it succeeds, leading to the correct final value.
++
++```text
++Path 2:
++- B/0 GetWithVersion() -> value=0, version=0
++- A/0 GetWithVersion() -> value=0, version=0
++- A/1 SetWithVersion(1, 0) -> [value=1], error=<nil>
++- B/1 SetWithVersion(1, 0) -> [value=1], error=version mismatch: expected 1, got 0
++- B/2 GetWithVersion() -> value=1, version=1
++- B/3 SetWithVersion(2, 1) -> [value=2], error=<nil>
++  assertion error: <nil>
++```
++
++As illustrated by this simple example, the Cooperative Executor could be also
++used to check more complex actor implementations for race conditions.
++
++#### Implementation details
++
++The source code of the actor need not be changed to be able to use the
++Cooperative Executor. The Cooperative Executor rather relies on a client API
++wrapper that yields control back to the Cooperative Executor before delegating
++to the client API methods.
++
++The `CooperativeClient` is such a wrapper for the client API that calls the
++`LockAndYield` and `Release` methods before and after each client API call to
++allow the Cooperative Executor to control the execution order of the client API
++calls.
++
++```go
++type CooperativeExecutor interface {
++  LockAndYield(clientName string, callID int, description string)
++  Release(clientName string, callID int, result string)
++}
++```
++
++The `Get` method of the `CooperativeClient` could look like this:
++
++```go
++type CooperativeClient struct {
++  mu     sync.Mutex
++  name   string
++  callID int
++  client Client
++  e      CooperativeExecutor
++}
++
++func (c *CooperativeClient) Get() int {
++  callID := cc.nextCallID()
++  cc.executor.LockAndYield(cc.clientName, callID, "Get")
++  value := cc.simpleClient.Get()
++  cc.executor.Release(cc.clientName, callID, fmt.Sprintf("value=%d", value))
++  return value
++}
++
++func (cc *CooperativeClient) nextCallID() int {
++  cc.mu.Lock()
++  defer cc.mu.Unlock()
++  callID := cc.callID
++  cc.callID++
++  return callID
++}
++```
++
++The Cooperative Client's `Get` method first calls the Cooperative Executor's
++`LockAndYield` method and that blocks. The Cooperative Executor waits until all
++the actors have reached such a yielding point during their execution flow. Then,
++it decides which actor, which client API method to execute first and lets that
++proceed. It takes note of this decision and the next time when it runs all the
++actors again from the start, it will let another client API method of another
++actor proceed at that point. This way, it explores all possible orderings of the
++client API calls, in a way similar to a depth-first search.
++
++In the unit test, actors should use dedicated client instances with unique
++names. The callID is should be unique in the scope of a single client. The
++description should capture the intent of the call. With all this information,
++the Cooperative Executor can check all possible orderings of the client API
++calls and emit readable output of the explored execution paths.
++
++```text
++Path 1:
++- A/0 Get() -> value=0
++- A/1 Set(1) -> [value=1]
++- B/0 Get() -> value=1
++- B/1 Set(2) -> [value=2]
++```
++
++#### Scalability
++
++The number of possible orderings depends on the number of the actors and the
++number of the yielding points during the execution flow.
++
++With `2` actors and `n`, `m` yielding points, there are *many*: `(n+m)!/(n!m!)`
++possible combinations and hence in the general case, it is not feasible to check
++all possible orderings.
++
++However, for small numbers of `n` and `m`, the complete list of all the
++combinations is still manageable. For `n=2`, `m=2`, there are `6` possible
++combinations: `4!/2!2! = 6` and they can be easily checked in a unit test.
++
++```text
++- A1 A2 B1 B2
++- A1 B1 A2 B2
++- A1 B1 B2 A2
++- B1 A1 A2 B2
++- B1 A1 B2 A2
++- B1 B2 A1 A2
++```
++
++Typically, one of the actors is simple, and performs a get and create/update
++call with `2` yielding points. If the other actor has `n` yielding points, there
++are "only" `(n+2)*(n+1)/2` possible combinations: `O(n^2)`.
++
++Even a more complex actor might not actually have too many "relevant" yielding
++points: e.g. a garbage collection algorithm might have `6` relevant yielding
++points: `Get`, `Mark`, `Get`, `Delete`, retrying `Get` and `Delete`, which could
++lead to up to `(6+2)*(6+1)/2=28` combinations. The client API wrapper could be
++used to determine which yielding points are relevant and which are not, based on
++the specifics of the actor implementation under test.
++
++Depending on the conditions in the actor implementation, some of the
++combinations might not be possible as an execution order. The Cooperative
++Executor explores only the execution orders that can actually happen, so
++theoretical combinations that are not possible in practice do not increase the
++number of paths that need to be checked.
++
++This reasoning makes us optimistic that the Cooperative Executor can be used to
++check even moderately complex actor implementations.
++
++## Summary
++
++The Cooperative Executor is designed to detect race conditions by exploring all
++possible orderings of client API method calls when two actors execute
++concurrently. It helps in writing unit tests to ensure that no execution order
++leads to unexpected results.

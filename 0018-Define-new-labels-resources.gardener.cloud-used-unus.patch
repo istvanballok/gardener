@@ -1,0 +1,54 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+Date: Tue, 10 Dec 2024 16:31:08 +0100
+Subject: [PATCH 18/29] Define new labels:
+ resources.gardener.cloud/{used,unused_at}
+
+Clients are expected to set the label
+- `resources.gardener.cloud/used` to `true`
+on the immutable secrets or configmaps that are referenced by other resources
+and that are managed by the Garbage Collector.
+
+The Garbage Collector will set the labels
+- `resources.gardener.cloud/used` to `false`, and
+- `resources.gardener.cloud/unused_at` to the current time
+when it marks a resource as "to be deleted".
+
+Hence, when a client reuses a resource that was marked to
+be deleted, the client will mutate the resource:
+- `resources.gardener.cloud/used` `false` --> `true`
+and that can be used to detect a conflict when the Garbage Collector
+deletes the resource.
+---
+ .../garbagecollector/references/references.go  | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/pkg/resourcemanager/controller/garbagecollector/references/references.go b/pkg/resourcemanager/controller/garbagecollector/references/references.go
+index ecd9a064a0..abe23eb096 100644
+--- a/pkg/resourcemanager/controller/garbagecollector/references/references.go
++++ b/pkg/resourcemanager/controller/garbagecollector/references/references.go
+@@ -32,6 +32,24 @@ const (
+ 	// workload.
+ 	LabelValueGarbageCollectable = "true"
+ 
++	// LabelKeyUsed is a constant for a label key on a Secret or ConfigMap resource
++	// which is used by the Garbage Collector to detect concurrent modifications.
++	// Clients are expected to always set this label to LabelValueUsed: "true".
++	// The Garbage Collector will set this label to LabelValueUnused: "false"
++	// when it marks a resource as to be deleted.
++	LabelKeyUsed = "resources.gardener.cloud/used"
++	// LabelValueUnusedAt is a constant for a label value on a Secret or ConfigMap resource.
++	// Clients are expected to set the label LabelKeyUsed always to LabelValueUsed.
++	LabelValueUsed = "true"
++	// LabelValueUnused is a constant for a label value on a Secret or ConfigMap resource.
++	// The GRM's garbage collector controller will set the label LabelKeyUsed to LabelValueUnused
++	// when it marks a resource as to be deleted.
++	LabelValueUnused = "false"
++
++	// LabelKeyUnusedAt is a constant for a label key on a Secret or ConfigMap resource
++	// which contains a timestamp when the resource was detected to be unused by the GRM's garbage collector controller.
++	LabelKeyUnusedAt = "resources.gardener.cloud/unused_at"
++
+ 	delimiter = "-"
+ 	// AnnotationKeyPrefix is a constant for the prefix used in annotations keys to indicate references to
+ 	// other resources.

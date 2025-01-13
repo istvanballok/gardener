@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+Date: Mon, 13 Jan 2025 15:45:40 +0100
+Subject: [PATCH 24/29] Track the used objects as well
+
+Previously only the objects to be deleted were tracked.
+
+Now, also the used objects are tracked. This is the complement of the
+objectsToGarbageCollect map.
+
+Later, we can clean up the labels that might have been added by the Garbage
+Collector in a race condition.
+---
+ pkg/resourcemanager/controller/garbagecollector/reconciler.go | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/pkg/resourcemanager/controller/garbagecollector/reconciler.go b/pkg/resourcemanager/controller/garbagecollector/reconciler.go
+index 79a24718e8..c126bd8ad1 100644
+--- a/pkg/resourcemanager/controller/garbagecollector/reconciler.go
++++ b/pkg/resourcemanager/controller/garbagecollector/reconciler.go
+@@ -51,6 +51,7 @@ func (r *Reconciler) Reconcile(reconcileCtx context.Context, _ reconcile.Request
+ 	var (
+ 		labels                  = client.MatchingLabels{references.LabelKeyGarbageCollectable: references.LabelValueGarbageCollectable}
+ 		objectsToGarbageCollect = map[objectId]*metav1.PartialObjectMetadata{}
++		usedObjects             = map[objectId]*metav1.PartialObjectMetadata{}
+ 	)
+ 
+ 	for _, resource := range []struct {
+@@ -109,6 +110,7 @@ func (r *Reconciler) Reconcile(reconcileCtx context.Context, _ reconcile.Request
+ 			}
+ 
+ 			key := objectId{objectKind, objectMeta.Namespace, objectName}
++			usedObjects[key] = objectsToGarbageCollect[key]
+ 			delete(objectsToGarbageCollect, key)
+ 		}
+ 	}

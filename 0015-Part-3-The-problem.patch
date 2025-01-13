@@ -1,0 +1,7 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+Date: Mon, 13 Jan 2025 09:58:10 +0100
+Subject: [PATCH 15/29] --- Part 3: The problem
+
+The following commits show in a unit test that the Garbage Collector of the
+Gardener Resource Manager has a race condition.

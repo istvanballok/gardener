@@ -1,0 +1,109 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+Date: Fri, 29 Nov 2024 12:23:34 +0100
+Subject: [PATCH 22/29] Requeue soon if some resources were marked as unused
+
+Instead of deleting unused resources right away, first they are marked with the
+`gc.gardener.cloud/unusedAt` label as to be deleted, and then a few minutes
+later, if they are still not referenced, they can be finally deleted.
+
+The Garbage Collector is executed infrequently, typically on startup and every
+12 hours.
+
+When the Garbage Collector marks some resources as unused, we should requeue the
+reconciliation sooner than the typical interval of 12 hours, e.g. in a few
+minutes, so that the deletion of the resources can be finalized in a timely
+manner.
+
+The resources are marked as unused in a separate goroutine, so a channel is used
+to relay this information to the main goroutine of the Garbage Collector,
+similar to the existing results channel.
+
+The existing results channel collects the errors and the new requeueNeeded
+channels collects true values if the Garbage Collector should be requeued soon.
+
+To avoid blocking when these channels are read in the main goroutine, both
+channels are read concurrently in a loop until both channels are closed.
+
+The previously used for loop with a range over the results channel:
+
+for err := range results {
+	...
+}
+
+has to be replaced with a slightly more complicated construct, a combination of
+a loop and a select statement, to read from both channels until they are closed.
+
+var err error
+resultsOK := true
+requeueNeededOK := true
+for resultsOK || requeueNeededOK {
+	select {
+	case err, resultsOK = <-results:
+		... // append err to a list
+	case _, requeueNeededOK = <-requeueNeeded:
+		...
+	}
+}
+---
+ .../controller/garbagecollector/reconciler.go | 28 +++++++++++++++----
+ 1 file changed, 23 insertions(+), 5 deletions(-)
+
+diff --git a/pkg/resourcemanager/controller/garbagecollector/reconciler.go b/pkg/resourcemanager/controller/garbagecollector/reconciler.go
+index d3e0c8c455..78031edb89 100644
+--- a/pkg/resourcemanager/controller/garbagecollector/reconciler.go
++++ b/pkg/resourcemanager/controller/garbagecollector/reconciler.go
+@@ -113,7 +113,9 @@ func (r *Reconciler) Reconcile(reconcileCtx context.Context, _ reconcile.Request
+ 	}
+ 
+ 	var (
+-		results   = make(chan error, 1)
++		results       = make(chan error, 1)
++		requeueNeeded = make(chan bool, 1)
++
+ 		wg        wait.Group
+ 		errorList = &multierror.Error{ErrorFormat: errorsutils.NewErrorFormatFuncWithPrefix("Could not delete all unused resources")}
+ 	)
+@@ -131,6 +133,8 @@ func (r *Reconciler) Reconcile(reconcileCtx context.Context, _ reconcile.Request
+ 				if err := r.TargetClient.Patch(ctx, obj, patch); err != nil {
+ 					results <- err
+ 				}
++				// requeue soon to delete the object
++				requeueNeeded <- true
+ 				return
+ 			}
+ 
+@@ -155,15 +159,29 @@ func (r *Reconciler) Reconcile(reconcileCtx context.Context, _ reconcile.Request
+ 	go func() {
+ 		wg.Wait()
+ 		close(results)
++		close(requeueNeeded)
+ 	}()
+ 
+-	for err := range results {
+-		if err != nil {
+-			errorList = multierror.Append(errorList, err)
++	requeueAfter := r.Config.SyncPeriod.Duration
++
++	var err error
++	resultsOK := true
++	requeueNeededOK := true
++	for resultsOK || requeueNeededOK {
++		select {
++		case err, resultsOK = <-results:
++			if resultsOK {
++				errorList = multierror.Append(errorList, err)
++				requeueAfter = *r.MinimumObjectLifetime + 1*time.Minute
++			}
++		case _, requeueNeededOK = <-requeueNeeded:
++			if requeueNeededOK {
++				requeueAfter = *r.MinimumObjectLifetime + 1*time.Minute
++			}
+ 		}
+ 	}
+ 
+-	return reconcile.Result{Requeue: true, RequeueAfter: r.Config.SyncPeriod.Duration}, errorList.ErrorOrNil()
++	return reconcile.Result{Requeue: true, RequeueAfter: requeueAfter}, errorList.ErrorOrNil()
+ }
+ 
+ type objectId struct {

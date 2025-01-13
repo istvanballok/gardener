@@ -1,0 +1,84 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+Date: Fri, 29 Nov 2024 12:29:37 +0100
+Subject: [PATCH 23/29] Skip objects that were marked as unused only recently
+
+This is similar to the
+
+  if obj.CreationTimestamp.Add(*r.MinimumObjectLifetime).UTC().After(r.Clock.Now().UTC()) {
+  // Do not consider recently created objects for garbage collection.
+  continue
+  }
+
+check in the first part of the file.
+
+What is the rationale behind this?
+
+Kubernetes does not offer mechanisms to have a consistent view on multiple
+resources at a given point in time.
+
+If an actor changes multiple resources, e.g. it creates a managed resource and a
+secret, we can not rely on the ordering of these operations. So the Garbage
+Collector might observe the newly created secret but might not yet see the
+managed resource.
+
+Eventually, the Garbage Collector will observe both the managed resource and the
+secret.
+
+To avoid that the Garbage Collector considers a secret to be unused and delete
+it due to the delay of observing the referring managed resource, recently
+created secrets are not considered for garbage collection. The rationale is that
+if a secret was created more than the minimum object lifetime (10 minutes) ago,
+it is expected that the Garbage Collector has observed all the resources that
+reference the secret.
+
+Similarly, if a secret was marked for deletion only recently, it is not going to
+be considered for garbage collection. If the secret was marked for deletion more
+than the minimum object lifetime ago, it is expected that the Garbage Collector
+has observed all the resources that reference the secret and hence an
+unreferenced secret can be safely deleted.
+---
+ .../controller/garbagecollector/reconciler.go    | 16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
+
+diff --git a/pkg/resourcemanager/controller/garbagecollector/reconciler.go b/pkg/resourcemanager/controller/garbagecollector/reconciler.go
+index 78031edb89..79a24718e8 100644
+--- a/pkg/resourcemanager/controller/garbagecollector/reconciler.go
++++ b/pkg/resourcemanager/controller/garbagecollector/reconciler.go
+@@ -6,6 +6,7 @@ package garbagecollector
+ 
+ import (
+ 	"context"
++	"fmt"
+ 	"time"
+ 
+ 	"github.com/hashicorp/go-multierror"
+@@ -124,7 +125,7 @@ func (r *Reconciler) Reconcile(reconcileCtx context.Context, _ reconcile.Request
+ 		obj := o
+ 
+ 		wg.StartWithContext(ctx, func(ctx context.Context) {
+-			_, ok := obj.Labels[references.LabelKeyUnusedAt]
++			unusedAtStr, ok := obj.Labels[references.LabelKeyUnusedAt]
+ 			if !ok {
+ 				// If the object does not have the unusedAt label, set the label to the current time.
+ 				patch := client.StrategicMergeFrom(obj.DeepCopy(), client.MergeFromWithOptimisticLock{})
+@@ -138,6 +139,19 @@ func (r *Reconciler) Reconcile(reconcileCtx context.Context, _ reconcile.Request
+ 				return
+ 			}
+ 
++			unusedAt, err := time.Parse(time.RFC3339, unusedAtStr)
++			if err != nil {
++				errorList = multierror.Append(errorList, fmt.Errorf("failed to parse unusedAt %s: %w", unusedAtStr, err))
++				return
++			}
++
++			if unusedAt.Add(*r.MinimumObjectLifetime).UTC().After(r.Clock.Now().UTC()) {
++				// requeue soon to delete the object
++				requeueNeeded <- true
++				// Do not consider objects for garbage collection that were marked as unused only recently.
++				return
++			}
++
+ 			log.Info("Delete resource",
+ 				"kind", obj.Kind,
+ 				"namespace", obj.Namespace,

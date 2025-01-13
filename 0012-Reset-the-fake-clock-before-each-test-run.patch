@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+Date: Tue, 7 Jan 2025 13:41:15 +0100
+Subject: [PATCH 12/29] Reset the fake clock before each test run
+
+The tests will call fakeClock.Step to advance the time, so the clock needs
+to be reset before each test run.
+---
+ .../controller/garbagecollector/reconciler_test.go            | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/pkg/resourcemanager/controller/garbagecollector/reconciler_test.go b/pkg/resourcemanager/controller/garbagecollector/reconciler_test.go
+index 60f29d00b5..2ade74f856 100644
+--- a/pkg/resourcemanager/controller/garbagecollector/reconciler_test.go
++++ b/pkg/resourcemanager/controller/garbagecollector/reconciler_test.go
+@@ -38,15 +38,17 @@ var _ = Describe("Collector", func() {
+ 		c  client.Client
+ 		gc *Reconciler
+ 
++		fakeClock *testclock.FakeClock
++
+ 		minimumObjectLifetime = time.Minute
+ 		creationTimestamp     = metav1.Date(2000, 5, 5, 5, 30, 0, 0, time.Local)
+-		fakeClock             = testclock.NewFakeClock(creationTimestamp.Add(minimumObjectLifetime / 2))
+ 	)
+ 
+ 	BeforeEach(func() {
+ 		log = logger.MustNewZapLogger(logger.DebugLevel, logger.FormatText)
+ 		logf.SetLogger(log.WithName("garbagecollector"))
+ 		c = fakeclient.NewClientBuilder().WithScheme(kubernetes.SeedScheme).Build()
++		fakeClock = testclock.NewFakeClock(creationTimestamp.Add(minimumObjectLifetime / 2))
+ 		gc = &Reconciler{
+ 			TargetClient:          c,
+ 			Config:                config.GarbageCollectorControllerConfig{SyncPeriod: &metav1.Duration{}},

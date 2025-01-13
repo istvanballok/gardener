@@ -1,0 +1,10 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+Date: Mon, 13 Jan 2025 09:57:57 +0100
+Subject: [PATCH 06/29] --- Part 2: Equivalent refactorings
+
+The following commits contain only equivalent refactorings that do not change
+the behavior of the source code.
+
+Extracting these refactorings into dedicated commits allows to keep the relevant
+changes of this PR in the later commits short and focused.

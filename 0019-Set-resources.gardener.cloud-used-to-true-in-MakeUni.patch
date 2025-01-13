@@ -1,0 +1,57 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+Date: Tue, 10 Dec 2024 16:32:05 +0100
+Subject: [PATCH 19/29] Set resources.gardener.cloud/used to true in MakeUnique
+
+The utils.kubernetes/MakeUnique function is the only place in the
+gardener/gardener code base that sets the
+
+  resources.gardener.cloud/garbage-collectable-reference
+
+label on secrets and configmaps when it makes them immutable.
+
+After setting the
+
+  resources.gardener.cloud/garbage-collectable-reference
+
+label, the GRM's Garbage Collector will be responsible for deleting these
+secrets and configmaps when they are not referenced by any more.
+
+This PR introduces a new label that clients are expected to set:
+
+  resources.gardener.cloud/used = true
+
+Hence, the utils.kubernetes/MakeUnique functions is a convenient, place to make
+sure that all the clients that create immutable secrets and configmaps set the
+new label as expected by this PR.
+
+Note that the approach of this PR is backwards compatible:
+
+Some clients (e.g. extensions) will not set the label until this change
+propagates to them as well. In that case the previous behavior (a small chance
+for race conditions) is preserved.
+
+So this change is backwards compatible, it does not require that all the clients
+use the new label.
+---
+ pkg/utils/kubernetes/object.go | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/pkg/utils/kubernetes/object.go b/pkg/utils/kubernetes/object.go
+index 1b1b2180d6..df918487a9 100644
+--- a/pkg/utils/kubernetes/object.go
++++ b/pkg/utils/kubernetes/object.go
+@@ -142,11 +142,13 @@ func MakeUnique(obj runtime.Object) error {
+ 		o.Immutable = ptr.To(true)
+ 		o.Name += prependHyphen(o.Name) + utils.ComputeSecretChecksum(mergeMaps(o.StringData, o.Data))[:numberOfChecksumChars]
+ 		metav1.SetMetaDataLabel(&o.ObjectMeta, references.LabelKeyGarbageCollectable, references.LabelValueGarbageCollectable)
++		metav1.SetMetaDataLabel(&o.ObjectMeta, references.LabelKeyUsed, references.LabelValueUsed)
+ 
+ 	case *corev1.ConfigMap:
+ 		o.Immutable = ptr.To(true)
+ 		o.Name += prependHyphen(o.Name) + utils.ComputeSecretChecksum(mergeMaps(o.Data, o.BinaryData))[:numberOfChecksumChars]
+ 		metav1.SetMetaDataLabel(&o.ObjectMeta, references.LabelKeyGarbageCollectable, references.LabelValueGarbageCollectable)
++		metav1.SetMetaDataLabel(&o.ObjectMeta, references.LabelKeyUsed, references.LabelValueUsed)
+ 
+ 	default:
+ 		return fmt.Errorf("unhandled object type: %T", obj)

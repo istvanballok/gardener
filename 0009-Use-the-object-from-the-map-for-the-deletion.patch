@@ -1,0 +1,53 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+Date: Fri, 29 Nov 2024 12:09:05 +0100
+Subject: [PATCH 09/29] Use the object from the map for the deletion
+
+Now that we store the objects in the `objectsToGarbageCollect` map, we can use
+them when deleting these objects.
+
+Previously a corev1.Secret or corev1.ConfigMap object was created, and was
+passed to the `Delete` method of the client. Now we use the
+PartialObjectMetadata object from the map to delete the object.
+---
+ .../controller/garbagecollector/reconciler.go | 23 ++++---------------
+ 1 file changed, 5 insertions(+), 18 deletions(-)
+
+diff --git a/pkg/resourcemanager/controller/garbagecollector/reconciler.go b/pkg/resourcemanager/controller/garbagecollector/reconciler.go
+index 293d0c58fb..b740b6e627 100644
+--- a/pkg/resourcemanager/controller/garbagecollector/reconciler.go
++++ b/pkg/resourcemanager/controller/garbagecollector/reconciler.go
+@@ -117,28 +117,15 @@ func (r *Reconciler) Reconcile(reconcileCtx context.Context, _ reconcile.Request
+ 		errorList = &multierror.Error{ErrorFormat: errorsutils.NewErrorFormatFuncWithPrefix("Could not delete all unused resources")}
+ 	)
+ 
+-	for id := range objectsToGarbageCollect {
+-		objId := id
++	for _, o := range objectsToGarbageCollect {
++		obj := o
+ 
+ 		wg.StartWithContext(ctx, func(ctx context.Context) {
+-			var (
+-				meta = metav1.ObjectMeta{Namespace: objId.namespace, Name: objId.name}
+-				obj  client.Object
+-			)
+-
+-			switch objId.kind {
+-			case references.KindSecret:
+-				obj = &corev1.Secret{ObjectMeta: meta}
+-			case references.KindConfigMap:
+-				obj = &corev1.ConfigMap{ObjectMeta: meta}
+-			default:
+-				return
+-			}
+ 
+ 			log.Info("Delete resource",
+-				"kind", objId.kind,
+-				"namespace", objId.namespace,
+-				"name", objId.name,
++				"kind", obj.Kind,
++				"namespace", obj.Namespace,
++				"name", obj.Name,
+ 			)
+ 
+ 			if err := r.TargetClient.Delete(ctx, obj); client.IgnoreNotFound(err) != nil {

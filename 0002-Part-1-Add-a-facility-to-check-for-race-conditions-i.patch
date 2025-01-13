@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+Date: Mon, 13 Jan 2025 09:42:59 +0100
+Subject: [PATCH 02/29] --- Part 1: Add a facility to check for race conditions
+ in unit tests
+
+This PR is about fixing a race condition in the Garbage Collector of the
+Gardener Resource Manager.
+
+The following commits add a facility that will allow to reproduce the
+given race condition in a unit test. This unit test will then be used to verify
+that after the fix the race condition is resolved.
+
+To facilitate the code review, a detailed documentation introduces the problem
+of race conditions and shows how the Cooperative Executor could be used to write
+unit tests for race conditions. The unit test of the Cooperative Executor itself
+contains a simple example how it could be used.
+
+Note that this component is only used for the unit tests and hence does not pose
+a risk of introducing a regression in the productive aspect of the Garbage
+Collector.
+
+It is sufficient to read the documentation of the Cooperative Executor (next
+commit) to understand the unit tests of the Garbage Collector. Understanding the
+implementation details of the Cooperative Executor is not required when
+reviewing the main aspect of this PR.

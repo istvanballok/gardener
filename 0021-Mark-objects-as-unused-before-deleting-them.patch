@@ -1,0 +1,54 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+Date: Fri, 29 Nov 2024 12:19:37 +0100
+Subject: [PATCH 21/29] Mark objects as unused before deleting them
+
+The Garbage Collector sets the new `gc.gardener.cloud/unusedAt` label to mark
+resources as unused, and deletes them only if they already have this label.
+
+Previously, the Garbage Collector deleted the unused resources right away, but
+this can lead to race conditions.
+
+Now, the Garbage Collector first marks the resources as unused by adding the
+`gc.gardener.cloud/unusedAt` label with the current timestamp, if the resource
+does not have the `gc.gardener.cloud/unusedAt` label yet, and it does not delete
+the resource right away.
+
+The Garbage Collector also sets the `gc.gardener.cloud/used` label to `false`.
+When a client reuses the resource, it can set the `gc.gardener.cloud/used` label
+back to `true`, thereby mutating the resource. This allows the Garbage Collector
+to detect a race condition when deleting the resource.
+
+The object is a PartialObjectMetadata object. The client does not support the
+Update method for PartialObjectMetadata objects. Therefore, the Patch method is
+used with the optimistic lock strategy. The optimistic lock strategy ensures
+that the resource version of the object is sent with the patch request.
+
+https://github.com/kubernetes-sigs/controller-runtime/blob/v0.19.2/pkg/client/client.go#L289-L290
+https://github.com/kubernetes-sigs/controller-runtime/blob/v0.19.2/pkg/client/patch.go#L104-L115
+---
+ .../controller/garbagecollector/reconciler.go         | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/pkg/resourcemanager/controller/garbagecollector/reconciler.go b/pkg/resourcemanager/controller/garbagecollector/reconciler.go
+index fcb3666c96..d3e0c8c455 100644
+--- a/pkg/resourcemanager/controller/garbagecollector/reconciler.go
++++ b/pkg/resourcemanager/controller/garbagecollector/reconciler.go
+@@ -122,6 +122,17 @@ func (r *Reconciler) Reconcile(reconcileCtx context.Context, _ reconcile.Request
+ 		obj := o
+ 
+ 		wg.StartWithContext(ctx, func(ctx context.Context) {
++			_, ok := obj.Labels[references.LabelKeyUnusedAt]
++			if !ok {
++				// If the object does not have the unusedAt label, set the label to the current time.
++				patch := client.StrategicMergeFrom(obj.DeepCopy(), client.MergeFromWithOptimisticLock{})
++				obj.Labels[references.LabelKeyUnusedAt] = r.Clock.Now().UTC().Format(time.RFC3339)
++				obj.Labels[references.LabelKeyUsed] = references.LabelValueUnused
++				if err := r.TargetClient.Patch(ctx, obj, patch); err != nil {
++					results <- err
++				}
++				return
++			}
+ 
+ 			log.Info("Delete resource",
+ 				"kind", obj.Kind,

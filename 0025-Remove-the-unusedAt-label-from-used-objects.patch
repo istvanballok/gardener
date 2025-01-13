@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+Date: Fri, 29 Nov 2024 12:46:34 +0100
+Subject: [PATCH 25/29] Remove the unusedAt label from used objects
+
+A silent race condition between adding the unusedAt label to an object and
+referencing the object is still possible.
+
+Previously, the Garbage Collector simply deleted the object, which left the
+system in an inconsistent state.
+
+Now, the Garbage Collector only adds the unusedAt label to the object, but does
+not delete it right away. The deletion takes place a few minutes later.
+
+So if the object is referenced again in the meantime, the Garbage Collector will
+remove the unusedAt label and set the used label back to true.
+---
+ .../controller/garbagecollector/reconciler.go    | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/pkg/resourcemanager/controller/garbagecollector/reconciler.go b/pkg/resourcemanager/controller/garbagecollector/reconciler.go
+index c126bd8ad1..be4ae72027 100644
+--- a/pkg/resourcemanager/controller/garbagecollector/reconciler.go
++++ b/pkg/resourcemanager/controller/garbagecollector/reconciler.go
+@@ -123,6 +123,22 @@ func (r *Reconciler) Reconcile(reconcileCtx context.Context, _ reconcile.Request
+ 		errorList = &multierror.Error{ErrorFormat: errorsutils.NewErrorFormatFuncWithPrefix("Could not delete all unused resources")}
+ 	)
+ 
++	for _, o := range usedObjects {
++		obj := o
++
++		wg.StartWithContext(ctx, func(ctx context.Context) {
++			if _, ok := obj.Labels[references.LabelKeyUnusedAt]; ok {
++				patch := client.StrategicMergeFrom(obj.DeepCopy(), client.MergeFromWithOptimisticLock{})
++				delete(obj.Labels, references.LabelKeyUnusedAt)
++				obj.Labels[references.LabelKeyUsed] = references.LabelValueUsed
++				if err := r.TargetClient.Patch(ctx, obj, patch); err != nil {
++					results <- err
++				}
++				return
++			}
++		})
++	}
++
+ 	for _, o := range objectsToGarbageCollect {
+ 		obj := o
+ 

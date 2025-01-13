@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+Date: Fri, 29 Nov 2024 12:01:26 +0100
+Subject: [PATCH 08/29] Extract a variable
+
+---
+ pkg/resourcemanager/controller/garbagecollector/reconciler.go | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/pkg/resourcemanager/controller/garbagecollector/reconciler.go b/pkg/resourcemanager/controller/garbagecollector/reconciler.go
+index fc0ba69221..293d0c58fb 100644
+--- a/pkg/resourcemanager/controller/garbagecollector/reconciler.go
++++ b/pkg/resourcemanager/controller/garbagecollector/reconciler.go
+@@ -106,7 +106,8 @@ func (r *Reconciler) Reconcile(reconcileCtx context.Context, _ reconcile.Request
+ 				continue
+ 			}
+ 
+-			delete(objectsToGarbageCollect, objectId{objectKind, objectMeta.Namespace, objectName})
++			key := objectId{objectKind, objectMeta.Namespace, objectName}
++			delete(objectsToGarbageCollect, key)
+ 		}
+ 	}
+ 

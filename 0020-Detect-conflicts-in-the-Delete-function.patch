@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+Date: Fri, 29 Nov 2024 12:11:52 +0100
+Subject: [PATCH 20/29] Detect conflicts in the Delete() function
+
+A plain delete request can not lead to a 409 Conflict because the UID and the
+resourceVersion are not passed in the underlying HTTP delete request to the API
+server.
+
+The Kubernetes API allows to pass a `DeleteOptions` object in the request body
+with the `preconditions.{resourceVersion,uid}` fields to assert that the
+resource to be deleted has not been changed in the meantime.
+
+See [kubernetes-api#delete-secret](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#delete-secret-v1-core)
+
+This change adds the `DeleteOptions` to the `Delete` call in the Garbage
+Collector reconciler to detect conflicts when deleting resources.
+---
+ .../controller/garbagecollector/reconciler.go            | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/pkg/resourcemanager/controller/garbagecollector/reconciler.go b/pkg/resourcemanager/controller/garbagecollector/reconciler.go
+index b740b6e627..fcb3666c96 100644
+--- a/pkg/resourcemanager/controller/garbagecollector/reconciler.go
++++ b/pkg/resourcemanager/controller/garbagecollector/reconciler.go
+@@ -17,6 +17,7 @@ import (
+ 	"k8s.io/apimachinery/pkg/runtime/schema"
+ 	"k8s.io/apimachinery/pkg/util/wait"
+ 	"k8s.io/utils/clock"
++	"k8s.io/utils/ptr"
+ 	"sigs.k8s.io/controller-runtime/pkg/client"
+ 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+ 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+@@ -128,7 +129,13 @@ func (r *Reconciler) Reconcile(reconcileCtx context.Context, _ reconcile.Request
+ 				"name", obj.Name,
+ 			)
+ 
+-			if err := r.TargetClient.Delete(ctx, obj); client.IgnoreNotFound(err) != nil {
++			deleteOptions := []client.DeleteOption{
++				client.Preconditions(metav1.Preconditions{
++					ResourceVersion: ptr.To(obj.GetResourceVersion()),
++					UID:             ptr.To(obj.GetUID()),
++				}),
++			}
++			if err := r.TargetClient.Delete(ctx, obj, deleteOptions...); client.IgnoreNotFound(err) != nil {
+ 				results <- err
+ 			}
+ 		})

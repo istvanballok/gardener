@@ -1,0 +1,27 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+Date: Tue, 7 Jan 2025 13:37:16 +0100
+Subject: [PATCH 13/29] Configure a typical sync period of 12 hours
+
+The SyncPeriod was not used previously in the unit test.
+
+Later, the unit test will consider the RequeueAfter return value of the Reconcile()
+method and it will be important to use a typical value for the SyncPeriod (12
+hours) instead of the default value (0s).
+---
+ .../controller/garbagecollector/reconciler_test.go              | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/pkg/resourcemanager/controller/garbagecollector/reconciler_test.go b/pkg/resourcemanager/controller/garbagecollector/reconciler_test.go
+index 2ade74f856..81e85aa34f 100644
+--- a/pkg/resourcemanager/controller/garbagecollector/reconciler_test.go
++++ b/pkg/resourcemanager/controller/garbagecollector/reconciler_test.go
+@@ -51,7 +51,7 @@ var _ = Describe("Collector", func() {
+ 		fakeClock = testclock.NewFakeClock(creationTimestamp.Add(minimumObjectLifetime / 2))
+ 		gc = &Reconciler{
+ 			TargetClient:          c,
+-			Config:                config.GarbageCollectorControllerConfig{SyncPeriod: &metav1.Duration{}},
++			Config:                config.GarbageCollectorControllerConfig{SyncPeriod: &metav1.Duration{Duration: 12 * time.Hour}},
+ 			Clock:                 fakeClock,
+ 			MinimumObjectLifetime: &minimumObjectLifetime,
+ 		}

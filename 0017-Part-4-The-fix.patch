@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+Date: Mon, 13 Jan 2025 09:58:19 +0100
+Subject: [PATCH 17/29] --- Part 4: The fix
+
+The following commits contain the relevant changes of this PR that should be
+carefully reviewed.
+
+1. The `MakeUnique` function in `pkg/utils/kubernetes` is adjusted to always
+   mutate resources that are marked for deletion and are reused by the clients.
+
+2. The Garbage Collector uses the `DeleteOptions` feature of the Kubernetes API
+   to detect conflicts.
+
+3. The Garbage Collector is split into 2 phases: marking and deleting.
+
+Previously, the Garbage Collector could silently delete secrets that were
+reused by the clients. After the fix, the Garbage Collector or the client
+will fail in this edge case.

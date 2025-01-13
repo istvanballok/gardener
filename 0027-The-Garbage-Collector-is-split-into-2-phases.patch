@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+Date: Tue, 7 Jan 2025 13:30:10 +0100
+Subject: [PATCH 27/29] The Garbage Collector is split into 2 phases
+
+The effect of the 2 phases is equivalent to the single run before
+this PR.
+
+> r.MinimumObjectLifetime = ptr.To(10 * time.Minute)
+> requeueAfter = *r.MinimumObjectLifetime + 1*time.Minute
+
+The second phase will be typically called 11 minutes after the first phase.
+---
+ .../controller/garbagecollector/reconciler_test.go          | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/pkg/resourcemanager/controller/garbagecollector/reconciler_test.go b/pkg/resourcemanager/controller/garbagecollector/reconciler_test.go
+index 5092e3a805..d6af22f0e4 100644
+--- a/pkg/resourcemanager/controller/garbagecollector/reconciler_test.go
++++ b/pkg/resourcemanager/controller/garbagecollector/reconciler_test.go
+@@ -349,7 +349,7 @@ var _ = Describe("Collector", func() {
+ 					break
+ 				}
+ 			}
+-			Expect(runs).To(Equal(1))
++			Expect(runs).To(Equal(2))
+ 
+ 			secretList = &corev1.SecretList{}
+ 			Expect(c.List(ctx, secretList)).To(Succeed())
+@@ -383,7 +383,7 @@ var _ = Describe("Collector", func() {
+ 					break
+ 				}
+ 			}
+-			Expect(runs).To(Equal(1))
++			Expect(runs).To(Equal(2))
+ 
+ 			secretList = &corev1.SecretList{}
+ 			Expect(c.List(ctx, secretList)).To(Succeed())
+@@ -453,7 +453,7 @@ var _ = Describe("Collector", func() {
+ 					break
+ 				}
+ 			}
+-			Expect(runs).To(Equal(1))
++			Expect(runs).To(Equal(2))
+ 
+ 			secretList = &corev1.SecretList{}
+ 			Expect(c.List(ctx, secretList)).To(Succeed())

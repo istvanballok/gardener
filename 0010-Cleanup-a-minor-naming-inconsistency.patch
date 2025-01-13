@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Istvan Zoltan Ballok <istvan.zoltan.ballok@sap.com>
+Date: Tue, 7 Jan 2025 13:32:36 +0100
+Subject: [PATCH 10/29] Cleanup a minor naming inconsistency
+
+This minor inconsistency was somewhat confusing while debugging the unit test.
+---
+ .../controller/garbagecollector/reconciler_test.go              | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/pkg/resourcemanager/controller/garbagecollector/reconciler_test.go b/pkg/resourcemanager/controller/garbagecollector/reconciler_test.go
+index 6adb292e11..afb06be54d 100644
+--- a/pkg/resourcemanager/controller/garbagecollector/reconciler_test.go
++++ b/pkg/resourcemanager/controller/garbagecollector/reconciler_test.go
+@@ -138,7 +138,7 @@ var _ = Describe("Collector", func() {
+ 			labeledConfigMap2.Name += "2"
+ 			labeledConfigMap3.Name += "3"
+ 			labeledConfigMap4.Name += "4"
+-			labeledConfigMap5.Name += "9"
++			labeledConfigMap5.Name += "5"
+ 			labeledConfigMap5.CreationTimestamp = creationTimestamp
+ 			labeledConfigMap6.Name += "6"
+ 			labeledConfigMap7.Name += "7"
