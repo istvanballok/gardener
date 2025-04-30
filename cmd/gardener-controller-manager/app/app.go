@@ -18,6 +18,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	"go.uber.org/automaxprocs/maxprocs"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -34,6 +35,7 @@ import (
 	"github.com/gardener/gardener/cmd/utils/initrun"
 	"github.com/gardener/gardener/pkg/api/indexer"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
+	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	seedmanagementv1alpha1 "github.com/gardener/gardener/pkg/apis/seedmanagement/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	controllermanagerconfigv1alpha1 "github.com/gardener/gardener/pkg/controllermanager/apis/config/v1alpha1"
@@ -216,6 +218,63 @@ func run(ctx context.Context, log logr.Logger, cfg *controllermanagerconfigv1alp
 			}
 		}
 
+		for _, list := range []client.ObjectList{
+			&seedmanagementv1alpha1.ManagedSeedList{},
+		} {
+			if err := mgr.GetClient().List(ctx, list); err != nil {
+				return fmt.Errorf("failed listing objects: %w", err)
+			}
+			if err := meta.EachListItem(list, func(o runtime.Object) error {
+				fns = append(fns, func(ctx context.Context) error {
+					obj := o.(client.Object)
+
+					gvk, err := apiutil.GVKForObject(obj, mgr.GetScheme())
+					if err != nil {
+						return fmt.Errorf("could not get GroupVersionKind from object %v: %w", obj, err)
+					}
+
+					mgr.GetLogger().Info("Check the seed name label for itself", "gvk", gvk, "objectKey", client.ObjectKeyFromObject(obj))
+					label := v1beta1constants.LabelPrefixSeedName + obj.GetName()
+					if v, ok := obj.GetLabels()[label]; ok && v == "true" {
+						mgr.GetLogger().Info("Label is present, do nothing", "gvk", gvk, "objectKey", client.ObjectKeyFromObject(obj), "label", label)
+						return nil
+					}
+					mgr.GetLogger().Info("Label is missing, send an empty patch to the ManagedSeed so that the mutating webhook can add the missing seed name label", "gvk", gvk, "objectKey", client.ObjectKeyFromObject(obj), "label", label)
+					emptyPatch := client.MergeFrom(obj)
+					if err := mgr.GetClient().Patch(ctx, obj, emptyPatch); err != nil {
+						return fmt.Errorf("failed to patch managed seed %s: %w", client.ObjectKeyFromObject(obj), err)
+					}
+
+					mgr.GetLogger().Info("Waiting for 30 seconds to let the gardenlet observe the change on the managed seed resource", "gvk", gvk, "objectKey", client.ObjectKeyFromObject(obj))
+					// without this wait, the gardenlet might see the change on the seed resource before the change on the managed seed resource
+					// the wait is performed in parallel for all the managed seeds via the flow.Parallel function call below
+					time.Sleep(30 * time.Second)
+					mgr.GetLogger().Info("Waiting done, now trigger a reconciliation on the seed resource", "gvk", gvk, "objectKey", client.ObjectKeyFromObject(obj))
+
+					seed := &gardencorev1beta1.Seed{}
+					if err := mgr.GetClient().Get(ctx, client.ObjectKey{Name: obj.GetName()}, seed); err != nil {
+						if apierrors.IsNotFound(err) {
+							mgr.GetLogger().Info("Seed object not found, skipping reconciliation", "gvk", gvk, "objectKey", client.ObjectKeyFromObject(obj))
+							return nil
+						}
+						return fmt.Errorf("failed to get seed %s: %w", client.ObjectKeyFromObject(obj), err)
+					}
+					reconcilePatch := client.MergeFrom(seed.DeepCopyObject().(client.Object))
+					seed.SetAnnotations(map[string]string{
+						v1beta1constants.GardenerOperation: v1beta1constants.GardenerOperationReconcile,
+					})
+					if err := mgr.GetClient().Patch(ctx, seed, reconcilePatch); err != nil {
+						return fmt.Errorf("failed to reconcile seed %s: %w", client.ObjectKeyFromObject(obj), err)
+					}
+					mgr.GetLogger().Info("Successfully mutated the Managed Seed to add the missing label via a webhook and triggered reconciliation on the respective seed", "seed", client.ObjectKeyFromObject(seed), "managedSeed", client.ObjectKeyFromObject(obj))
+
+					return nil
+				})
+				return nil
+			}); err != nil {
+				return fmt.Errorf("failed preparing managed seed mutating and seed reconciling tasks for %T: %w", list, err)
+			}
+		}
 		return flow.Parallel(fns...)(ctx)
 	})); err != nil {
 		return fmt.Errorf("failed adding seed name label removal runnable to manager: %w", err)
