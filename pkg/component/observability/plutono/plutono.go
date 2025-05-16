@@ -115,6 +115,9 @@ type Values struct {
 	Replicas int32
 	// VPAEnabled states whether VerticalPodAutoscaler is enabled.
 	VPAEnabled bool
+	// VPAInstallationMetricsAvailable states whether the VPA installation metrics are available.
+	// If so, we can show dashboards about the VPA internal components, like the recommender and the VPA admission controller.
+	VpaInstallationMetricsAvailable bool
 	// VPNHighAvailabilityEnabled specifies whether the cluster is configured with HA VPN.
 	VPNHighAvailabilityEnabled bool
 	// WildcardCertName is name of wildcard TLS certificate which is issued for the seed's ingress domain.
