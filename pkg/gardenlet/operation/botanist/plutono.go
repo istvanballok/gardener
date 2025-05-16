@@ -31,6 +31,7 @@ func (b *Botanist) DefaultPlutono() (plutono.Interface, error) {
 		false,
 		b.Shoot.VPNHighAvailabilityEnabled,
 		b.Shoot.WantsVerticalPodAutoscaler,
+		b.Shoot.WantsVerticalPodAutoscaler,
 		nil,
 	)
 }

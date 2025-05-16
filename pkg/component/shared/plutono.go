@@ -22,7 +22,7 @@ func NewPlutono(
 	replicas int32,
 	authSecretName, ingressHost, priorityClassName string,
 	includeIstioDashboards, isWorkerless bool,
-	isGardenCluster, vpnHighAvailabilityEnabled, vpaEnabled bool,
+	isGardenCluster, vpnHighAvailabilityEnabled, vpaCustomResourceMetricsAvailable, vpaInstallationMetricsAvailable bool,
 	wildcardCertName *string,
 ) (
 	plutono.Interface,
@@ -54,7 +54,8 @@ func NewPlutono(
 			PriorityClassName:                 priorityClassName,
 			Replicas:                          replicas,
 			VPNHighAvailabilityEnabled:        vpnHighAvailabilityEnabled,
-			VPACustomResourceMetricsAvailable: vpaEnabled,
+			VPACustomResourceMetricsAvailable: vpaCustomResourceMetricsAvailable,
+			VpaInstallationMetricsAvailable:   vpaInstallationMetricsAvailable,
 			WildcardCertName:                  wildcardCertName,
 		},
 	), nil
