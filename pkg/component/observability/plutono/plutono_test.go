@@ -659,7 +659,7 @@ status:
 
 				Context("w/ enabled vpa", func() {
 					BeforeEach(func() {
-						values.VPAEnabled = true
+						values.VPACustomResourceMetricsAvailable = true
 					})
 
 					It("should successfully deploy all resources", func() {
@@ -675,7 +675,7 @@ status:
 
 				Context("with VPAEnabled=true", func() {
 					BeforeEach(func() {
-						values.VPAEnabled = true
+						values.VPACustomResourceMetricsAvailable = true
 					})
 
 					It("should successfully deploy all resources", func() {
@@ -703,7 +703,7 @@ status:
 				BeforeEach(func() {
 					values.IncludeIstioDashboards = true
 					values.VPNHighAvailabilityEnabled = true
-					values.VPAEnabled = true
+					values.VPACustomResourceMetricsAvailable = true
 				})
 
 				It("should successfully deploy all resources", func() {

@@ -113,8 +113,8 @@ type Values struct {
 	PriorityClassName string
 	// Replicas is the number of pod replicas for the plutono.
 	Replicas int32
-	// VPAEnabled states whether VerticalPodAutoscaler is enabled.
-	VPAEnabled bool
+	// VPACustomResourceMetricsAvailable states whether VerticalPodAutoscaler is enabled.
+	VPACustomResourceMetricsAvailable bool
 	// VPAInstallationMetricsAvailable states whether the VPA installation metrics are available.
 	// If so, we can show dashboards about the VPA internal components, like the recommender and the VPA admission controller.
 	VpaInstallationMetricsAvailable bool
@@ -390,7 +390,7 @@ func (p *plutono) getDashboardConfigMap() (*corev1.ConfigMap, error) {
 
 	if p.values.IsGardenCluster {
 		requiredDashboards = map[string]embed.FS{gardenDashboardsPath: gardenDashboards, gardenAndShootDashboardsPath: gardenAndShootDashboards}
-		if p.values.VPAEnabled {
+		if p.values.VPACustomResourceMetricsAvailable {
 			requiredDashboards[commonVpaDashboardsPath] = commonDashboards
 		}
 	} else if p.values.ClusterType == component.ClusterTypeSeed {
@@ -398,7 +398,7 @@ func (p *plutono) getDashboardConfigMap() (*corev1.ConfigMap, error) {
 		if !p.values.IncludeIstioDashboards {
 			ignorePaths.Insert("istio")
 		}
-		if !p.values.VPAEnabled {
+		if !p.values.VPACustomResourceMetricsAvailable {
 			ignorePaths.Insert("vpa")
 		}
 	} else if p.values.ClusterType == component.ClusterTypeShoot {
@@ -408,7 +408,7 @@ func (p *plutono) getDashboardConfigMap() (*corev1.ConfigMap, error) {
 			commonDashboardsPath:         commonDashboards,
 		}
 
-		if !p.values.VPAEnabled {
+		if !p.values.VPACustomResourceMetricsAvailable {
 			ignorePaths.Insert("vpa")
 		}
 		if p.values.IsWorkerless {
