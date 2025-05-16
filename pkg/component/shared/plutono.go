@@ -22,7 +22,7 @@ func NewPlutono(
 	replicas int32,
 	authSecretName, ingressHost, priorityClassName string,
 	includeIstioDashboards, isWorkerless bool,
-	isGardenCluster, vpnHighAvailabilityEnabled, vpaEnabled, vpaInstallationMetricsAvailable bool,
+	isGardenCluster, vpnHighAvailabilityEnabled, vpaEnabled bool,
 	wildcardCertName *string,
 ) (
 	plutono.Interface,
