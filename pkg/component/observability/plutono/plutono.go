@@ -391,7 +391,7 @@ func (p *plutono) getDashboardConfigMap() (*corev1.ConfigMap, error) {
 	if p.values.IsGardenCluster {
 		requiredDashboards = map[string]embed.FS{gardenDashboardsPath: gardenDashboards, gardenAndShootDashboardsPath: gardenAndShootDashboards}
 		if p.values.VPACustomResourceMetricsAvailable {
-			requiredDashboards[commonVpaDashboardsPath] = commonDashboards
+			requiredDashboards[commonVpaDashboardsPath] = commonDashboards // ?
 		}
 	} else if p.values.ClusterType == component.ClusterTypeSeed {
 		requiredDashboards = map[string]embed.FS{seedDashboardsPath: seedDashboards, commonDashboardsPath: commonDashboards}
@@ -400,6 +400,9 @@ func (p *plutono) getDashboardConfigMap() (*corev1.ConfigMap, error) {
 		}
 		if !p.values.VPACustomResourceMetricsAvailable {
 			ignorePaths.Insert("vpa")
+		}
+		if !p.values.VpaInstallationMetricsAvailable {
+			ignorePaths.Insert("vpa-installation")
 		}
 	} else if p.values.ClusterType == component.ClusterTypeShoot {
 		requiredDashboards = map[string]embed.FS{
@@ -410,6 +413,9 @@ func (p *plutono) getDashboardConfigMap() (*corev1.ConfigMap, error) {
 
 		if !p.values.VPACustomResourceMetricsAvailable {
 			ignorePaths.Insert("vpa")
+		}
+		if !p.values.VpaInstallationMetricsAvailable {
+			ignorePaths.Insert("vpa-installation")
 		}
 		if p.values.IsWorkerless {
 			ignorePaths.Insert("worker")
