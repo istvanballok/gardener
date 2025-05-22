@@ -435,13 +435,25 @@
       "seriesOverrides": [
         {
           "$$hashKey": "object:258",
-          "alias": "/bound|allowed/",
+          "alias": "/allowed/",
           "dashes": true
         },
         {
           "$$hashKey": "object:63",
-          "alias": "/upper|max/",
+          "alias": "/max/",
           "hiddenSeries": true
+        },
+        {
+          "$$hashKey": "object:172",
+          "alias": "upper bound",
+          "color": "#73BF69",
+          "fillBelowTo": "lower bound",
+          "lines": false
+        },
+        {
+          "$$hashKey": "object:177",
+          "alias": "lower bound",
+          "lines": false
         }
       ],
       "spaceLength": 10,
