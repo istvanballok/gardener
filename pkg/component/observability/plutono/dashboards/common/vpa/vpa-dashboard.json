@@ -150,6 +150,11 @@
           "$$hashKey": "object:91",
           "alias": "lower bound",
           "lines": false
+        },
+        {
+          "$$hashKey": "object:77",
+          "alias": "/actual usage/",
+          "legend": false
         }
       ],
       "spaceLength": 10,
