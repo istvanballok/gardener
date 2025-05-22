@@ -15,8 +15,6 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 19,
-  "iteration": 1664986167378,
   "links": [],
   "panels": [
     {
@@ -833,6 +831,5 @@
   },
   "timezone": "utc",
   "title": "VPA Recommendations",
-  "uid": "vpa-recommendations",
-  "version": 1
+  "uid": "vpa-recommendations"
 }
