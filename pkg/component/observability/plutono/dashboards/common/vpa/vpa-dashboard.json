@@ -65,7 +65,7 @@
         "text": {},
         "textMode": "name"
       },
-      "pluginVersion": "7.5.16",
+      "pluginVersion": "7.5.37",
       "targets": [
         {
           "exemplar": true,
@@ -124,7 +124,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.16",
+      "pluginVersion": "7.5.37",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -288,7 +288,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.16",
+      "pluginVersion": "7.5.37",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -414,7 +414,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.16",
+      "pluginVersion": "7.5.37",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -577,7 +577,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.5.16",
+      "pluginVersion": "7.5.37",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
