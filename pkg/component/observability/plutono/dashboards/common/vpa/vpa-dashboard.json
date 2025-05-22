@@ -268,7 +268,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
-      "description": "Shows the recommendation of the VPA and compares it to the requests and limits of all containers in a pod. \n\n**Requests and/or limits may not reflect useful values if they are not defined for each container in a pod.",
+      "description": "Shows the lower and upper bounds of the VPA recommendation and compares it to the requests and limits of the container.\n\nIf the VPA is enabled, it will evict the pod when the current request is outside the lower and upper bound band.\n\n**Requests and/or limits may not reflect useful values if they are not defined for each container in a pod.",
       "fieldConfig": {
         "defaults": {},
         "overrides": []
@@ -291,6 +291,8 @@
         "min": false,
         "rightSide": false,
         "show": true,
+        "sort": "current",
+        "sortDesc": true,
         "total": false,
         "values": true
       },
@@ -311,6 +313,28 @@
           "$$hashKey": "object:465",
           "alias": "/limits/",
           "hiddenSeries": true
+        },
+        {
+          "$$hashKey": "object:136",
+          "alias": "recommendation",
+          "hiddenSeries": true
+        },
+        {
+          "$$hashKey": "object:143",
+          "alias": "upper bound",
+          "color": "#73BF69",
+          "fillBelowTo": "lower bound",
+          "lines": false
+        },
+        {
+          "$$hashKey": "object:148",
+          "alias": "lower bound",
+          "lines": false
+        },
+        {
+          "$$hashKey": "object:226",
+          "alias": "/requests/",
+          "linewidth": 3
         }
       ],
       "spaceLength": 10,
@@ -343,13 +367,29 @@
           "intervalFactor": 1,
           "legendFormat": "recommendation",
           "refId": "A"
+        },
+        {
+          "exemplar": true,
+          "expr": "kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_memory{namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"}",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "lower bound",
+          "refId": "D"
+        },
+        {
+          "exemplar": true,
+          "expr": "kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_memory{namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"}",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "upper bound",
+          "refId": "E"
         }
       ],
       "thresholds": [],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Memory Recommendations vs Requests and Limits",
+      "title": "Memory bounds vs Requests and Limits",
       "tooltip": {
         "shared": true,
         "sort": 2,
@@ -572,7 +612,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
-      "description": "Shows the recommendation of the VPA and compares it to the requests and limits of all containers in a pod. \n\n**Requests and/or limits may not reflect useful values if they are not defined for each container in a pod.",
+      "description": "Shows the lower and upper bounds of the VPA recommendation and compares it to the requests and limits of the container.\n\nIf the VPA is enabled, it will evict the pod when the current request is outside the lower and upper bound band. \n\n**Requests and/or limits may not reflect useful values if they are not defined for each container in a pod.",
       "fieldConfig": {
         "defaults": {},
         "overrides": []
@@ -594,6 +634,8 @@
         "max": true,
         "min": false,
         "show": true,
+        "sort": "current",
+        "sortDesc": true,
         "total": false,
         "values": true
       },
@@ -614,6 +656,28 @@
           "$$hashKey": "object:90",
           "alias": "/limits/",
           "hiddenSeries": true
+        },
+        {
+          "$$hashKey": "object:63",
+          "alias": "recommendation",
+          "hiddenSeries": true
+        },
+        {
+          "$$hashKey": "object:70",
+          "alias": "upper bound",
+          "color": "#73BF69",
+          "fillBelowTo": "lower bound",
+          "lines": false
+        },
+        {
+          "$$hashKey": "object:75",
+          "alias": "lower bound",
+          "lines": false
+        },
+        {
+          "$$hashKey": "object:205",
+          "alias": "/requests/",
+          "linewidth": 3
         }
       ],
       "spaceLength": 10,
@@ -644,15 +708,31 @@
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "recommendation ",
+          "legendFormat": "recommendation",
           "refId": "A"
+        },
+        {
+          "exemplar": true,
+          "expr": "kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_cpu{namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"}",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "lower bound",
+          "refId": "D"
+        },
+        {
+          "exemplar": true,
+          "expr": "kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_cpu{namespace=~\"$namespace\", target_kind=~\"$targetKind\", target_name=~\"$targetName\", container=~\"$container|\\\\*\"}",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "upper bound",
+          "refId": "E"
         }
       ],
       "thresholds": [],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "CPU Recommendations vs Requests and Limits",
+      "title": "CPU bounds vs Requests and Limits",
       "tooltip": {
         "shared": true,
         "sort": 2,
