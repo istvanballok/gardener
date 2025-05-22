@@ -113,6 +113,8 @@
         "min": false,
         "rightSide": false,
         "show": true,
+        "sort": "current",
+        "sortDesc": true,
         "total": false,
         "values": true
       },
@@ -150,11 +152,6 @@
           "$$hashKey": "object:91",
           "alias": "lower bound",
           "lines": false
-        },
-        {
-          "$$hashKey": "object:77",
-          "alias": "/actual usage/",
-          "legend": false
         }
       ],
       "spaceLength": 10,
