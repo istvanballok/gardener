@@ -464,7 +464,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\",pod=~\"(?i:$targetKind-)?$targetName-(.+)\",container=~\"$container\"}[$__rate_interval])) by (pod)",
+          "expr": "rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\",pod=~\"(?i:$targetKind-)?$targetName-(.+)\",container=~\"$container\"}[$__rate_interval])",
           "format": "time_series",
           "hide": false,
           "interval": "",
