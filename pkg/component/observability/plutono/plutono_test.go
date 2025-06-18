@@ -593,7 +593,7 @@ status:
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		checkDeployedResources := func(dashboardConfigMapName string, dashboardCount int) {
+		checkDeployedResources := func(dashboardConfigMapName string, dashboardCount int, expectedDashboards sets.Set[string]) {
 			GinkgoHelper()
 
 			deployment := deploymentYAMLFor(values)
@@ -639,6 +639,7 @@ status:
 				availableDashboards.Insert(key)
 			}
 			Expect(availableDashboards).To(HaveLen(dashboardCount), "The number of deployed dashboards differs from the expected one")
+			Expect(availableDashboards).To(Equal(expectedDashboards), "The set of deployed dashboards does not match the expected set")
 		}
 
 		Context("Cluster type is seed", func() {
@@ -654,7 +655,29 @@ status:
 				})
 
 				It("should successfully deploy all resources", func() {
-					checkDeployedResources("plutono-dashboards", 21)
+					checkDeployedResources("plutono-dashboards", 21, sets.New(
+						"alerts-dashboard.json",
+						"client-go.json",
+						"controller-details.json",
+						"controllers.json",
+						"extensions-dashboard.json",
+						"fluent-bit-dashboard.json",
+						"gardener-resource-usage-by-container.json",
+						"gardener-resource-usage.json",
+						"istio-control-plane-dashboard.json",
+						"istio-ingress-gateway-dashboard.json",
+						"istio-mesh-dashboard.json",
+						"pod-logs.json",
+						"seed-deployments-replicas.json",
+						"seed-resource-usage.json",
+						"shoot-control-plane-resource-usage-by-owner-container.json",
+						"shoot-control-plane-resource-usage-overview.json",
+						"shoot-control-plane-resource-usage.json",
+						"shoot-operation-duration.json",
+						"systemd-logs.json",
+						"webhook-details.json",
+						"webhooks.json",
+					))
 				})
 
 				Context("w/ enabled vpa", func() {
@@ -663,7 +686,32 @@ status:
 					})
 
 					It("should successfully deploy all resources", func() {
-						checkDeployedResources("plutono-dashboards", 24)
+						checkDeployedResources("plutono-dashboards", 24, sets.New(
+							"alerts-dashboard.json",
+							"client-go.json",
+							"controller-details.json",
+							"controllers.json",
+							"extensions-dashboard.json",
+							"fluent-bit-dashboard.json",
+							"gardener-resource-usage-by-container.json",
+							"gardener-resource-usage.json",
+							"istio-control-plane-dashboard.json",
+							"istio-ingress-gateway-dashboard.json",
+							"istio-mesh-dashboard.json",
+							"pod-logs.json",
+							"seed-deployments-replicas.json",
+							"seed-resource-usage.json",
+							"shoot-control-plane-resource-usage-by-owner-container.json",
+							"shoot-control-plane-resource-usage-overview.json",
+							"shoot-control-plane-resource-usage.json",
+							"shoot-operation-duration.json",
+							"systemd-logs.json",
+							"vpa-admission-controller.json",
+							"vpa-dashboard.json",
+							"vpa-recommender.json",
+							"webhook-details.json",
+							"webhooks.json",
+						))
 					})
 				})
 			})
@@ -679,12 +727,63 @@ status:
 					})
 
 					It("should successfully deploy all resources", func() {
-						checkDeployedResources("plutono-dashboards-garden", 26)
+						checkDeployedResources("plutono-dashboards-garden", 26, sets.New(
+							"alerts-dashboard.json",
+							"apiserver-admission-details.json",
+							"apiserver-overview.json",
+							"apiserver-request-details.json",
+							"apiserver-request-duration-and-response-size.json",
+							"apiserver-storage-details.json",
+							"apiserver-watch-details.json",
+							"container-runtime.json",
+							"garden-alertmanager-dashboard.json",
+							"garden-availability-dashboard.json",
+							"garden-resource.json",
+							"gardener-admission-controller-dashboard.json",
+							"gardener-admission-controller-seedauthorizer-details.json",
+							"gardener-controlplane.json",
+							"kubernetes-pods-dashboard.json",
+							"resource-usage-by-container.json",
+							"seed-resource-usage-dashboard.json",
+							"shoot-availability-dashboard.json",
+							"shoot-details-dashboard.json",
+							"shoot-sla-dashboard.json",
+							"shoot-sli-dashboard.json",
+							"virtual-garden-etcd-backup-dashboard.json",
+							"virtual-garden-etcd-dashboard.json",
+							"vpa-admission-controller.json",
+							"vpa-dashboard.json",
+							"vpa-recommender.json",
+						))
 					})
 				})
 
 				It("should successfully deploy all resources", func() {
-					checkDeployedResources("plutono-dashboards-garden", 23)
+					checkDeployedResources("plutono-dashboards-garden", 23, sets.New(
+						"alerts-dashboard.json",
+						"apiserver-admission-details.json",
+						"apiserver-overview.json",
+						"apiserver-request-details.json",
+						"apiserver-request-duration-and-response-size.json",
+						"apiserver-storage-details.json",
+						"apiserver-watch-details.json",
+						"container-runtime.json",
+						"garden-alertmanager-dashboard.json",
+						"garden-availability-dashboard.json",
+						"garden-resource.json",
+						"gardener-admission-controller-dashboard.json",
+						"gardener-admission-controller-seedauthorizer-details.json",
+						"gardener-controlplane.json",
+						"kubernetes-pods-dashboard.json",
+						"resource-usage-by-container.json",
+						"seed-resource-usage-dashboard.json",
+						"shoot-availability-dashboard.json",
+						"shoot-details-dashboard.json",
+						"shoot-sla-dashboard.json",
+						"shoot-sli-dashboard.json",
+						"virtual-garden-etcd-backup-dashboard.json",
+						"virtual-garden-etcd-dashboard.json",
+					))
 				})
 			})
 		})
@@ -696,7 +795,41 @@ status:
 			})
 
 			It("should successfully deploy all resources", func() {
-				checkDeployedResources("plutono-dashboards", 33)
+				checkDeployedResources("plutono-dashboards", 33, sets.New(
+					"apiserver-admission-details.json",
+					"apiserver-overview.json",
+					"apiserver-request-details.json",
+					"apiserver-request-duration-and-response-size.json",
+					"apiserver-storage-details.json",
+					"apiserver-watch-details.json",
+					"client-go.json",
+					"cluster-overview-dashboard.json",
+					"container-images.json",
+					"controller-details.json",
+					"controllers.json",
+					"controlplane-logs-dashboard.json",
+					"dns-dashboard.json",
+					"envoy-proxy-dashboard.json",
+					"etcd-backup-dashboard.json",
+					"etcd-cluster-details-dashboard.json",
+					"etcd-compaction-job-dashboard.json",
+					"etcd-dashboard.json",
+					"kubernetes-api-server-details.json",
+					"kubernetes-api-server-watches-dashboard.json",
+					"kubernetes-control-plane-status-dashboard.json",
+					"kubernetes-daemonsets-dashboard.json",
+					"kubernetes-deployments-dashboard.json",
+					"kubernetes-pods-dashboard.json",
+					"kubernetes-statefulsets-dashboard.json",
+					"mcm-dashboard.json",
+					"node-details-dashboard.json",
+					"node-pool-dashboard.json",
+					"prometheus-dashboard.json",
+					"shoot-control-plane-resource-usage-by-owner-container.json",
+					"vpn-dashboard.json",
+					"webhook-details.json",
+					"webhooks.json",
+				))
 			})
 
 			Context("w/ include istio, mcm, ha-vpn, vpa", func() {
@@ -707,7 +840,45 @@ status:
 				})
 
 				It("should successfully deploy all resources", func() {
-					checkDeployedResources("plutono-dashboards", 37)
+					checkDeployedResources("plutono-dashboards", 37, sets.New(
+						"apiserver-admission-details.json",
+						"apiserver-overview.json",
+						"apiserver-proxy-dashboard.json",
+						"apiserver-request-details.json",
+						"apiserver-request-duration-and-response-size.json",
+						"apiserver-storage-details.json",
+						"apiserver-watch-details.json",
+						"client-go.json",
+						"cluster-overview-dashboard.json",
+						"container-images.json",
+						"controller-details.json",
+						"controllers.json",
+						"controlplane-logs-dashboard.json",
+						"dns-dashboard.json",
+						"etcd-backup-dashboard.json",
+						"etcd-cluster-details-dashboard.json",
+						"etcd-compaction-job-dashboard.json",
+						"etcd-dashboard.json",
+						"kubernetes-api-server-details.json",
+						"kubernetes-api-server-watches-dashboard.json",
+						"kubernetes-control-plane-status-dashboard.json",
+						"kubernetes-daemonsets-dashboard.json",
+						"kubernetes-deployments-dashboard.json",
+						"kubernetes-pods-dashboard.json",
+						"kubernetes-statefulsets-dashboard.json",
+						"mcm-dashboard.json",
+						"node-details-dashboard.json",
+						"node-pool-dashboard.json",
+						"prometheus-dashboard.json",
+						"shoot-control-plane-resource-usage-by-owner-container.json",
+						"vpa-admission-controller.json",
+						"vpa-dashboard.json",
+						"vpa-recommender.json",
+						"vpn-dashboard.json",
+						"vpn-seed-server-dashboard.json",
+						"webhook-details.json",
+						"webhooks.json",
+					))
 				})
 			})
 
@@ -717,7 +888,33 @@ status:
 				})
 
 				It("should successfully deploy all resources", func() {
-					checkDeployedResources("plutono-dashboards", 25)
+					checkDeployedResources("plutono-dashboards", 25, sets.New(
+						"apiserver-admission-details.json",
+						"apiserver-overview.json",
+						"apiserver-request-details.json",
+						"apiserver-request-duration-and-response-size.json",
+						"apiserver-storage-details.json",
+						"apiserver-watch-details.json",
+						"client-go.json",
+						"cluster-overview-dashboard.json",
+						"controller-details.json",
+						"controllers.json",
+						"controlplane-logs-dashboard.json",
+						"etcd-backup-dashboard.json",
+						"etcd-cluster-details-dashboard.json",
+						"etcd-compaction-job-dashboard.json",
+						"etcd-dashboard.json",
+						"kubernetes-api-server-details.json",
+						"kubernetes-api-server-watches-dashboard.json",
+						"kubernetes-control-plane-status-dashboard.json",
+						"kubernetes-deployments-dashboard.json",
+						"kubernetes-pods-dashboard.json",
+						"kubernetes-statefulsets-dashboard.json",
+						"prometheus-dashboard.json",
+						"shoot-control-plane-resource-usage-by-owner-container.json",
+						"webhook-details.json",
+						"webhooks.json",
+					))
 				})
 			})
 		})
