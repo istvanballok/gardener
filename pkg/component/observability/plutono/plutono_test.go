@@ -832,7 +832,7 @@ status:
 				))
 			})
 
-			Context("w/ include istio, mcm, ha-vpn, vpa", func() {
+			Context("w/ istio, ha-vpn, vpa", func() {
 				BeforeEach(func() {
 					values.IncludeIstioDashboards = true
 					values.VPNHighAvailabilityEnabled = true
@@ -882,7 +882,7 @@ status:
 				})
 			})
 
-			Context("shoot is workerless", func() {
+			Context("w/ workerless shoot", func() {
 				BeforeEach(func() {
 					values.IsWorkerless = true
 				})
