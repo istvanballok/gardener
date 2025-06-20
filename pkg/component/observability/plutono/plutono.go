@@ -76,12 +76,13 @@ var (
 	//go:embed dashboards/common
 	commonDashboards embed.FS
 
-	gardenDashboardsPath         = filepath.Join("dashboards", "garden")
-	seedDashboardsPath           = filepath.Join("dashboards", "seed")
-	shootDashboardsPath          = filepath.Join("dashboards", "shoot")
-	gardenAndShootDashboardsPath = filepath.Join("dashboards", "garden-shoot")
-	commonDashboardsPath         = filepath.Join("dashboards", "common")
-	commonVpaDashboardsPath      = filepath.Join(commonDashboardsPath, "vpa")
+	gardenDashboardsPath                   = filepath.Join("dashboards", "garden")
+	seedDashboardsPath                     = filepath.Join("dashboards", "seed")
+	shootDashboardsPath                    = filepath.Join("dashboards", "shoot")
+	gardenAndShootDashboardsPath           = filepath.Join("dashboards", "garden-shoot")
+	commonDashboardsPath                   = filepath.Join("dashboards", "common")
+	commonVpaRecommendationsDashboardsPath = filepath.Join(commonDashboardsPath, "vpa-recommendations")
+	commonVpaInternalDashboardsPath        = filepath.Join(commonDashboardsPath, "vpa-internal")
 )
 
 // Interface contains functions for a Plutono Deployer
@@ -388,7 +389,8 @@ func (p *plutono) getDashboardConfigMap() (*corev1.ConfigMap, error) {
 	if p.values.IsGardenCluster {
 		requiredDashboards = map[string]embed.FS{gardenDashboardsPath: gardenDashboards, gardenAndShootDashboardsPath: gardenAndShootDashboards}
 		if p.values.VPAEnabled {
-			requiredDashboards[commonVpaDashboardsPath] = commonDashboards
+			requiredDashboards[commonVpaRecommendationsDashboardsPath] = commonDashboards
+			requiredDashboards[commonVpaInternalDashboardsPath] = commonDashboards
 		}
 	} else if p.values.ClusterType == component.ClusterTypeSeed {
 		requiredDashboards = map[string]embed.FS{seedDashboardsPath: seedDashboards, commonDashboardsPath: commonDashboards}
@@ -400,7 +402,8 @@ func (p *plutono) getDashboardConfigMap() (*corev1.ConfigMap, error) {
 		}
 
 		if !p.values.VPAEnabled {
-			ignorePaths.Insert("vpa")
+			ignorePaths.Insert("vpa-recommendations")
+			ignorePaths.Insert("vpa-internal")
 		}
 		if p.values.IsWorkerless {
 			ignorePaths.Insert("worker")
