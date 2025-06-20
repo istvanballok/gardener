@@ -721,6 +721,34 @@ status:
 					values.IsGardenCluster = true
 				})
 
+				It("should successfully deploy all resources", func() {
+					checkDeployedResources("plutono-dashboards-garden", 23, sets.New(
+						"alerts-dashboard.json",
+						"apiserver-admission-details.json",
+						"apiserver-overview.json",
+						"apiserver-request-details.json",
+						"apiserver-request-duration-and-response-size.json",
+						"apiserver-storage-details.json",
+						"apiserver-watch-details.json",
+						"container-runtime.json",
+						"garden-alertmanager-dashboard.json",
+						"garden-availability-dashboard.json",
+						"garden-resource.json",
+						"gardener-admission-controller-dashboard.json",
+						"gardener-admission-controller-seedauthorizer-details.json",
+						"gardener-controlplane.json",
+						"kubernetes-pods-dashboard.json",
+						"resource-usage-by-container.json",
+						"seed-resource-usage-dashboard.json",
+						"shoot-availability-dashboard.json",
+						"shoot-details-dashboard.json",
+						"shoot-sla-dashboard.json",
+						"shoot-sli-dashboard.json",
+						"virtual-garden-etcd-backup-dashboard.json",
+						"virtual-garden-etcd-dashboard.json",
+					))
+				})
+
 				Context("with VPAEnabled=true", func() {
 					BeforeEach(func() {
 						values.VPAEnabled = true
@@ -756,34 +784,6 @@ status:
 							"vpa-recommender.json",
 						))
 					})
-				})
-
-				It("should successfully deploy all resources", func() {
-					checkDeployedResources("plutono-dashboards-garden", 23, sets.New(
-						"alerts-dashboard.json",
-						"apiserver-admission-details.json",
-						"apiserver-overview.json",
-						"apiserver-request-details.json",
-						"apiserver-request-duration-and-response-size.json",
-						"apiserver-storage-details.json",
-						"apiserver-watch-details.json",
-						"container-runtime.json",
-						"garden-alertmanager-dashboard.json",
-						"garden-availability-dashboard.json",
-						"garden-resource.json",
-						"gardener-admission-controller-dashboard.json",
-						"gardener-admission-controller-seedauthorizer-details.json",
-						"gardener-controlplane.json",
-						"kubernetes-pods-dashboard.json",
-						"resource-usage-by-container.json",
-						"seed-resource-usage-dashboard.json",
-						"shoot-availability-dashboard.json",
-						"shoot-details-dashboard.json",
-						"shoot-sla-dashboard.json",
-						"shoot-sli-dashboard.json",
-						"virtual-garden-etcd-backup-dashboard.json",
-						"virtual-garden-etcd-dashboard.json",
-					))
 				})
 			})
 		})
