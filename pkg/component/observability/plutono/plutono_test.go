@@ -652,10 +652,11 @@ status:
 				BeforeEach(func() {
 					values.AuthSecretName = "global-monitoring-secret"
 					values.IncludeIstioDashboards = true
+					values.VPAEnabled = true
 				})
 
 				It("should successfully deploy all resources", func() {
-					checkDeployedResources("plutono-dashboards", 21, sets.New(
+					checkDeployedResources("plutono-dashboards", 24, sets.New(
 						"alerts-dashboard.json",
 						"client-go.json",
 						"controller-details.json",
@@ -675,44 +676,12 @@ status:
 						"shoot-control-plane-resource-usage.json",
 						"shoot-operation-duration.json",
 						"systemd-logs.json",
+						"vpa-admission-controller.json",
+						"vpa-dashboard.json",
+						"vpa-recommender.json",
 						"webhook-details.json",
 						"webhooks.json",
 					))
-				})
-
-				Context("w/ enabled vpa", func() {
-					BeforeEach(func() {
-						values.VPAEnabled = true
-					})
-
-					It("should successfully deploy all resources", func() {
-						checkDeployedResources("plutono-dashboards", 24, sets.New(
-							"alerts-dashboard.json",
-							"client-go.json",
-							"controller-details.json",
-							"controllers.json",
-							"extensions-dashboard.json",
-							"fluent-bit-dashboard.json",
-							"gardener-resource-usage-by-container.json",
-							"gardener-resource-usage.json",
-							"istio-control-plane-dashboard.json",
-							"istio-ingress-gateway-dashboard.json",
-							"istio-mesh-dashboard.json",
-							"pod-logs.json",
-							"seed-deployments-replicas.json",
-							"seed-resource-usage.json",
-							"shoot-control-plane-resource-usage-by-owner-container.json",
-							"shoot-control-plane-resource-usage-overview.json",
-							"shoot-control-plane-resource-usage.json",
-							"shoot-operation-duration.json",
-							"systemd-logs.json",
-							"vpa-admission-controller.json",
-							"vpa-dashboard.json",
-							"vpa-recommender.json",
-							"webhook-details.json",
-							"webhooks.json",
-						))
-					})
 				})
 			})
 
