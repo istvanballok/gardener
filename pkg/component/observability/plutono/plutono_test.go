@@ -652,11 +652,11 @@ status:
 				BeforeEach(func() {
 					values.AuthSecretName = "global-monitoring-secret"
 					values.IncludeIstioDashboards = true
-					values.VPAEnabled = true
+					values.VPARecommendationsAvailable = true
 				})
 
 				It("should successfully deploy all resources", func() {
-					checkDeployedResources("plutono-dashboards", 24, sets.New(
+					checkDeployedResources("plutono-dashboards", 22, sets.New(
 						"alerts-dashboard.json",
 						"client-go.json",
 						"controller-details.json",
@@ -676,23 +676,56 @@ status:
 						"shoot-control-plane-resource-usage.json",
 						"shoot-operation-duration.json",
 						"systemd-logs.json",
-						"vpa-admission-controller.json",
 						"vpa-recommendations.json",
-						"vpa-recommender.json",
 						"webhook-details.json",
 						"webhooks.json",
 					))
+				})
+
+				Context("w/ vpa internal metrics", func() {
+					BeforeEach(func() {
+						values.VPAInternalsAvailable = true
+					})
+
+					It("should successfully deploy all resources", func() {
+						checkDeployedResources("plutono-dashboards", 24, sets.New(
+							"alerts-dashboard.json",
+							"client-go.json",
+							"controller-details.json",
+							"controllers.json",
+							"extensions-dashboard.json",
+							"fluent-bit-dashboard.json",
+							"gardener-resource-usage-by-container.json",
+							"gardener-resource-usage.json",
+							"istio-control-plane-dashboard.json",
+							"istio-ingress-gateway-dashboard.json",
+							"istio-mesh-dashboard.json",
+							"pod-logs.json",
+							"seed-deployments-replicas.json",
+							"seed-resource-usage.json",
+							"shoot-control-plane-resource-usage-by-owner-container.json",
+							"shoot-control-plane-resource-usage-overview.json",
+							"shoot-control-plane-resource-usage.json",
+							"shoot-operation-duration.json",
+							"systemd-logs.json",
+							"vpa-admission-controller.json",
+							"vpa-recommendations.json",
+							"vpa-recommender.json",
+							"webhook-details.json",
+							"webhooks.json",
+						))
+					})
 				})
 			})
 
 			Context("Cluster is garden cluster", func() {
 				BeforeEach(func() {
 					values.IsGardenCluster = true
-					values.VPAEnabled = true
+					values.VPARecommendationsAvailable = true
 				})
 
 				It("should successfully deploy all resources", func() {
-					checkDeployedResources("plutono-dashboards-garden", 26, sets.New(
+					checkDeployedResources("plutono-dashboards-garden", 24, sets.New(
 						"alerts-dashboard.json",
 						"apiserver-admission-details.json",
 						"apiserver-overview.json",
@@ -716,10 +749,45 @@ status:
 						"shoot-sli-dashboard.json",
 						"virtual-garden-etcd-backup-dashboard.json",
 						"virtual-garden-etcd-dashboard.json",
-						"vpa-admission-controller.json",
 						"vpa-recommendations.json",
-						"vpa-recommender.json",
 					))
+				})
+
+				Context("w/ vpa internal metrics", func() {
+					BeforeEach(func() {
+						values.VPAInternalsAvailable = true
+					})
+
+					It("should successfully deploy all resources", func() {
+						checkDeployedResources("plutono-dashboards-garden", 26, sets.New(
+							"alerts-dashboard.json",
+							"apiserver-admission-details.json",
+							"apiserver-overview.json",
+							"apiserver-request-details.json",
+							"apiserver-request-duration-and-response-size.json",
+							"apiserver-storage-details.json",
+							"apiserver-watch-details.json",
+							"container-runtime.json",
+							"garden-alertmanager-dashboard.json",
+							"garden-availability-dashboard.json",
+							"garden-resource.json",
+							"gardener-admission-controller-dashboard.json",
+							"gardener-admission-controller-seedauthorizer-details.json",
+							"gardener-controlplane.json",
+							"kubernetes-pods-dashboard.json",
+							"resource-usage-by-container.json",
+							"seed-resource-usage-dashboard.json",
+							"shoot-availability-dashboard.json",
+							"shoot-details-dashboard.json",
+							"shoot-sla-dashboard.json",
+							"shoot-sli-dashboard.json",
+							"virtual-garden-etcd-backup-dashboard.json",
+							"virtual-garden-etcd-dashboard.json",
+							"vpa-admission-controller.json",
+							"vpa-recommendations.json",
+							"vpa-recommender.json",
+						))
+					})
 				})
 			})
 		})
@@ -728,10 +796,11 @@ status:
 			BeforeEach(func() {
 				values.ClusterType = comp.ClusterTypeShoot
 				values.IngressHost = "shoot.example.com"
+				values.VPARecommendationsAvailable = true
 			})
 
 			It("should successfully deploy all resources", func() {
-				checkDeployedResources("plutono-dashboards", 33, sets.New(
+				checkDeployedResources("plutono-dashboards", 34, sets.New(
 					"apiserver-admission-details.json",
 					"apiserver-overview.json",
 					"apiserver-request-details.json",
@@ -762,17 +831,19 @@ status:
 					"node-pool-dashboard.json",
 					"prometheus-dashboard.json",
 					"shoot-control-plane-resource-usage-by-owner-container.json",
+					"vpa-recommendations.json",
 					"vpn-dashboard.json",
 					"webhook-details.json",
 					"webhooks.json",
 				))
 			})
 
-			Context("w/ istio, ha-vpn, vpa", func() {
+			Context("w/ istio, ha-vpn, vpa-internal", func() {
 				BeforeEach(func() {
 					values.IncludeIstioDashboards = true
 					values.VPNHighAvailabilityEnabled = true
-					values.VPAEnabled = true
+					values.VPARecommendationsAvailable = true
+					values.VPAInternalsAvailable = true
 				})
 
 				It("should successfully deploy all resources", func() {
@@ -824,7 +895,7 @@ status:
 				})
 
 				It("should successfully deploy all resources", func() {
-					checkDeployedResources("plutono-dashboards", 25, sets.New(
+					checkDeployedResources("plutono-dashboards", 26, sets.New(
 						"apiserver-admission-details.json",
 						"apiserver-overview.json",
 						"apiserver-request-details.json",
@@ -848,6 +919,7 @@ status:
 						"kubernetes-statefulsets-dashboard.json",
 						"prometheus-dashboard.json",
 						"shoot-control-plane-resource-usage-by-owner-container.json",
+						"vpa-recommendations.json",
 						"webhook-details.json",
 						"webhooks.json",
 					))

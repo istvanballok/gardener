@@ -114,8 +114,10 @@ type Values struct {
 	PriorityClassName string
 	// Replicas is the number of pod replicas for the plutono.
 	Replicas int32
-	// VPAEnabled states whether VerticalPodAutoscaler is enabled.
-	VPAEnabled bool
+	// VPARecommendationsAvailable states whether VerticalPodAutoscaler is available in the cluster (controls the recommendations dashboard).
+	VPARecommendationsAvailable bool
+	// VPAInternalsAvailable states whether VPA internal metrics are available (controls component-level dashboards).
+	VPAInternalsAvailable bool
 	// VPNHighAvailabilityEnabled specifies whether the cluster is configured with HA VPN.
 	VPNHighAvailabilityEnabled bool
 	// WildcardCertName is name of wildcard TLS certificate which is issued for the seed's ingress domain.
@@ -388,12 +390,17 @@ func (p *plutono) getDashboardConfigMap() (*corev1.ConfigMap, error) {
 
 	if p.values.IsGardenCluster {
 		requiredDashboards = map[string]embed.FS{gardenDashboardsPath: gardenDashboards, gardenAndShootDashboardsPath: gardenAndShootDashboards}
-		if p.values.VPAEnabled {
+		if p.values.VPARecommendationsAvailable {
 			requiredDashboards[commonVpaRecommendationsDashboardsPath] = commonDashboards
+		}
+		if p.values.VPAInternalsAvailable {
 			requiredDashboards[commonVpaInternalDashboardsPath] = commonDashboards
 		}
 	} else if p.values.ClusterType == component.ClusterTypeSeed {
 		requiredDashboards = map[string]embed.FS{seedDashboardsPath: seedDashboards, commonDashboardsPath: commonDashboards}
+		if !p.values.VPAInternalsAvailable {
+			ignorePaths.Insert("vpa-internal")
+		}
 	} else if p.values.ClusterType == component.ClusterTypeShoot {
 		requiredDashboards = map[string]embed.FS{
 			shootDashboardsPath:          shootDashboards,
@@ -401,8 +408,10 @@ func (p *plutono) getDashboardConfigMap() (*corev1.ConfigMap, error) {
 			commonDashboardsPath:         commonDashboards,
 		}
 
-		if !p.values.VPAEnabled {
+		if !p.values.VPARecommendationsAvailable {
 			ignorePaths.Insert("vpa-recommendations")
+		}
+		if !p.values.VPAInternalsAvailable {
 			ignorePaths.Insert("vpa-internal")
 		}
 		if p.values.IsWorkerless {
