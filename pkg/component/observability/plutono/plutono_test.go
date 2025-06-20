@@ -677,7 +677,7 @@ status:
 						"shoot-operation-duration.json",
 						"systemd-logs.json",
 						"vpa-admission-controller.json",
-						"vpa-dashboard.json",
+						"vpa-recommendations.json",
 						"vpa-recommender.json",
 						"webhook-details.json",
 						"webhooks.json",
@@ -717,7 +717,7 @@ status:
 						"virtual-garden-etcd-backup-dashboard.json",
 						"virtual-garden-etcd-dashboard.json",
 						"vpa-admission-controller.json",
-						"vpa-dashboard.json",
+						"vpa-recommendations.json",
 						"vpa-recommender.json",
 					))
 				})
@@ -808,7 +808,7 @@ status:
 						"prometheus-dashboard.json",
 						"shoot-control-plane-resource-usage-by-owner-container.json",
 						"vpa-admission-controller.json",
-						"vpa-dashboard.json",
+						"vpa-recommendations.json",
 						"vpa-recommender.json",
 						"vpn-dashboard.json",
 						"vpn-seed-server-dashboard.json",
