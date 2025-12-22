@@ -23,7 +23,7 @@ spec:
 
         # Federated metrics are absent
         - record: healthcheck
-          expr: absent(apiserver_request_total{job="virtual-garden-kube-apiserver"})
+          expr: absent(apiserver_request_total{job="prometheus-garden"})
           labels:
             task: federate:absent
 

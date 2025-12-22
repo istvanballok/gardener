@@ -13,7 +13,7 @@ tests:
       - series: up{job="foo"}
         values: 0
 
-      - series: apiserver_request_total{job="virtual-garden-kube-apiserver"}
+      - series: apiserver_request_total{job="prometheus-garden"}
         values: 100
     promql_expr_test:
       - expr: healthcheck:alert
@@ -29,7 +29,7 @@ tests:
       - series: expectation
         values: stale stale stale stale stale 1
 
-      - series: apiserver_request_total{job="virtual-garden-kube-apiserver"}
+      - series: apiserver_request_total{job="prometheus-garden"}
         values: 100x5
     promql_expr_test:
       - expr: healthcheck:alert != expectation or healthcheck:alert unless expectation or expectation unless healthcheck:alert
@@ -57,7 +57,7 @@ tests:
       - series: expectation
         values: stale stale stale stale stale 1     1     1     1     1     1     stale
 
-      - series: apiserver_request_total{job="virtual-garden-kube-apiserver"}
+      - series: apiserver_request_total{job="prometheus-garden"}
         values: 100x11
     promql_expr_test:
       - expr: healthcheck:alert != expectation or healthcheck:alert unless expectation or expectation unless healthcheck:alert
@@ -91,7 +91,7 @@ tests:
         values: 1
       - series: scrape_samples_scraped{job="foo"}
         values: 100
-      - series: apiserver_request_total{job="virtual-garden-kube-apiserver"}
+      - series: apiserver_request_total{job="prometheus-garden"}
         values: 100
     promql_expr_test:
       - expr: healthcheck:alert
@@ -114,7 +114,7 @@ tests:
       - series: expectation
         values: stale stale stale stale stale 2 stale
 
-      - series: apiserver_request_total{job="virtual-garden-kube-apiserver"}
+      - series: apiserver_request_total{job="prometheus-garden"}
         values: 100x6
     promql_expr_test:
       - expr: healthcheck:alert != expectation or healthcheck:alert unless expectation or expectation unless healthcheck:alert
@@ -139,7 +139,7 @@ tests:
       - series: scrape_samples_scraped{job="foo"}
         values: 0
 
-      - series: apiserver_request_total{job="virtual-garden-kube-apiserver"}
+      - series: apiserver_request_total{job="prometheus-garden"}
         values: 100
     promql_expr_test:
       - expr: healthcheck:alert
@@ -163,7 +163,7 @@ tests:
       - series: expectation{flapping="true"}
         values: stale stale stale stale stale stale 5     5     6     7     6     7     6     5     5     stale
 
-      - series: apiserver_request_total{job="virtual-garden-kube-apiserver"}
+      - series: apiserver_request_total{job="prometheus-garden"}
         values: 100x15
     promql_expr_test:
       - expr: healtcheck:alert != expectation or healthcheck:alert unless expectation or expectation unless healthcheck:alert
