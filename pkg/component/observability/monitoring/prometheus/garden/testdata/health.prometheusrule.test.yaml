@@ -45,6 +45,43 @@ tests:
       - expr: healthcheck:alert != expectation or healthcheck:alert unless expectation or expectation unless healthcheck:alert
         eval_time: 5m
 
+  # New scrape pools should report a health issue if they have no targets.
+  - input_series:
+      - series: prometheus_target_scrape_pool_targets{job="foo"}
+        values: 0
+
+      - series: apiserver_request_total{job="prometheus-garden"}
+        values: 100
+    promql_expr_test:
+      - expr: healthcheck:alert
+        eval_time: 0m
+        exp_samples:
+          - labels: healthcheck:alert
+            value: 1
+
+  # Existing scrape pools should wait 5m before reporting a health issue if they have no targets.
+  - input_series:
+      - series: prometheus_target_scrape_pool_targets{job="foo"}
+        values: 1     0     0     0     0     0
+      - series: expectation
+        values: stale stale stale stale stale 1
+
+      - series: apiserver_request_total{job="prometheus-garden"}
+        values: 100x5
+    promql_expr_test:
+      - expr: healthcheck:alert != expectation or healthcheck:alert unless expectation or expectation unless healthcheck:alert
+        eval_time: 0m
+      - expr: healthcheck:alert != expectation or healthcheck:alert unless expectation or expectation unless healthcheck:alert
+        eval_time: 1m
+      - expr: healthcheck:alert != expectation or healthcheck:alert unless expectation or expectation unless healthcheck:alert
+        eval_time: 2m
+      - expr: healthcheck:alert != expectation or healthcheck:alert unless expectation or expectation unless healthcheck:alert
+        eval_time: 3m
+      - expr: healthcheck:alert != expectation or healthcheck:alert unless expectation or expectation unless healthcheck:alert
+        eval_time: 4m
+      - expr: healthcheck:alert != expectation or healthcheck:alert unless expectation or expectation unless healthcheck:alert
+        eval_time: 5m
+
   # Jobs should report a health issue if they flap.
   - input_series:
       - series: indentation

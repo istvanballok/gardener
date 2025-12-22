@@ -15,6 +15,21 @@ spec:
           labels:
             task: job:failing
 
+        # Scrape pool has no targets for a period of time
+        - record: healthcheck
+          expr: |2
+                prometheus_target_scrape_pool_targets
+              +
+                (
+                    sum_over_time(prometheus_target_scrape_pool_targets[4m] offset 1m)
+                  or
+                    prometheus_target_scrape_pool_targets * 0
+                )
+            ==
+              0
+          labels:
+            task: scrape_pool:no_targets
+
         # No samples scraped
         - record: healthcheck
           expr: scrape_samples_scraped == 0
