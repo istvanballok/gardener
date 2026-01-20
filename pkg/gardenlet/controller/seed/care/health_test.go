@@ -356,6 +356,7 @@ var _ = Describe("Seed health", func() {
 
 				Expect(conditions.ConvertToSlice()).To(ConsistOf(
 					beConditionOfTypeWithStatusReasonAndMessage(gardencorev1beta1.SeedSystemComponentsHealthy, "Unknown", "ConditionInitialized", "The condition has been initialized but its semantic check has not been performed yet."),
+					beConditionOfTypeWithStatusReasonAndMessage(gardencorev1beta1.SeedObservabilityComponentsHealthy, "Unknown", "ConditionInitialized", "The condition has been initialized but its semantic check has not been performed yet."),
 				))
 			})
 
@@ -363,7 +364,7 @@ var _ = Describe("Seed health", func() {
 				oldTime := fakeClock.Now()
 
 				fakeClock.Step(30 * time.Second)
-				// newTime := fakeClock.Now()
+				newTime := fakeClock.Now()
 
 				conditions := NewSeedConditions(fakeClock, gardencorev1beta1.SeedStatus{
 					Conditions: []gardencorev1beta1.Condition{
@@ -376,6 +377,8 @@ var _ = Describe("Seed health", func() {
 				Expect(conditions.ConvertToSlice()).To(HaveExactElements(
 					And(OfType("SeedSystemComponentsHealthy"),
 						HaveField("LastUpdateTime.Time", BeTemporally("==", oldTime))),
+					And(OfType("ObservabilityComponentsHealthy"),
+						HaveField("LastUpdateTime.Time", BeTemporally("==", newTime))),
 					And(OfType("EmergencyStopShootReconciliations"),
 						HaveField("LastUpdateTime.Time", BeTemporally("==", oldTime))),
 				))
@@ -388,6 +391,7 @@ var _ = Describe("Seed health", func() {
 
 				Expect(conditions.ConvertToSlice()).To(HaveExactElements(
 					OfType("SeedSystemComponentsHealthy"),
+					OfType("ObservabilityComponentsHealthy"),
 				))
 			})
 
@@ -400,6 +404,7 @@ var _ = Describe("Seed health", func() {
 
 				Expect(conditions.ConvertToSlice()).To(HaveExactElements(
 					OfType("SeedSystemComponentsHealthy"),
+					OfType("ObservabilityComponentsHealthy"),
 				))
 			})
 
@@ -412,6 +417,7 @@ var _ = Describe("Seed health", func() {
 
 				Expect(conditions.ConvertToSlice()).To(HaveExactElements(
 					OfType("SeedSystemComponentsHealthy"),
+					OfType("ObservabilityComponentsHealthy"),
 					OfType("EmergencyStopShootReconciliations"),
 				))
 			})
@@ -424,6 +430,7 @@ var _ = Describe("Seed health", func() {
 				Expect(conditions.ConditionTypes()).To(HaveExactElements(
 					gardencorev1beta1.ConditionType("SeedSystemComponentsHealthy"),
 					gardencorev1beta1.ConditionType("EmergencyStopShootReconciliations"),
+					gardencorev1beta1.ConditionType("ObservabilityComponentsHealthy"),
 				))
 			})
 		})

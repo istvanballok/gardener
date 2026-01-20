@@ -130,11 +130,12 @@ func (h *health) checkEmergencyStopShootReconciliations(condition gardencorev1be
 type SeedConditions struct {
 	systemComponentsHealthy           gardencorev1beta1.Condition
 	emergencyStopShootReconciliations gardencorev1beta1.Condition
+	observabilityComponentsHealthy    gardencorev1beta1.Condition
 }
 
 // ConvertToSlice returns the seed conditions as a slice.
 func (s SeedConditions) ConvertToSlice() []gardencorev1beta1.Condition {
-	slice := []gardencorev1beta1.Condition{s.systemComponentsHealthy}
+	slice := []gardencorev1beta1.Condition{s.systemComponentsHealthy, s.observabilityComponentsHealthy}
 	if s.emergencyStopShootReconciliations.Status != gardencorev1beta1.ConditionUnknown {
 		slice = append(slice, s.emergencyStopShootReconciliations)
 	}
@@ -146,6 +147,7 @@ func (s SeedConditions) ConditionTypes() []gardencorev1beta1.ConditionType {
 	return []gardencorev1beta1.ConditionType{
 		s.systemComponentsHealthy.Type,
 		s.emergencyStopShootReconciliations.Type,
+		s.observabilityComponentsHealthy.Type,
 	}
 }
 
@@ -155,5 +157,6 @@ func NewSeedConditions(clock clock.Clock, status gardencorev1beta1.SeedStatus) S
 	return SeedConditions{
 		systemComponentsHealthy:           v1beta1helper.GetOrInitConditionWithClock(clock, status.Conditions, gardencorev1beta1.SeedSystemComponentsHealthy),
 		emergencyStopShootReconciliations: v1beta1helper.GetOrInitConditionWithClock(clock, status.Conditions, gardencorev1beta1.SeedEmergencyStopShootReconciliations),
+		observabilityComponentsHealthy:    v1beta1helper.GetOrInitConditionWithClock(clock, status.Conditions, gardencorev1beta1.SeedObservabilityComponentsHealthy),
 	}
 }
