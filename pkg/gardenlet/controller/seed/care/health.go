@@ -65,12 +65,9 @@ func (h *health) Check(
 		return conditions.ConvertToSlice()
 	}
 
-	var checkedConditions []gardencorev1beta1.Condition
-	checkedConditions = append(checkedConditions, v1beta1helper.NewConditionOrError(h.clock, conditions.systemComponentsHealthy, h.checkSystemComponents(ctx, conditions.systemComponentsHealthy, managedResources, prometheuses), nil))
-	if newEmergencyStopShootReconciliations := h.checkEmergencyStopShootReconciliations(conditions.emergencyStopShootReconciliations); newEmergencyStopShootReconciliations != nil {
-		checkedConditions = append(checkedConditions, v1beta1helper.NewConditionOrError(h.clock, conditions.emergencyStopShootReconciliations, newEmergencyStopShootReconciliations, nil))
-	}
-	return checkedConditions
+	conditions.systemComponentsHealthy = v1beta1helper.NewConditionOrError(h.clock, conditions.systemComponentsHealthy, h.checkSystemComponents(ctx, conditions.systemComponentsHealthy, managedResources, prometheuses), nil)
+	conditions.emergencyStopShootReconciliations = v1beta1helper.NewConditionOrError(h.clock, conditions.emergencyStopShootReconciliations, h.checkEmergencyStopShootReconciliations(conditions.emergencyStopShootReconciliations), nil)
+	return conditions.ConvertToSlice()
 }
 
 func (h *health) listManagedResources(ctx context.Context) ([]resourcesv1alpha1.ManagedResource, error) {
@@ -137,10 +134,11 @@ type SeedConditions struct {
 
 // ConvertToSlice returns the seed conditions as a slice.
 func (s SeedConditions) ConvertToSlice() []gardencorev1beta1.Condition {
-	return []gardencorev1beta1.Condition{
-		s.systemComponentsHealthy,
-		s.emergencyStopShootReconciliations,
+	slice := []gardencorev1beta1.Condition{s.systemComponentsHealthy}
+	if s.emergencyStopShootReconciliations.Status != gardencorev1beta1.ConditionUnknown {
+		slice = append(slice, s.emergencyStopShootReconciliations)
 	}
+	return slice
 }
 
 // ConditionTypes returns all seed condition types.
