@@ -48,7 +48,7 @@ func (g *gardenerDashboard) configMap(ctx context.Context) (*corev1.ConfigMap, e
 	}
 
 	var (
-		websocketAllowedOrigins []string
+		websocketAllowedOrigins []string = []string{"http://localhost:8080"}
 	)
 
 	for _, host := range g.ingressHosts() {
