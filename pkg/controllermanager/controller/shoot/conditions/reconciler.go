@@ -49,17 +49,17 @@ func (r *Reconciler) Reconcile(ctx context.Context, request reconcile.Request) (
 	// First remove all existing seed conditions and then add the current seed conditions if the shoot is still registered as seed.
 	// The list of shoot conditions is well known (see contract https://github.com/gardener/gardener/blob/master/docs/extensions/shoot-health-status-conditions.md)
 	// as opposed to seed conditions. Thus, subtract all shoot conditions to filter out the seed conditions.
-	shootConditions := gardenerutils.GetShootConditionTypes(false)
+	shootConditionTypes := gardenerutils.GetShootConditionTypes(false)
 
-	conditions := v1beta1helper.RetainConditions(shoot.Status.Conditions, shootConditions...)
+	shootConditions := v1beta1helper.RetainConditions(shoot.Status.Conditions, shootConditionTypes...)
 	if seed != nil {
-		conditions = v1beta1helper.MergeConditions(conditions, seed.Status.Conditions...)
+		shootConditions = v1beta1helper.MergeConditions(shootConditions, seed.Status.Conditions...)
 	}
 
 	// Update the shoot conditions if needed
-	if v1beta1helper.ConditionsNeedUpdate(shoot.Status.Conditions, conditions) {
+	if v1beta1helper.ConditionsNeedUpdate(shoot.Status.Conditions, shootConditions) {
 		log.V(1).Info("Updating shoot conditions")
-		shoot.Status.Conditions = conditions
+		shoot.Status.Conditions = shootConditions
 		// We are using Update here to ensure that we act upon an up-to-date version of the shoot.
 		// An outdated cache together with a strategic merge patch can lead to incomplete patches if conditions change quickly.
 		if err := r.Client.Status().Update(ctx, shoot); err != nil {
