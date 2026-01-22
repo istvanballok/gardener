@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -53,7 +54,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, request reconcile.Request) (
 
 	shootConditions := v1beta1helper.RetainConditions(shoot.Status.Conditions, shootConditionTypes...)
 	if seed != nil {
-		shootConditions = v1beta1helper.MergeConditions(shootConditions, seed.Status.Conditions...)
+		shootConditions = v1beta1helper.MergeConditions(shootConditions, prefixOverlappingSeedConditions(shootConditionTypes, seed.Status.Conditions)...)
 	}
 
 	// Update the shoot conditions if needed
@@ -83,4 +84,18 @@ func (r *Reconciler) getShootSeed(ctx context.Context, shoot *gardencorev1beta1.
 		return nil, client.IgnoreNotFound(err)
 	}
 	return seed, nil
+}
+
+// prefixOverlappingSeedConditions prefixes seed conditions that overlap with shoot condition types.
+func prefixOverlappingSeedConditions(
+	shootConditionTypes []gardencorev1beta1.ConditionType,
+	seedConditions []gardencorev1beta1.Condition,
+) []gardencorev1beta1.Condition {
+	shootConditionTypesSet := sets.New(shootConditionTypes...)
+	for i := range seedConditions {
+		if shootConditionTypesSet.Has(seedConditions[i].Type) {
+			seedConditions[i].Type = gardencorev1beta1.ConditionType("Seed" + string(seedConditions[i].Type))
+		}
+	}
+	return seedConditions
 }
