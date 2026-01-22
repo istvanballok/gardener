@@ -39,7 +39,8 @@ var _ = Describe("Seed health", func() {
 
 		seed *gardencorev1beta1.Seed
 
-		seedSystemComponentsHealthyCondition gardencorev1beta1.Condition
+		seedSystemComponentsHealthyCondition        gardencorev1beta1.Condition
+		seedObservabilityComponentsHealthyCondition gardencorev1beta1.Condition
 	)
 
 	BeforeEach(func() {
@@ -75,6 +76,10 @@ var _ = Describe("Seed health", func() {
 			Type:               gardencorev1beta1.SeedSystemComponentsHealthy,
 			LastTransitionTime: metav1.Time{Time: fakeClock.Now()},
 		}
+		seedObservabilityComponentsHealthyCondition = gardencorev1beta1.Condition{
+			Type:               gardencorev1beta1.SeedObservabilityComponentsHealthy,
+			LastTransitionTime: metav1.Time{Time: fakeClock.Now()},
+		}
 	})
 
 	Describe("#Check", func() {
@@ -82,16 +87,22 @@ var _ = Describe("Seed health", func() {
 
 		Context("When all managed resources are deployed successfully", func() {
 			JustBeforeEach(func() {
-				Expect(c.Create(ctx, healthyManagedResource(managedResourceName))).To(Succeed())
+				Expect(c.Create(ctx, healthyManagedResource(managedResourceName, ""))).To(Succeed())
+				Expect(c.Create(ctx, healthyManagedResource(managedResourceName, v1beta1constants.ObservabilityComponentsHealthy))).To(Succeed())
 			})
 
-			It("should set SeedSystemComponentsHealthy condition to true", func() {
+			It("should set SeedSystemComponentsHealthy and SeedObservabilityComponentsHealthy condition to true", func() {
 				healthCheck := NewHealth(seed, c, fakeClock, nil, checker.NewHealthChecker(c, fakeClock))
 				conditions := NewSeedConditions(fakeClock, gardencorev1beta1.SeedStatus{
-					Conditions: []gardencorev1beta1.Condition{seedSystemComponentsHealthyCondition},
+					Conditions: []gardencorev1beta1.Condition{
+						seedSystemComponentsHealthyCondition,
+						seedObservabilityComponentsHealthyCondition,
+					},
 				})
 
-				expectHealthySystemComponents(healthCheck.Check(ctx, conditions))
+				checkResult := healthCheck.Check(ctx, conditions)
+				expectHealthySystemComponents(checkResult)
+				expectHealthyObservabilityComponents(checkResult)
 			})
 		})
 
@@ -399,9 +410,10 @@ func beConditionOfTypeWithStatusReasonAndMessage(typ gardencorev1beta1.Condition
 	return And(OfType(typ), WithStatus(status), WithReason(reason), WithMessage(message))
 }
 
-func healthyManagedResource(name string) *resourcesv1alpha1.ManagedResource {
+func healthyManagedResource(name string, careLabel string) *resourcesv1alpha1.ManagedResource {
 	return managedResource(
 		name,
+		careLabel,
 		[]gardencorev1beta1.Condition{
 			{
 				Type:   resourcesv1alpha1.ResourcesApplied,
@@ -418,9 +430,10 @@ func healthyManagedResource(name string) *resourcesv1alpha1.ManagedResource {
 		})
 }
 
-func notHealthyManagedResource(name string) *resourcesv1alpha1.ManagedResource {
+func notHealthyManagedResource(name string, careLabel string) *resourcesv1alpha1.ManagedResource {
 	return managedResource(
 		name,
+		careLabel,
 		[]gardencorev1beta1.Condition{
 			{
 				Type:   resourcesv1alpha1.ResourcesApplied,
@@ -439,9 +452,10 @@ func notHealthyManagedResource(name string) *resourcesv1alpha1.ManagedResource {
 		})
 }
 
-func notAppliedManagedResource(name string) *resourcesv1alpha1.ManagedResource {
+func notAppliedManagedResource(name string, careLabel string) *resourcesv1alpha1.ManagedResource {
 	return managedResource(
 		name,
+		careLabel,
 		[]gardencorev1beta1.Condition{
 			{
 				Type:    resourcesv1alpha1.ResourcesApplied,
@@ -460,9 +474,10 @@ func notAppliedManagedResource(name string) *resourcesv1alpha1.ManagedResource {
 		})
 }
 
-func progressingManagedResource(name string) *resourcesv1alpha1.ManagedResource {
+func progressingManagedResource(name string, careLabel string) *resourcesv1alpha1.ManagedResource {
 	return managedResource(
 		name,
+		careLabel,
 		[]gardencorev1beta1.Condition{
 			{
 				Type:   resourcesv1alpha1.ResourcesApplied,
@@ -481,7 +496,7 @@ func progressingManagedResource(name string) *resourcesv1alpha1.ManagedResource 
 		})
 }
 
-func managedResource(name string, conditions []gardencorev1beta1.Condition) *resourcesv1alpha1.ManagedResource {
+func managedResource(name string, careLabel string, conditions []gardencorev1beta1.Condition) *resourcesv1alpha1.ManagedResource {
 	namespace := v1beta1constants.GardenNamespace
 	if name == "istio-system" || strings.HasSuffix(name, "istio") {
 		namespace = v1beta1constants.IstioSystemNamespace
@@ -491,6 +506,9 @@ func managedResource(name string, conditions []gardencorev1beta1.Condition) *res
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
+			Labels: map[string]string{
+				v1beta1constants.LabelCareConditionType: careLabel,
+			},
 		},
 		Spec: resourcesv1alpha1.ManagedResourceSpec{
 			Class: ptr.To("seed"),
@@ -503,9 +521,18 @@ func managedResource(name string, conditions []gardencorev1beta1.Condition) *res
 
 func expectHealthySystemComponents(conditions []gardencorev1beta1.Condition) {
 	Expect(conditions).ToNot(BeEmpty())
-	Expect(conditions[0]).To(beConditionOfTypeWithStatusReasonAndMessage(
+	Expect(conditions).To(ContainElement(beConditionOfTypeWithStatusReasonAndMessage(
 		gardencorev1beta1.SeedSystemComponentsHealthy,
 		gardencorev1beta1.ConditionTrue,
 		"SystemComponentsRunning",
-		"All system components are healthy."))
+		"All system components are healthy.")))
+}
+
+func expectHealthyObservabilityComponents(conditions []gardencorev1beta1.Condition) {
+	Expect(conditions).ToNot(BeEmpty())
+	Expect(conditions).To(ContainElement(beConditionOfTypeWithStatusReasonAndMessage(
+		gardencorev1beta1.SeedObservabilityComponentsHealthy,
+		gardencorev1beta1.ConditionTrue,
+		"ObservabilityComponentsRunning",
+		"All observability components are healthy.")))
 }
