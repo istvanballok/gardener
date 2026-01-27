@@ -40,7 +40,8 @@ var _ = Describe("Seed health", func() {
 
 		seed *gardencorev1beta1.Seed
 
-		seedSystemComponentsHealthyCondition gardencorev1beta1.Condition
+		seedSystemComponentsHealthyCondition        gardencorev1beta1.Condition
+		seedObservabilityComponentsHealthyCondition gardencorev1beta1.Condition
 	)
 
 	BeforeEach(func() {
@@ -76,6 +77,10 @@ var _ = Describe("Seed health", func() {
 			Type:               gardencorev1beta1.SeedSystemComponentsHealthy,
 			LastTransitionTime: metav1.Time{Time: fakeClock.Now()},
 		}
+		seedObservabilityComponentsHealthyCondition = gardencorev1beta1.Condition{
+			Type:               gardencorev1beta1.SeedObservabilityComponentsHealthy,
+			LastTransitionTime: metav1.Time{Time: fakeClock.Now()},
+		}
 	})
 
 	Describe("#Check", func() {
@@ -84,15 +89,21 @@ var _ = Describe("Seed health", func() {
 		Context("When all managed resources are deployed successfully", func() {
 			JustBeforeEach(func() {
 				Expect(c.Create(ctx, healthyManagedResource(managedResourceName, ""))).To(Succeed())
+				Expect(c.Create(ctx, healthyManagedResource(managedResourceName+"-observability", v1beta1constants.ObservabilityComponentsHealthy))).To(Succeed())
 			})
 
-			It("should set SeedSystemComponentsHealthy condition to true", func() {
+			It("should set SeedSystemComponentsHealthy and SeedObservabilityComponentsHealthy condition to true", func() {
 				healthCheck := NewHealth(seed, c, fakeClock, nil, checker.NewHealthChecker(c, fakeClock))
 				conditions := NewSeedConditions(fakeClock, gardencorev1beta1.SeedStatus{
-					Conditions: []gardencorev1beta1.Condition{seedSystemComponentsHealthyCondition},
+					Conditions: []gardencorev1beta1.Condition{
+						seedSystemComponentsHealthyCondition,
+						seedObservabilityComponentsHealthyCondition,
+					},
 				})
 
-				expectHealthySystemComponents(healthCheck.Check(ctx, conditions))
+				updatedConditions := healthCheck.Check(ctx, conditions)
+				expectHealthySystemComponents(updatedConditions)
+				expectHealthyObservabilityComponents(updatedConditions)
 			})
 		})
 
@@ -119,65 +130,65 @@ var _ = Describe("Seed health", func() {
 				Expect(c.Create(ctx, prometheus)).To(Succeed())
 			})
 
-			It("should set SeedSystemComponentsHealthy condition to false if Prometheus health check is down", func() {
+			It("should set SeedObservabilityComponentsHealthy condition to false if Prometheus health check is down", func() {
 				healthChecker := checker.NewHealthChecker(c, fakeClock, checker.WithPrometheusHealthChecker(unhealthy))
 
 				healthCheck := NewHealth(seed, c, fakeClock, nil, healthChecker)
 				conditions := NewSeedConditions(fakeClock, gardencorev1beta1.SeedStatus{
-					Conditions: []gardencorev1beta1.Condition{seedSystemComponentsHealthyCondition},
+					Conditions: []gardencorev1beta1.Condition{seedObservabilityComponentsHealthyCondition},
 				})
 
 				updatedConditions := healthCheck.Check(ctx, conditions)
 
 				Expect(updatedConditions).ToNot(BeEmpty())
 				Expect(updatedConditions).To(ContainElement(beConditionOfTypeWithStatusReasonAndMessage(
-					gardencorev1beta1.SeedSystemComponentsHealthy,
+					gardencorev1beta1.SeedObservabilityComponentsHealthy,
 					gardencorev1beta1.ConditionFalse,
 					"PrometheusHealthCheckDown",
 					`There are health issues in Prometheus pod "garden/prometheus-foo-0". Access Prometheus UI and query for "healthcheck" for more details.`)))
 			})
 
-			It("should set SeedSystemComponentsHealthy condition to false if Prometheus health check is erroring", func() {
+			It("should set SeedObservabilityComponentsHealthy condition to false if Prometheus health check is erroring", func() {
 				healthChecker := checker.NewHealthChecker(c, fakeClock, checker.WithPrometheusHealthChecker(erroring))
 
 				healthCheck := NewHealth(seed, c, fakeClock, nil, healthChecker)
 				conditions := NewSeedConditions(fakeClock, gardencorev1beta1.SeedStatus{
-					Conditions: []gardencorev1beta1.Condition{seedSystemComponentsHealthyCondition},
+					Conditions: []gardencorev1beta1.Condition{seedObservabilityComponentsHealthyCondition},
 				})
 
 				updatedConditions := healthCheck.Check(ctx, conditions)
 
 				Expect(updatedConditions).ToNot(BeEmpty())
 				Expect(updatedConditions).To(ContainElement(beConditionOfTypeWithStatusReasonAndMessage(
-					gardencorev1beta1.SeedSystemComponentsHealthy,
+					gardencorev1beta1.SeedObservabilityComponentsHealthy,
 					gardencorev1beta1.ConditionFalse,
 					"PrometheusHealthCheckError",
 					`Querying Prometheus pod "garden/prometheus-foo-0" for health checking returned an error: test error`)))
 			})
 
-			It("should set SeedSystemComponentsHealthy condition to true if Prometheus is healthy", func() {
+			It("should set SeedObservabilityComponentsHealthy condition to true if Prometheus is healthy", func() {
 				healthChecker := checker.NewHealthChecker(c, fakeClock, checker.WithPrometheusHealthChecker(healthy))
 
 				healthCheck := NewHealth(seed, c, fakeClock, nil, healthChecker)
 				conditions := NewSeedConditions(fakeClock, gardencorev1beta1.SeedStatus{
-					Conditions: []gardencorev1beta1.Condition{seedSystemComponentsHealthyCondition},
+					Conditions: []gardencorev1beta1.Condition{seedObservabilityComponentsHealthyCondition},
 				})
 
-				expectHealthySystemComponents(healthCheck.Check(ctx, conditions))
+				expectHealthyObservabilityComponents(healthCheck.Check(ctx, conditions))
 			})
 
-			It("should set SeedSystemComponentsHealthy condition to true if Prometheus health check is down but the PrometheusHealthChecks feature gate is disabled", func() {
+			It("should set SeedObservabilityComponentsHealthy condition to true if Prometheus health check is down but the PrometheusHealthChecks feature gate is disabled", func() {
 				DeferCleanup(test.WithFeatureGate(features.DefaultFeatureGate, features.PrometheusHealthChecks, false))
 
 				healthChecker := checker.NewHealthChecker(c, fakeClock, checker.WithPrometheusHealthChecker(unhealthy))
 
 				healthCheck := NewHealth(seed, c, fakeClock, nil, healthChecker)
 				conditions := NewSeedConditions(fakeClock, gardencorev1beta1.SeedStatus{
-					Conditions: []gardencorev1beta1.Condition{seedSystemComponentsHealthyCondition},
+					Conditions: []gardencorev1beta1.Condition{seedObservabilityComponentsHealthyCondition},
 				})
 
 				updatedConditions := healthCheck.Check(ctx, conditions)
-				expectHealthySystemComponents(updatedConditions)
+				expectHealthyObservabilityComponents(updatedConditions)
 			})
 
 			Context("Prometheus is filtered out from the health check", func() {
@@ -193,13 +204,13 @@ var _ = Describe("Seed health", func() {
 					healthChecker = checker.NewHealthChecker(c, fakeClock, checker.WithPrometheusHealthChecker(unhealthy))
 					healthCheck = NewHealth(seed, c, fakeClock, nil, healthChecker)
 					conditions = NewSeedConditions(fakeClock, gardencorev1beta1.SeedStatus{
-						Conditions: []gardencorev1beta1.Condition{seedSystemComponentsHealthyCondition},
+						Conditions: []gardencorev1beta1.Condition{seedObservabilityComponentsHealthyCondition},
 					})
 
 					updatedConditions := healthCheck.Check(ctx, conditions)
 
 					Expect(updatedConditions).To(ContainElement(beConditionOfTypeWithStatusReasonAndMessage(
-						gardencorev1beta1.SeedSystemComponentsHealthy,
+						gardencorev1beta1.SeedObservabilityComponentsHealthy,
 						gardencorev1beta1.ConditionFalse,
 						"PrometheusHealthCheckDown",
 						`There are health issues in Prometheus pod "garden/prometheus-foo-0". Access Prometheus UI and query for "healthcheck" for more details.`)))
@@ -209,7 +220,7 @@ var _ = Describe("Seed health", func() {
 					Expect(prometheus).ToNot(BeNil())
 					prometheus.Labels = map[string]string{"health-check-by": "foo"}
 					Expect(c.Update(ctx, prometheus)).To(Succeed())
-					expectHealthySystemComponents(healthCheck.Check(ctx, conditions))
+					expectHealthyObservabilityComponents(healthCheck.Check(ctx, conditions))
 				})
 			})
 		})
@@ -218,6 +229,7 @@ var _ = Describe("Seed health", func() {
 			// Execute the following tests for both SeedSystemComponentsHealthy and SeedObservabilityComponentsHealthy conditions
 			for careLabel, condition := range map[string]gardencorev1beta1.Condition{
 				"": {Type: gardencorev1beta1.SeedSystemComponentsHealthy},
+				v1beta1constants.ObservabilityComponentsHealthy: {Type: gardencorev1beta1.SeedObservabilityComponentsHealthy},
 			} {
 				Context(fmt.Sprintf("condition: %s", string(condition.Type)), func() {
 					BeforeEach(func() {
@@ -559,4 +571,13 @@ func expectHealthySystemComponents(conditions []gardencorev1beta1.Condition) {
 		gardencorev1beta1.ConditionTrue,
 		"SystemComponentsRunning",
 		"All system components are healthy.")))
+}
+
+func expectHealthyObservabilityComponents(conditions []gardencorev1beta1.Condition) {
+	Expect(conditions).ToNot(BeEmpty())
+	Expect(conditions).To(ContainElement(beConditionOfTypeWithStatusReasonAndMessage(
+		gardencorev1beta1.SeedObservabilityComponentsHealthy,
+		gardencorev1beta1.ConditionTrue,
+		"ObservabilityComponentsRunning",
+		"All observability components are healthy.")))
 }
