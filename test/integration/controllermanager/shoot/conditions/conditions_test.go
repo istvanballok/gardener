@@ -24,6 +24,9 @@ var _ = Describe("Shoot Conditions controller tests", func() {
 		managedSeed *seedmanagementv1alpha1.ManagedSeed
 		seed        *gardencorev1beta1.Seed
 	)
+	var (
+		SeedObservabilityComponentsHealthyInShoot gardencorev1beta1.ConditionType = gardencorev1beta1.ConditionType("Seed" + string(gardencorev1beta1.SeedObservabilityComponentsHealthy))
+	)
 
 	BeforeEach(func() {
 		shoot = &gardencorev1beta1.Shoot{
@@ -148,6 +151,7 @@ var _ = Describe("Shoot Conditions controller tests", func() {
 				Not(ContainCondition(OfType(gardencorev1beta1.SeedExtensionsReady))),
 				Not(ContainCondition(OfType(gardencorev1beta1.GardenletReady))),
 				Not(ContainCondition(OfType(gardencorev1beta1.SeedSystemComponentsHealthy))),
+				Not(ContainCondition(OfType(SeedObservabilityComponentsHealthyInShoot))),
 			))
 		})
 
