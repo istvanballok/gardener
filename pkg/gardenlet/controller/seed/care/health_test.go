@@ -350,17 +350,23 @@ var _ = Describe("Seed health", func() {
 			})
 
 			It("should only initialize missing conditions", func() {
+				oldTime := fakeClock.Now()
+
+				fakeClock.Step(30 * time.Second)
+				newTime := fakeClock.Now()
+
 				conditions := NewSeedConditions(fakeClock, gardencorev1beta1.SeedStatus{
 					Conditions: []gardencorev1beta1.Condition{
-						{Type: "SeedSystemComponentsHealthy"},
-						{Type: "EmergencyStopShootReconciliations"},
-						{Type: "Foo"},
+						{Type: "SeedSystemComponentsHealthy", LastUpdateTime: metav1.Time{Time: oldTime}},
+						{Type: "Foo", LastUpdateTime: metav1.Time{Time: oldTime}},
 					},
 				})
 
 				Expect(conditions.ConvertToSlice()).To(HaveExactElements(
-					OfType("SeedSystemComponentsHealthy"),
-					OfType("EmergencyStopShootReconciliations"),
+					And(OfType("SeedSystemComponentsHealthy"),
+						HaveField("LastUpdateTime.Time", BeTemporally("==", oldTime))),
+					And(OfType("EmergencyStopShootReconciliations"),
+						HaveField("LastUpdateTime.Time", BeTemporally("==", newTime))),
 				))
 			})
 		})
