@@ -329,6 +329,10 @@ func appendSeedConditionsToShoot(shoot *gardencorev1beta1.Shoot) {
 			Status: gardencorev1beta1.ConditionTrue,
 		},
 		{
+			Type:   gardencorev1beta1.ConditionType("Seed" + string(gardencorev1beta1.SeedObservabilityComponentsHealthy)),
+			Status: gardencorev1beta1.ConditionTrue,
+		},
+		{
 			Type:   gardencorev1beta1.SeedExtensionsReady,
 			Status: gardencorev1beta1.ConditionTrue,
 		},
