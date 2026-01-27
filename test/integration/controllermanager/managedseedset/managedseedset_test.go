@@ -92,6 +92,7 @@ var _ = Describe("ManagedSeedSet controller test", func() {
 				Conditions: []gardencorev1beta1.Condition{
 					{Type: gardencorev1beta1.GardenletReady, Status: gardencorev1beta1.ConditionTrue},
 					{Type: gardencorev1beta1.SeedSystemComponentsHealthy, Status: gardencorev1beta1.ConditionTrue},
+					{Type: gardencorev1beta1.SeedObservabilityComponentsHealthy, Status: gardencorev1beta1.ConditionTrue},
 					{Type: gardencorev1beta1.SeedBackupBucketsReady, Status: gardencorev1beta1.ConditionTrue},
 				},
 			}
