@@ -82,7 +82,7 @@ var _ = Describe("Seed health", func() {
 
 		Context("When all managed resources are deployed successfully", func() {
 			JustBeforeEach(func() {
-				Expect(c.Create(ctx, healthyManagedResource(managedResourceName))).To(Succeed())
+				Expect(c.Create(ctx, healthyManagedResource(managedResourceName, ""))).To(Succeed())
 			})
 
 			It("should set SeedSystemComponentsHealthy condition to true", func() {
@@ -303,7 +303,7 @@ var _ = Describe("Seed health", func() {
 
 			Context("When all managed resources are deployed, but not healthy", func() {
 				JustBeforeEach(func() {
-					Expect(c.Create(ctx, notHealthyManagedResource(managedResourceName))).To(Succeed())
+					Expect(c.Create(ctx, notHealthyManagedResource(managedResourceName, ""))).To(Succeed())
 				})
 
 				tests("NotHealthy", "Resources are not healthy")
@@ -311,7 +311,7 @@ var _ = Describe("Seed health", func() {
 
 			Context("When all managed resources are deployed but their resources are not applied", func() {
 				JustBeforeEach(func() {
-					Expect(c.Create(ctx, notAppliedManagedResource(managedResourceName))).To(Succeed())
+					Expect(c.Create(ctx, notAppliedManagedResource(managedResourceName, ""))).To(Succeed())
 				})
 
 				tests("NotApplied", "Resources are not applied")
@@ -319,7 +319,7 @@ var _ = Describe("Seed health", func() {
 
 			Context("When all managed resources are deployed but their resources are still progressing", func() {
 				JustBeforeEach(func() {
-					Expect(c.Create(ctx, progressingManagedResource(managedResourceName))).To(Succeed())
+					Expect(c.Create(ctx, progressingManagedResource(managedResourceName, ""))).To(Succeed())
 				})
 
 				tests("ResourcesProgressing", "Resources are progressing")
@@ -327,7 +327,7 @@ var _ = Describe("Seed health", func() {
 
 			Context("When all managed resources are deployed but not all required conditions are present", func() {
 				JustBeforeEach(func() {
-					Expect(c.Create(ctx, managedResource(managedResourceName, []gardencorev1beta1.Condition{{
+					Expect(c.Create(ctx, managedResource(managedResourceName, "", []gardencorev1beta1.Condition{{
 						Type:   resourcesv1alpha1.ResourcesApplied,
 						Status: gardencorev1beta1.ConditionTrue}},
 					))).To(Succeed())
@@ -423,9 +423,10 @@ func beConditionOfTypeWithStatusReasonAndMessage(typ gardencorev1beta1.Condition
 	return And(OfType(typ), WithStatus(status), WithReason(reason), WithMessage(message))
 }
 
-func healthyManagedResource(name string) *resourcesv1alpha1.ManagedResource {
+func healthyManagedResource(name string, careLabel string) *resourcesv1alpha1.ManagedResource {
 	return managedResource(
 		name,
+		careLabel,
 		[]gardencorev1beta1.Condition{
 			{
 				Type:   resourcesv1alpha1.ResourcesApplied,
@@ -442,9 +443,10 @@ func healthyManagedResource(name string) *resourcesv1alpha1.ManagedResource {
 		})
 }
 
-func notHealthyManagedResource(name string) *resourcesv1alpha1.ManagedResource {
+func notHealthyManagedResource(name string, careLabel string) *resourcesv1alpha1.ManagedResource {
 	return managedResource(
 		name,
+		careLabel,
 		[]gardencorev1beta1.Condition{
 			{
 				Type:   resourcesv1alpha1.ResourcesApplied,
@@ -463,9 +465,10 @@ func notHealthyManagedResource(name string) *resourcesv1alpha1.ManagedResource {
 		})
 }
 
-func notAppliedManagedResource(name string) *resourcesv1alpha1.ManagedResource {
+func notAppliedManagedResource(name string, careLabel string) *resourcesv1alpha1.ManagedResource {
 	return managedResource(
 		name,
+		careLabel,
 		[]gardencorev1beta1.Condition{
 			{
 				Type:    resourcesv1alpha1.ResourcesApplied,
@@ -484,9 +487,10 @@ func notAppliedManagedResource(name string) *resourcesv1alpha1.ManagedResource {
 		})
 }
 
-func progressingManagedResource(name string) *resourcesv1alpha1.ManagedResource {
+func progressingManagedResource(name string, careLabel string) *resourcesv1alpha1.ManagedResource {
 	return managedResource(
 		name,
+		careLabel,
 		[]gardencorev1beta1.Condition{
 			{
 				Type:   resourcesv1alpha1.ResourcesApplied,
@@ -505,13 +509,13 @@ func progressingManagedResource(name string) *resourcesv1alpha1.ManagedResource 
 		})
 }
 
-func managedResource(name string, conditions []gardencorev1beta1.Condition) *resourcesv1alpha1.ManagedResource {
+func managedResource(name string, careLabel string, conditions []gardencorev1beta1.Condition) *resourcesv1alpha1.ManagedResource {
 	namespace := v1beta1constants.GardenNamespace
 	if name == "istio-system" || strings.HasSuffix(name, "istio") {
 		namespace = v1beta1constants.IstioSystemNamespace
 	}
 
-	return &resourcesv1alpha1.ManagedResource{
+	mr := &resourcesv1alpha1.ManagedResource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -523,6 +527,12 @@ func managedResource(name string, conditions []gardencorev1beta1.Condition) *res
 			Conditions: conditions,
 		},
 	}
+	if careLabel != "" {
+		mr.Labels = map[string]string{
+			v1beta1constants.LabelCareConditionType: careLabel,
+		}
+	}
+	return mr
 }
 
 func expectHealthySystemComponents(conditions []gardencorev1beta1.Condition) {
