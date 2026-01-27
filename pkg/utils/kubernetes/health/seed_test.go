@@ -26,6 +26,7 @@ var _ = Describe("Seed", func() {
 					Conditions: []gardencorev1beta1.Condition{
 						{Type: gardencorev1beta1.GardenletReady, Status: gardencorev1beta1.ConditionTrue},
 						{Type: gardencorev1beta1.SeedSystemComponentsHealthy, Status: gardencorev1beta1.ConditionTrue},
+						{Type: gardencorev1beta1.SeedObservabilityComponentsHealthy, Status: gardencorev1beta1.ConditionTrue},
 					},
 				},
 			}, &gardencorev1beta1.Gardener{}, Succeed()),
@@ -35,6 +36,7 @@ var _ = Describe("Seed", func() {
 					Conditions: []gardencorev1beta1.Condition{
 						{Type: gardencorev1beta1.GardenletReady, Status: gardencorev1beta1.ConditionTrue},
 						{Type: gardencorev1beta1.SeedSystemComponentsHealthy, Status: gardencorev1beta1.ConditionTrue},
+						{Type: gardencorev1beta1.SeedObservabilityComponentsHealthy, Status: gardencorev1beta1.ConditionTrue},
 					},
 				},
 			}, &gardencorev1beta1.Gardener{ID: "thegardener"}, Succeed()),
@@ -95,6 +97,7 @@ var _ = Describe("Seed", func() {
 					Conditions: []gardencorev1beta1.Condition{
 						{Type: gardencorev1beta1.GardenletReady, Status: gardencorev1beta1.ConditionTrue},
 						{Type: gardencorev1beta1.SeedSystemComponentsHealthy, Status: gardencorev1beta1.ConditionTrue},
+						{Type: gardencorev1beta1.SeedObservabilityComponentsHealthy, Status: gardencorev1beta1.ConditionTrue},
 					},
 				},
 			}, &gardencorev1beta1.Gardener{Version: "1.12.8"}, Succeed()),
