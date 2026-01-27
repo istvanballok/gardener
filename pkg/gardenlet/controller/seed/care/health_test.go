@@ -7,6 +7,7 @@ package care_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -214,127 +215,137 @@ var _ = Describe("Seed health", func() {
 		})
 
 		Context("When there are issues with seed managed resources", func() {
-			var (
-				tests = func(reason, message string) {
-					It("should set SeedSystemComponentsHealthy condition to False if there is no Progressing threshold duration mapping", func() {
-						healthCheck := NewHealth(seed, c, fakeClock, nil, checker.NewHealthChecker(c, fakeClock))
-						conditions := NewSeedConditions(fakeClock, gardencorev1beta1.SeedStatus{
-							Conditions: []gardencorev1beta1.Condition{seedSystemComponentsHealthyCondition},
+			// Execute the following tests for both SeedSystemComponentsHealthy and SeedObservabilityComponentsHealthy conditions
+			for careLabel, condition := range map[string]gardencorev1beta1.Condition{
+				"": {Type: gardencorev1beta1.SeedSystemComponentsHealthy},
+			} {
+				Context(fmt.Sprintf("condition: %s", string(condition.Type)), func() {
+					BeforeEach(func() {
+						condition.LastTransitionTime = metav1.Time{Time: fakeClock.Now()}
+					})
+					var (
+						tests = func(reason, message string) {
+							It("should set condition to False if there is no Progressing threshold duration mapping", func() {
+								healthCheck := NewHealth(seed, c, fakeClock, nil, checker.NewHealthChecker(c, fakeClock))
+								conditions := NewSeedConditions(fakeClock, gardencorev1beta1.SeedStatus{
+									Conditions: []gardencorev1beta1.Condition{condition},
+								})
+
+								updatedConditions := healthCheck.Check(ctx, conditions)
+
+								Expect(updatedConditions).To(ContainElement(beConditionOfTypeWithStatusReasonAndMessage(condition.Type, gardencorev1beta1.ConditionFalse, reason, message)))
+							})
+
+							It("should set condition to Progressing if time is within threshold duration and condition is currently False", func() {
+								condition.Status = gardencorev1beta1.ConditionFalse
+								fakeClock.Step(30 * time.Second)
+
+								healthChecker := checker.NewHealthChecker(
+									c,
+									fakeClock,
+									checker.WithConditionThresholds(map[gardencorev1beta1.ConditionType]time.Duration{condition.Type: time.Minute}))
+								healthCheck := NewHealth(seed, c, fakeClock, nil, healthChecker)
+								conditions := NewSeedConditions(fakeClock, gardencorev1beta1.SeedStatus{
+									Conditions: []gardencorev1beta1.Condition{condition},
+								})
+
+								updatedConditions := healthCheck.Check(ctx, conditions)
+
+								Expect(updatedConditions).To(ContainElement(beConditionOfTypeWithStatusReasonAndMessage(condition.Type, gardencorev1beta1.ConditionProgressing, reason, message)))
+							})
+
+							It("should set condition to Progressing if time is within threshold duration and condition is currently True", func() {
+								condition.Status = gardencorev1beta1.ConditionTrue
+								fakeClock.Step(30 * time.Second)
+
+								healthChecker := checker.NewHealthChecker(
+									c,
+									fakeClock,
+									checker.WithConditionThresholds(map[gardencorev1beta1.ConditionType]time.Duration{condition.Type: time.Minute}))
+								healthCheck := NewHealth(seed, c, fakeClock, nil, healthChecker)
+								conditions := NewSeedConditions(fakeClock, gardencorev1beta1.SeedStatus{
+									Conditions: []gardencorev1beta1.Condition{condition},
+								})
+
+								updatedConditions := healthCheck.Check(ctx, conditions)
+
+								Expect(updatedConditions).To(ContainElement(beConditionOfTypeWithStatusReasonAndMessage(condition.Type, gardencorev1beta1.ConditionProgressing, reason, message)))
+							})
+
+							It("should not set condition to false if Progressing threshold duration has not expired", func() {
+								condition.Status = gardencorev1beta1.ConditionProgressing
+								fakeClock.Step(30 * time.Second)
+
+								healthChecker := checker.NewHealthChecker(
+									c,
+									fakeClock,
+									checker.WithConditionThresholds(map[gardencorev1beta1.ConditionType]time.Duration{condition.Type: time.Minute}))
+								healthCheck := NewHealth(seed, c, fakeClock, nil, healthChecker)
+								conditions := NewSeedConditions(fakeClock, gardencorev1beta1.SeedStatus{
+									Conditions: []gardencorev1beta1.Condition{condition},
+								})
+
+								updatedConditions := healthCheck.Check(ctx, conditions)
+
+								Expect(updatedConditions).To(ContainElement(beConditionOfTypeWithStatusReasonAndMessage(condition.Type, gardencorev1beta1.ConditionProgressing, reason, message)))
+							})
+
+							It("should set condition to false if Progressing threshold duration has expired", func() {
+								condition.Status = gardencorev1beta1.ConditionProgressing
+								fakeClock.Step(90 * time.Second)
+
+								healthChecker := checker.NewHealthChecker(
+									c,
+									fakeClock,
+									checker.WithConditionThresholds(map[gardencorev1beta1.ConditionType]time.Duration{condition.Type: time.Minute}))
+								healthCheck := NewHealth(seed, c, fakeClock, nil, healthChecker)
+								conditions := NewSeedConditions(fakeClock, gardencorev1beta1.SeedStatus{
+									Conditions: []gardencorev1beta1.Condition{condition},
+								})
+
+								updatedConditions := healthCheck.Check(ctx, conditions)
+
+								Expect(updatedConditions).To(ContainElement(beConditionOfTypeWithStatusReasonAndMessage(condition.Type, gardencorev1beta1.ConditionFalse, reason, message)))
+							})
+						}
+					)
+
+					Context("When all managed resources are deployed, but not healthy", func() {
+						JustBeforeEach(func() {
+							Expect(c.Create(ctx, notHealthyManagedResource(managedResourceName, careLabel))).To(Succeed())
 						})
 
-						updatedConditions := healthCheck.Check(ctx, conditions)
-
-						Expect(updatedConditions).To(ContainElement(beConditionOfTypeWithStatusReasonAndMessage(gardencorev1beta1.SeedSystemComponentsHealthy, gardencorev1beta1.ConditionFalse, reason, message)))
+						tests("NotHealthy", "Resources are not healthy")
 					})
 
-					It("should set SeedSystemComponentsHealthy condition to Progressing if time is within threshold duration and condition is currently False", func() {
-						seedSystemComponentsHealthyCondition.Status = gardencorev1beta1.ConditionFalse
-						fakeClock.Step(30 * time.Second)
-
-						healthChecker := checker.NewHealthChecker(
-							c,
-							fakeClock,
-							checker.WithConditionThresholds(map[gardencorev1beta1.ConditionType]time.Duration{gardencorev1beta1.SeedSystemComponentsHealthy: time.Minute}))
-						healthCheck := NewHealth(seed, c, fakeClock, nil, healthChecker)
-						conditions := NewSeedConditions(fakeClock, gardencorev1beta1.SeedStatus{
-							Conditions: []gardencorev1beta1.Condition{seedSystemComponentsHealthyCondition},
+					Context("When all managed resources are deployed but their resources are not applied", func() {
+						JustBeforeEach(func() {
+							Expect(c.Create(ctx, notAppliedManagedResource(managedResourceName, careLabel))).To(Succeed())
 						})
 
-						updatedConditions := healthCheck.Check(ctx, conditions)
-
-						Expect(updatedConditions).To(ContainElement(beConditionOfTypeWithStatusReasonAndMessage(gardencorev1beta1.SeedSystemComponentsHealthy, gardencorev1beta1.ConditionProgressing, reason, message)))
+						tests("NotApplied", "Resources are not applied")
 					})
 
-					It("should set SeedSystemComponentsHealthy condition to Progressing if time is within threshold duration and condition is currently True", func() {
-						seedSystemComponentsHealthyCondition.Status = gardencorev1beta1.ConditionTrue
-						fakeClock.Step(30 * time.Second)
-
-						healthChecker := checker.NewHealthChecker(
-							c,
-							fakeClock,
-							checker.WithConditionThresholds(map[gardencorev1beta1.ConditionType]time.Duration{gardencorev1beta1.SeedSystemComponentsHealthy: time.Minute}))
-						healthCheck := NewHealth(seed, c, fakeClock, nil, healthChecker)
-						conditions := NewSeedConditions(fakeClock, gardencorev1beta1.SeedStatus{
-							Conditions: []gardencorev1beta1.Condition{seedSystemComponentsHealthyCondition},
+					Context("When all managed resources are deployed but their resources are still progressing", func() {
+						JustBeforeEach(func() {
+							Expect(c.Create(ctx, progressingManagedResource(managedResourceName, careLabel))).To(Succeed())
 						})
 
-						updatedConditions := healthCheck.Check(ctx, conditions)
-
-						Expect(updatedConditions).To(ContainElement(beConditionOfTypeWithStatusReasonAndMessage(gardencorev1beta1.SeedSystemComponentsHealthy, gardencorev1beta1.ConditionProgressing, reason, message)))
+						tests("ResourcesProgressing", "Resources are progressing")
 					})
 
-					It("should not set SeedSystemComponentsHealthy condition to false if Progressing threshold duration has not expired", func() {
-						seedSystemComponentsHealthyCondition.Status = gardencorev1beta1.ConditionProgressing
-						fakeClock.Step(30 * time.Second)
-
-						healthChecker := checker.NewHealthChecker(
-							c,
-							fakeClock,
-							checker.WithConditionThresholds(map[gardencorev1beta1.ConditionType]time.Duration{gardencorev1beta1.SeedSystemComponentsHealthy: time.Minute}))
-						healthCheck := NewHealth(seed, c, fakeClock, nil, healthChecker)
-						conditions := NewSeedConditions(fakeClock, gardencorev1beta1.SeedStatus{
-							Conditions: []gardencorev1beta1.Condition{seedSystemComponentsHealthyCondition},
+					Context("When all managed resources are deployed but not all required conditions are present", func() {
+						JustBeforeEach(func() {
+							Expect(c.Create(ctx, managedResource(managedResourceName, careLabel, []gardencorev1beta1.Condition{{
+								Type:   resourcesv1alpha1.ResourcesApplied,
+								Status: gardencorev1beta1.ConditionTrue}},
+							))).To(Succeed())
 						})
 
-						updatedConditions := healthCheck.Check(ctx, conditions)
-
-						Expect(updatedConditions).To(ContainElement(beConditionOfTypeWithStatusReasonAndMessage(gardencorev1beta1.SeedSystemComponentsHealthy, gardencorev1beta1.ConditionProgressing, reason, message)))
+						tests("MissingManagedResourceCondition", "is missing the following condition(s)")
 					})
-
-					It("should set SeedSystemComponentsHealthy condition to false if Progressing threshold duration has expired", func() {
-						seedSystemComponentsHealthyCondition.Status = gardencorev1beta1.ConditionProgressing
-						fakeClock.Step(90 * time.Second)
-
-						healthChecker := checker.NewHealthChecker(
-							c,
-							fakeClock,
-							checker.WithConditionThresholds(map[gardencorev1beta1.ConditionType]time.Duration{gardencorev1beta1.SeedSystemComponentsHealthy: time.Minute}))
-						healthCheck := NewHealth(seed, c, fakeClock, nil, healthChecker)
-						conditions := NewSeedConditions(fakeClock, gardencorev1beta1.SeedStatus{
-							Conditions: []gardencorev1beta1.Condition{seedSystemComponentsHealthyCondition},
-						})
-
-						updatedConditions := healthCheck.Check(ctx, conditions)
-
-						Expect(updatedConditions).To(ContainElement(beConditionOfTypeWithStatusReasonAndMessage(gardencorev1beta1.SeedSystemComponentsHealthy, gardencorev1beta1.ConditionFalse, reason, message)))
-					})
-				}
-			)
-
-			Context("When all managed resources are deployed, but not healthy", func() {
-				JustBeforeEach(func() {
-					Expect(c.Create(ctx, notHealthyManagedResource(managedResourceName, ""))).To(Succeed())
 				})
-
-				tests("NotHealthy", "Resources are not healthy")
-			})
-
-			Context("When all managed resources are deployed but their resources are not applied", func() {
-				JustBeforeEach(func() {
-					Expect(c.Create(ctx, notAppliedManagedResource(managedResourceName, ""))).To(Succeed())
-				})
-
-				tests("NotApplied", "Resources are not applied")
-			})
-
-			Context("When all managed resources are deployed but their resources are still progressing", func() {
-				JustBeforeEach(func() {
-					Expect(c.Create(ctx, progressingManagedResource(managedResourceName, ""))).To(Succeed())
-				})
-
-				tests("ResourcesProgressing", "Resources are progressing")
-			})
-
-			Context("When all managed resources are deployed but not all required conditions are present", func() {
-				JustBeforeEach(func() {
-					Expect(c.Create(ctx, managedResource(managedResourceName, "", []gardencorev1beta1.Condition{{
-						Type:   resourcesv1alpha1.ResourcesApplied,
-						Status: gardencorev1beta1.ConditionTrue}},
-					))).To(Succeed())
-				})
-
-				tests("MissingManagedResourceCondition", "is missing the following condition(s)")
-			})
+			}
 		})
 	})
 
