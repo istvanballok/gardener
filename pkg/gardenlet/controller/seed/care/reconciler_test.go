@@ -178,7 +178,7 @@ var _ = Describe("Seed Care Control", func() {
 						})))
 				})
 
-				It("should update shoot conditions", func() {
+				It("should update seed conditions", func() {
 					Expect(reconciler.Reconcile(ctx, req)).To(Equal(reconcile.Result{RequeueAfter: careSyncPeriod}))
 
 					updatedSeed := &gardencorev1beta1.Seed{}
@@ -217,9 +217,9 @@ var _ = Describe("Seed Care Control", func() {
 				updatedSeed := &gardencorev1beta1.Seed{}
 				Expect(gardenClient.Get(ctx, client.ObjectKeyFromObject(seed), updatedSeed)).To(Succeed())
 				Expect(updatedSeed.Status.Conditions).To(ConsistOf(
+					MatchFields(IgnoreExtras, Fields{"Type": BeEquivalentTo("SeedSystemComponentsHealthy")}),
+					MatchFields(IgnoreExtras, Fields{"Type": BeEquivalentTo("ObservabilityComponentsHealthy")}),
 					MatchFields(IgnoreExtras, Fields{
-						"Type": BeEquivalentTo("SeedSystemComponentsHealthy"),
-					}), MatchFields(IgnoreExtras, Fields{
 						"Type":    BeEquivalentTo("EmergencyStopShootReconciliations"),
 						"Status":  BeEquivalentTo("True"),
 						"Reason":  Equal("EmergencyStopShootReconciliations"),
@@ -243,9 +243,10 @@ var _ = Describe("Seed Care Control", func() {
 
 				updatedSeed := &gardencorev1beta1.Seed{}
 				Expect(gardenClient.Get(ctx, client.ObjectKeyFromObject(seed), updatedSeed)).To(Succeed())
-				Expect(updatedSeed.Status.Conditions).To(ConsistOf(MatchFields(IgnoreExtras, Fields{
-					"Type": BeEquivalentTo("SeedSystemComponentsHealthy"),
-				})))
+				Expect(updatedSeed.Status.Conditions).To(ConsistOf(
+					MatchFields(IgnoreExtras, Fields{"Type": BeEquivalentTo("SeedSystemComponentsHealthy")}),
+					MatchFields(IgnoreExtras, Fields{"Type": BeEquivalentTo("ObservabilityComponentsHealthy")}),
+				))
 			})
 		})
 	})

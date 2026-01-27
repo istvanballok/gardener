@@ -222,7 +222,8 @@ func (r *Reconciler) updateStatusOperationSuccess(ctx context.Context, seed *gar
 			case gardencorev1beta1.SeedBackupBucketsReady,
 				gardencorev1beta1.SeedExtensionsReady,
 				gardencorev1beta1.GardenletReady,
-				gardencorev1beta1.SeedSystemComponentsHealthy:
+				gardencorev1beta1.SeedSystemComponentsHealthy,
+				gardencorev1beta1.SeedObservabilityComponentsHealthy:
 				if cond.Status != gardencorev1beta1.ConditionFalse {
 					seed.Status.Conditions[i].Status = gardencorev1beta1.ConditionProgressing
 					seed.Status.Conditions[i].LastUpdateTime = metav1.Now()
