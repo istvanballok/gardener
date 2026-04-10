@@ -2,13 +2,17 @@
 # e2e-soak.sh - run the HA multi-zone e2e suite N times to assess reliability
 #
 # Usage: ./e2e-soak.sh [RUNS] [SLEEP_SECONDS]
-#   RUNS           number of iterations (default: 10)
-#   SLEEP_SECONDS  pause between runs   (default: 600 = 10 min)
+#   RUNS              number of iterations          (default: 10)
+#   SLEEP_SECONDS     pause between runs in seconds (default: 600 = 10 min)
+#
+# Environment:
+#   PARALLEL_E2E_TESTS  ginkgo --procs value (default: 5)
 #
 # Output: output-01.log .. output-N.log + summary printed at the end
 
 RUNS="${1:-10}"
 SLEEP_BETWEEN="${2:-600}"
+export PARALLEL_E2E_TESTS="${PARALLEL_E2E_TESTS:-5}"
 
 declare -a results=()
 
@@ -18,8 +22,8 @@ for i in $(seq 1 "$RUNS"); do
     "$i" "$RUNS" "$(date '+%Y-%m-%d %H:%M:%S')" "$logfile"
 
   unbuffer bash -c '
-    PARALLEL_E2E_TESTS=2 GOFLAGS="-tags=musl" \
-    make import-tools-bin ci-e2e-kind-ha-multi-zone
+    GOFLAGS="-tags=musl" make kind-multi-zone-down || true
+    GOFLAGS="-tags=musl" make import-tools-bin ci-e2e-kind-ha-multi-zone
   ' |& ts | nl | tee "$logfile"
   rc=${PIPESTATUS[0]}
 
